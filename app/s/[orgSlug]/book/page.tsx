@@ -16,6 +16,7 @@ export default async function PublicBookPage({
     serviceId?: string;
     staffId?: string;
     locationId?: string;
+    startsAt?: string;
     booked?: string;
   }>;
 }) {
@@ -122,6 +123,11 @@ export default async function PublicBookPage({
           }))}
           initialServiceId={serviceId}
           initialStaffId={staffId}
+          initialStartsAt={
+            query.startsAt && slots.some((slot) => slot.toISOString() === query.startsAt)
+              ? query.startsAt
+              : ""
+          }
           slots={slots.map((slot) => slot.toISOString())}
         />
       )}

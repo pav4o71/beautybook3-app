@@ -43,6 +43,7 @@ export function BookingForm({
   initialServiceId,
   initialStaffId,
   initialLocationId = "",
+  initialStartsAt = "",
   slots,
   action = bookSlot,
   bookPath = "/dashboard/book",
@@ -53,6 +54,7 @@ export function BookingForm({
   initialServiceId: string;
   initialStaffId: string;
   initialLocationId?: string;
+  initialStartsAt?: string;
   slots: string[];
   action?: (formData: FormData) => Promise<ActionFormState>;
   bookPath?: string;
@@ -252,7 +254,11 @@ export function BookingForm({
                       type="submit"
                       data-testid="book-slot"
                       disabled={pending || !locationId || !serviceId || !staffId}
-                      className={slotButtonClass}
+                      className={
+                        iso === initialStartsAt
+                          ? `${slotButtonClass} border-zinc-900 bg-zinc-900 text-white hover:bg-zinc-800`
+                          : slotButtonClass
+                      }
                     >
                       {formatTime(new Date(iso))}
                     </button>

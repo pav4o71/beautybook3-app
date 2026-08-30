@@ -1,4 +1,6 @@
+import { getAvailableSlotsForDay } from "@/lib/booking";
 import { prisma } from "@/lib/prisma";
+import { parseSalonTime, salonMinutesOfDay } from "@/lib/timezone";
 
 export type MarketplaceCategoryFilter = {
   slug: string;
@@ -218,4 +220,132 @@ export async function listMarketplaceServices(input: {
       };
     })
     .filter((service) => service.locations.length > 0);
+}
+
+export type MarketplaceAvailabilityResult = {
+  organization: {
+    id: string;
+    name: string;
+    slug: string;
+  };
+  location: {
+    id: string;
+    name: string;
+    area: string | null;
+  };
+  service: {
+    id: string;
+    name: string;
+    durationMin: number;
+    priceCents: number;
+  };
+  staff: {
+    id: string;
+    name: string;
+  };
+  startsAt: Date;
+  priceCents: number;
+};
+
+const AVAILABILITY_RESULT_LIMIT = 50;
+const TIME_WINDOW_MINUTES = 30;
+
+function slotMatchesTime(slot: Date, time?: string) {
+  if (!time) return true;
+  const target = parseSalonTime(time);
+  if (target == null) return true;
+  return Math.abs(salonMinutesOfDay(slot) - target) <= TIME_WINDOW_MINUTES;
+}
+
+export async function searchMarketplaceAvailability(input: {
+  categorySlug?: string;
+  serviceId?: string;
+  area?: string;
+  date: Date;
+  time?: string;
+}): Promise<MarketplaceAvailabilityResult[]> {
+  const area = input.area?.trim() || undefined;
+  const categorySlug = input.categorySlug?.trim() || undefined;
+  const serviceId = input.serviceId?.trim() || undefined;
+  const staffInArea = {
+    staff: {
+      active: true,
+      location: {
+        active: true,
+        ...(area ? { area } : {}),
+      },
+    },
+  } as const;
+
+  const services = await prisma.service.findMany({
+    where: {
+      active: true,
+      organization: { published: true },
+      staff: { some: staffInArea },
+      ...(serviceId ? { id: serviceId } : {}),
+      ...(categorySlug && !serviceId ? { category: { slug: categorySlug } } : {}),
+    },
+    include: {
+      organization: {
+        select: { id: true, name: true, slug: true, published: true },
+      },
+      staff: {
+        where: staffInArea,
+        select: {
+          staff: {
+            select: {
+              id: true,
+              name: true,
+              location: {
+                select: { id: true, name: true, area: true },
+              },
+            },
+          },
+        },
+      },
+    },
+    orderBy: [{ priceCents: "asc" }, { name: "asc" }],
+  });
+
+  const results: MarketplaceAvailabilityResult[] = [];
+
+  for (const service of services) {
+    if (!service.organization.published) continue;
+    for (const link of service.staff) {
+      const slots = await getAvailableSlotsForDay({
+        organizationId: service.organization.id,
+        staffId: link.staff.id,
+        durationMin: service.durationMin,
+        date: input.date,
+      });
+      for (const startsAt of slots) {
+        if (!slotMatchesTime(startsAt, input.time)) continue;
+        results.push({
+          organization: {
+            id: service.organization.id,
+            name: service.organization.name,
+            slug: service.organization.slug,
+          },
+          location: link.staff.location,
+          service: {
+            id: service.id,
+            name: service.name,
+            durationMin: service.durationMin,
+            priceCents: service.priceCents,
+          },
+          staff: { id: link.staff.id, name: link.staff.name },
+          startsAt,
+          priceCents: service.priceCents,
+        });
+      }
+    }
+  }
+
+  return results
+    .sort((left, right) => {
+      const timeDelta = left.startsAt.getTime() - right.startsAt.getTime();
+      if (timeDelta !== 0) return timeDelta;
+      return left.priceCents - right.priceCents;
+    })
+    .slice(0, AVAILABILITY_RESULT_LIMIT);
 }

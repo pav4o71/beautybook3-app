@@ -14,17 +14,17 @@ import {
   weekdayFromDate,
 } from "@/lib/schedule";
 
-export async function getAvailableSlots(input: {
+type SlotQuery = {
   organizationId: string;
   staffId: string;
   durationMin: number;
-  days?: number;
-}) {
-  const days = input.days ?? 7;
-  const now = new Date();
-  const { start: rangeStart } = salonDayBounds(now);
-  const rangeEnd = addSalonDays(rangeStart, days);
+  rangeStart: Date;
+  rangeEnd: Date;
+  dayCount: number;
+};
 
+async function collectAvailableSlots(input: SlotQuery) {
+  const now = new Date();
   const [schedules, appointments, timeOff] = await Promise.all([
     prisma.staffSchedule.findMany({
       where: { staffId: input.staffId, organizationId: input.organizationId },
@@ -34,8 +34,8 @@ export async function getAvailableSlots(input: {
         organizationId: input.organizationId,
         staffId: input.staffId,
         status: { not: AppointmentStatus.CANCELLED },
-        startsAt: { lt: rangeEnd },
-        endsAt: { gt: rangeStart },
+        startsAt: { lt: input.rangeEnd },
+        endsAt: { gt: input.rangeStart },
       },
       select: { startsAt: true, endsAt: true },
     }),
@@ -43,8 +43,8 @@ export async function getAvailableSlots(input: {
       where: {
         organizationId: input.organizationId,
         staffId: input.staffId,
-        startsAt: { lt: rangeEnd },
-        endsAt: { gt: rangeStart },
+        startsAt: { lt: input.rangeEnd },
+        endsAt: { gt: input.rangeStart },
       },
       select: { startsAt: true, endsAt: true },
     }),
@@ -52,8 +52,8 @@ export async function getAvailableSlots(input: {
 
   const slots: Date[] = [];
 
-  for (let offset = 0; offset < days; offset += 1) {
-    const dayStart = addSalonDays(rangeStart, offset);
+  for (let offset = 0; offset < input.dayCount; offset += 1) {
+    const dayStart = addSalonDays(input.rangeStart, offset);
     const weekday = weekdayFromDate(dayStart);
     const daySchedules = schedules.filter((row) => row.weekday === weekday);
 
@@ -81,6 +81,41 @@ export async function getAvailableSlots(input: {
   }
 
   return slots;
+}
+
+export async function getAvailableSlots(input: {
+  organizationId: string;
+  staffId: string;
+  durationMin: number;
+  days?: number;
+}) {
+  const days = input.days ?? 7;
+  const { start: rangeStart } = salonDayBounds();
+  return collectAvailableSlots({
+    organizationId: input.organizationId,
+    staffId: input.staffId,
+    durationMin: input.durationMin,
+    rangeStart,
+    rangeEnd: addSalonDays(rangeStart, days),
+    dayCount: days,
+  });
+}
+
+export async function getAvailableSlotsForDay(input: {
+  organizationId: string;
+  staffId: string;
+  durationMin: number;
+  date: Date;
+}) {
+  const { start: rangeStart, end: rangeEnd } = salonDayBounds(input.date);
+  return collectAvailableSlots({
+    organizationId: input.organizationId,
+    staffId: input.staffId,
+    durationMin: input.durationMin,
+    rangeStart,
+    rangeEnd,
+    dayCount: 1,
+  });
 }
 
 function isAppointmentOverlapError(error: unknown) {
