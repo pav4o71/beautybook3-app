@@ -34,4 +34,30 @@ test.describe("locations admin", () => {
     await expect(row).toBeVisible();
     await expect(row.getByText(branchAddress)).toBeVisible();
   });
+
+  test("admin can reassign staff to another location", async ({ page }) => {
+    await page.goto("/dashboard/admin/staff");
+    const jordanRow = page.locator("li").filter({ hasText: "Jordan Reyes" });
+
+    await jordanRow.getByRole("link", { name: "Edit" }).click();
+    await page.waitForURL(/\/dashboard\/admin\/staff\/.+/);
+    const locationSelect = page.locator("main select[name='locationId']");
+    await locationSelect.selectOption({ label: "Main location (default)" });
+    await page.getByRole("button", { name: "Save changes" }).click();
+    await page.waitForURL("/dashboard/admin/staff");
+
+    await page.goto("/dashboard/book");
+    await page.getByRole("button", { name: "BGC branch" }).click();
+    await page.waitForURL(/locationId=/);
+    await page.getByRole("button", { name: "Haircut" }).click();
+    await expect(page.getByText("Jordan Reyes")).toHaveCount(0);
+
+    await page.goto("/dashboard/admin/staff");
+    const jordanRowAfterBook = page.locator("li").filter({ hasText: "Jordan Reyes" });
+    await jordanRowAfterBook.getByRole("link", { name: "Edit" }).click();
+    await page.waitForURL(/\/dashboard\/admin\/staff\/.+/);
+    await page.locator("main select[name='locationId']").selectOption({ label: "BGC branch" });
+    await page.getByRole("button", { name: "Save changes" }).click();
+    await page.waitForURL("/dashboard/admin/staff");
+  });
 });

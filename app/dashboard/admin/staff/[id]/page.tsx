@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getStaffForEdit, listActiveServicesForPicker } from "@/lib/catalog";
+import { listLocations } from "@/lib/locations";
 import { requireActiveOrgAdmin } from "@/lib/require-org";
 import {
   checkboxClass,
@@ -21,9 +22,10 @@ export default async function EditStaffPage({
   const { organizationId } = await requireActiveOrgAdmin();
   const { id } = await params;
 
-  const [person, services] = await Promise.all([
+  const [person, services, locations] = await Promise.all([
     getStaffForEdit(organizationId, id),
     listActiveServicesForPicker(organizationId),
+    listLocations(organizationId),
   ]);
 
   if (!person) {
@@ -73,6 +75,24 @@ export default async function EditStaffPage({
             defaultValue={person.bio ?? ""}
             className={controlClass}
           />
+        </label>
+        <label className={labelClass}>
+          <span className={labelTextClass}>Location</span>
+          <select
+            name="locationId"
+            required
+            defaultValue={person.locationId ?? ""}
+            className={controlClass}
+          >
+            {locations
+              .filter((location) => location.active)
+              .map((location) => (
+                <option key={location.id} value={location.id}>
+                  {location.name}
+                  {location.isDefault ? " (default)" : ""}
+                </option>
+              ))}
+          </select>
         </label>
         <label className="flex items-center gap-2 text-sm text-zinc-900">
           <input

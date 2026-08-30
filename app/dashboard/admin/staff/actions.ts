@@ -9,7 +9,12 @@ import {
   parseRequiredString,
 } from "@/lib/catalog";
 import { prisma } from "@/lib/prisma";
+import { getLocationById } from "@/lib/locations";
 import { requireActiveOrgAdmin } from "@/lib/require-org";
+import {
+  formatZodError,
+  updateStaffSchema,
+} from "@/lib/validations/staff";
 
 function revalidateStaffPaths() {
   revalidatePath("/dashboard/admin/staff");
@@ -85,14 +90,18 @@ export async function updateStaff(
   const { organizationId } = await requireActiveOrgAdmin();
 
   try {
-    const id = String(formData.get("id") ?? "");
-    if (!id) {
-      throw new Error("Staff id is required.");
+    const parsed = updateStaffSchema.safeParse({
+      id: String(formData.get("id") ?? ""),
+      locationId: String(formData.get("locationId") ?? ""),
+      name: String(formData.get("name") ?? ""),
+      bio: String(formData.get("bio") ?? ""),
+      active: parseBooleanCheckbox(formData.get("active")),
+    });
+    if (!parsed.success) {
+      throw new Error(formatZodError(parsed.error));
     }
 
-    const name = parseRequiredString(formData.get("name"), "Name");
-    const bio = parseOptionalString(formData.get("bio"));
-    const active = parseBooleanCheckbox(formData.get("active"));
+    const { id, locationId, name, bio, active } = parsed.data;
     const serviceIds = parseServiceIds(formData);
 
     const existing = await prisma.staff.findFirst({
@@ -102,9 +111,14 @@ export async function updateStaff(
       throw new Error("Staff member not found.");
     }
 
+    const location = await getLocationById(organizationId, locationId);
+    if (!location?.active) {
+      throw new Error("Selected location is not available.");
+    }
+
     await prisma.staff.update({
       where: { id },
-      data: { name, bio, active },
+      data: { name, bio, active, locationId },
     });
 
     await syncStaffServices(organizationId, id, serviceIds);
