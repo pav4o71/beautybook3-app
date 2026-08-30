@@ -30,10 +30,18 @@ async function main() {
   const customer = await prisma.user.findFirstOrThrow({
     where: { email: "customer@beautybook.local" },
   });
-  const cut = await prisma.service.findFirstOrThrow({ where: { name: "Haircut" } });
-  const maya = await prisma.staff.findFirstOrThrow({ where: { name: "Maya Petrova" } });
+  const cut = await prisma.service.findFirstOrThrow({
+    where: { organizationId: tenant.organizationId, name: "Haircut" },
+  });
+  const maya = await prisma.staff.findFirstOrThrow({
+    where: { organizationId: tenant.organizationId, name: "Maya Petrova" },
+  });
   const alex = await prisma.staff.findFirst({
-    where: { name: "Alex Rivera", active: false },
+    where: {
+      organizationId: tenant.organizationId,
+      name: "Alex Rivera",
+      active: false,
+    },
   });
 
   const slots = await getAvailableSlots({

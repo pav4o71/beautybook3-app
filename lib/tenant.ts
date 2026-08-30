@@ -41,10 +41,17 @@ export async function listPublishedOrganizations() {
     orderBy: { name: "asc" },
     include: {
       locations: {
-        where: { isDefault: true, active: true },
-        take: 1,
+        where: { active: true },
+        orderBy: [{ isDefault: "desc" }, { name: "asc" }],
       },
     },
+  });
+}
+
+export async function listActiveLocations(organizationId: string) {
+  return prisma.location.findMany({
+    where: { organizationId, active: true },
+    orderBy: [{ isDefault: "desc" }, { name: "asc" }],
   });
 }
 

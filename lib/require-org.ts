@@ -40,7 +40,7 @@ export async function requireActiveOrgAdmin() {
   }
 
   if (!active.location) {
-    throw new Error("Active organization has no default location.");
+    throw new Error("Active organization has no active location.");
   }
 
   return {
@@ -48,6 +48,7 @@ export async function requireActiveOrgAdmin() {
     organization: active.organization,
     membership: active.membership,
     location: active.location,
+    locations: active.locations,
     organizationId: active.organization.id,
     locationId: active.location.id,
   };
@@ -63,7 +64,7 @@ export async function requireActiveOrgContext() {
   }
 
   if (!active.location) {
-    throw new Error("Active organization has no default location.");
+    throw new Error("Active organization has no active location.");
   }
 
   return {
@@ -71,6 +72,7 @@ export async function requireActiveOrgContext() {
     organization: active.organization,
     membership: active.membership,
     location: active.location,
+    locations: active.locations,
     organizationId: active.organization.id,
     locationId: active.location.id,
   };

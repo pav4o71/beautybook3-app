@@ -3,6 +3,7 @@ import { resolveActiveOrganization, listUserMemberships } from "@/lib/org-contex
 import { isOrgAdminRole } from "@/lib/org-roles";
 import { requireUser } from "@/lib/require-user";
 import { OrgSwitcher } from "./org-switcher";
+import { LocationSwitcher } from "./location-switcher";
 import { SignOutButton } from "./sign-out-button";
 
 const links = [
@@ -36,6 +37,15 @@ export async function DashboardNav() {
             memberships={memberships}
             activeOrgId={active?.organization.id ?? ""}
           />
+          {active && active.locations.length > 0 ? (
+            <LocationSwitcher
+              locations={active.locations.map((location) => ({
+                id: location.id,
+                name: location.name,
+              }))}
+              activeLocationId={active.location?.id ?? active.locations[0].id}
+            />
+          ) : null}
         </div>
         <nav className="flex flex-wrap items-center gap-3 text-sm">
           {links.map((link) => (

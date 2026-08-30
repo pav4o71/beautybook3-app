@@ -9,11 +9,14 @@ export const bookSlotSchema = z.object({
   customerId: z.string().min(1).nullable().optional(),
 });
 
-export const publicBookSlotSchema = bookSlotSchema.omit({
-  organizationId: true,
-  locationId: true,
-  customerId: true,
-});
+export const publicBookSlotSchema = bookSlotSchema
+  .omit({
+    organizationId: true,
+    customerId: true,
+  })
+  .extend({
+    locationId: z.string().min(1, "Choose a location."),
+  });
 
 export function formatZodError(error: z.ZodError) {
   return error.issues[0]?.message ?? "Invalid input.";

@@ -5,8 +5,9 @@ import { redirect } from "next/navigation";
 import type { ActionFormState } from "@/lib/action-form-state";
 import { actionError } from "@/lib/action-form-state";
 import { createAppointment } from "@/lib/booking";
+import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
-import { getDefaultLocation, getPublishedOrganizationBySlug } from "@/lib/tenant";
+import { getPublishedOrganizationBySlug } from "@/lib/tenant";
 import {
   formatZodError,
   publicBookSlotSchema,
@@ -21,12 +22,8 @@ export async function bookPublicSlot(
     return { error: "Salon not found." };
   }
 
-  const location = organization.locations[0] ?? (await getDefaultLocation(organization.id));
-  if (!location) {
-    return { error: "This salon is not ready for bookings yet." };
-  }
-
   const parsed = publicBookSlotSchema.safeParse({
+    locationId: formData.get("locationId"),
     serviceId: formData.get("serviceId"),
     staffId: formData.get("staffId"),
     startsAt: formData.get("startsAt"),
@@ -34,6 +31,18 @@ export async function bookPublicSlot(
 
   if (!parsed.success) {
     return { error: formatZodError(parsed.error) };
+  }
+
+  const location = await prisma.location.findFirst({
+    where: {
+      id: parsed.data.locationId,
+      organizationId: organization.id,
+      active: true,
+    },
+  });
+
+  if (!location) {
+    return { error: "Choose a valid location." };
   }
 
   const session = await getSession();

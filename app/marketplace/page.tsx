@@ -22,9 +22,23 @@ export default async function MarketplacePage() {
           {organizations.map((org) => (
             <li key={org.id} className="rounded-lg border border-zinc-200 bg-white p-4">
               <h2 className="font-medium text-zinc-900">{org.name}</h2>
-              {org.locations[0]?.address ? (
-                <p className="mt-1 text-sm text-zinc-600">{org.locations[0].address}</p>
-              ) : null}
+              {org.locations.length === 0 ? (
+                <p className="mt-1 text-sm text-zinc-500">No active locations</p>
+              ) : (
+                <ul className="mt-2 space-y-1">
+                  {org.locations.map((location) => (
+                    <li key={location.id} className="text-sm text-zinc-600">
+                      <span className="font-medium text-zinc-800">{location.name}</span>
+                      {location.isDefault ? (
+                        <span className="ml-1 text-xs text-zinc-500">(default)</span>
+                      ) : null}
+                      {location.address ? (
+                        <span className="block text-zinc-500">{location.address}</span>
+                      ) : null}
+                    </li>
+                  ))}
+                </ul>
+              )}
               <div className="mt-4 flex flex-wrap gap-2">
                 <Link
                   href={`/s/${org.slug}`}
