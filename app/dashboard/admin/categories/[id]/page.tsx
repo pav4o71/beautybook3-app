@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getCategoryById } from "@/lib/catalog";
-import { requireAdmin } from "@/lib/require-admin";
+import { requireActiveOrgAdmin } from "@/lib/require-org";
 import {
   controlClass,
   labelClass,
@@ -17,10 +17,10 @@ export default async function EditCategoryPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  await requireAdmin();
+  const { organizationId } = await requireActiveOrgAdmin();
   const { id } = await params;
 
-  const category = await getCategoryById(id);
+  const category = await getCategoryById(organizationId, id);
   if (!category) {
     notFound();
   }

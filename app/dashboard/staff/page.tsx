@@ -1,10 +1,10 @@
 import { listActiveStaff } from "@/lib/catalog";
-import { requireUser } from "@/lib/require-user";
+import { requireActiveOrgContext } from "@/lib/require-org";
 
 export default async function StaffPage() {
-  await requireUser();
+  const { organizationId } = await requireActiveOrgContext();
 
-  const staff = await listActiveStaff();
+  const staff = await listActiveStaff(organizationId);
 
   return (
     <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-10">

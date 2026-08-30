@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { listAdminCategories } from "@/lib/catalog";
-import { requireAdmin } from "@/lib/require-admin";
+import { requireActiveOrgAdmin } from "@/lib/require-org";
 import {
   controlClass,
   dangerButtonClass,
@@ -14,9 +14,9 @@ import { AdminCatalogNav } from "../admin-catalog-nav";
 import { createCategory, deleteCategory } from "./actions";
 
 export default async function AdminCategoriesPage() {
-  await requireAdmin();
+  const { organizationId } = await requireActiveOrgAdmin();
 
-  const categories = await listAdminCategories();
+  const categories = await listAdminCategories(organizationId);
 
   return (
     <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-10">

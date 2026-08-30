@@ -5,6 +5,7 @@ const links = [
   { href: "/dashboard/admin/categories", label: "Categories", key: "categories" },
   { href: "/dashboard/admin/services", label: "Services", key: "services" },
   { href: "/dashboard/admin/staff", label: "Staff", key: "staff" },
+  { href: "/dashboard/admin/settings", label: "Settings", key: "settings" },
 ] as const;
 
 export type AdminNavSection = (typeof links)[number]["key"];

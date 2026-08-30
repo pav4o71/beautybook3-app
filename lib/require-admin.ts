@@ -1,12 +1,6 @@
 import { redirect } from "next/navigation";
-import { requireUser } from "@/lib/require-user";
+import { requireActiveOrgAdmin } from "@/lib/require-org";
 
 export async function requireAdmin() {
-  const session = await requireUser();
-
-  if (session.user.role !== "ADMIN") {
-    redirect("/dashboard");
-  }
-
-  return session;
+  return requireActiveOrgAdmin();
 }

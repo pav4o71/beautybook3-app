@@ -1,6 +1,7 @@
 import "dotenv/config";
 import { getAvailableSlots } from "../../lib/booking";
 import { prisma } from "../../lib/prisma";
+import { getDemoTenantContext } from "../../lib/tenant";
 
 function assert(condition: boolean, message: string) {
   if (!condition) {
@@ -9,17 +10,20 @@ function assert(condition: boolean, message: string) {
 }
 
 async function main() {
+  const tenant = await getDemoTenantContext();
   const cut = await prisma.service.findFirstOrThrow({ where: { name: "Haircut" } });
   const maya = await prisma.staff.findFirstOrThrow({ where: { name: "Maya Petrova" } });
   const lena = await prisma.staff.findFirstOrThrow({ where: { name: "Lena Dimitrova" } });
 
   const mayaBefore = await getAvailableSlots({
+    organizationId: tenant.organizationId,
     staffId: maya.id,
     durationMin: cut.durationMin,
     days: 7,
   });
 
   const lenaSaturday = await getAvailableSlots({
+    organizationId: tenant.organizationId,
     staffId: lena.id,
     durationMin: cut.durationMin,
     days: 7,
@@ -40,6 +44,8 @@ async function main() {
 
   const block = await prisma.timeOff.create({
     data: {
+      organizationId: tenant.organizationId,
+      locationId: tenant.locationId,
       staffId: maya.id,
       startsAt: timeOffStart,
       endsAt: timeOffEnd,
@@ -48,6 +54,7 @@ async function main() {
   });
 
   const mayaAfter = await getAvailableSlots({
+    organizationId: tenant.organizationId,
     staffId: maya.id,
     durationMin: cut.durationMin,
     days: 7,

@@ -1,11 +1,15 @@
 'use client'
 
-import { Category } from '@prisma/client'
+type MarketplaceCategory = {
+  slug: string
+  name: string
+  icon?: string | null
+  description?: string | null
+  _count: { services: number }
+}
 
 interface CategoryCardProps {
-  category: Category & {
-    _count: { services: number }
-  }
+  category: MarketplaceCategory
   onClick: () => void
 }
 

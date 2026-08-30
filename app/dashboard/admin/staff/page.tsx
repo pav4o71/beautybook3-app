@@ -3,7 +3,7 @@ import {
   listActiveServicesForPicker,
   listAdminStaffBoard,
 } from "@/lib/catalog";
-import { requireAdmin } from "@/lib/require-admin";
+import { requireActiveOrgAdmin } from "@/lib/require-org";
 import { summarizeStaffSchedule } from "@/lib/schedule";
 import {
   checkboxClass,
@@ -19,11 +19,11 @@ import { AdminCatalogNav } from "../admin-catalog-nav";
 import { activateStaff, createStaff, deactivateStaff } from "./actions";
 
 export default async function AdminStaffPage() {
-  await requireAdmin();
+  const { organizationId } = await requireActiveOrgAdmin();
 
   const [staff, services] = await Promise.all([
-    listAdminStaffBoard(),
-    listActiveServicesForPicker(),
+    listAdminStaffBoard(organizationId),
+    listActiveServicesForPicker(organizationId),
   ]);
 
   return (

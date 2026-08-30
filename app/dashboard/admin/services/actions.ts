@@ -10,21 +10,22 @@ import {
   parsePositiveInt,
   parseRequiredString,
 } from "@/lib/catalog";
-import { requireAdmin } from "@/lib/require-admin";
 import { prisma } from "@/lib/prisma";
+import { requireActiveOrgAdmin } from "@/lib/require-org";
 
 function revalidateServicePaths() {
   revalidatePath("/dashboard/admin/services");
   revalidatePath("/dashboard/services");
   revalidatePath("/dashboard/staff");
   revalidatePath("/dashboard/book");
+  revalidatePath("/marketplace");
 }
 
 export async function createService(
   _prevState: ActionFormState,
   formData: FormData,
 ): Promise<ActionFormState> {
-  await requireAdmin();
+  const { organizationId } = await requireActiveOrgAdmin();
 
   try {
     const categoryId = parseRequiredString(formData.get("categoryId"), "Category");
@@ -34,8 +35,16 @@ export async function createService(
     const priceCents = parsePesoToCentavos(formData.get("pricePhp"), "Price");
     const active = parseBooleanCheckbox(formData.get("active"));
 
+    const category = await prisma.serviceCategory.findFirst({
+      where: { id: categoryId, organizationId },
+    });
+    if (!category) {
+      throw new Error("Category not found.");
+    }
+
     await prisma.service.create({
       data: {
+        organizationId,
         categoryId,
         name,
         description,
@@ -56,7 +65,7 @@ export async function updateService(
   _prevState: ActionFormState,
   formData: FormData,
 ): Promise<ActionFormState> {
-  await requireAdmin();
+  const { organizationId } = await requireActiveOrgAdmin();
 
   try {
     const id = String(formData.get("id") ?? "");
@@ -70,6 +79,13 @@ export async function updateService(
     const durationMin = parsePositiveInt(formData.get("durationMin"), "Duration");
     const priceCents = parsePesoToCentavos(formData.get("pricePhp"), "Price");
     const active = parseBooleanCheckbox(formData.get("active"));
+
+    const existing = await prisma.service.findFirst({
+      where: { id, organizationId },
+    });
+    if (!existing) {
+      throw new Error("Service not found.");
+    }
 
     await prisma.service.update({
       where: { id },
@@ -91,15 +107,15 @@ export async function updateService(
 }
 
 export async function deactivateService(formData: FormData): Promise<void> {
-  await requireAdmin();
+  const { organizationId } = await requireActiveOrgAdmin();
 
   const id = String(formData.get("id") ?? "");
   if (!id) {
     redirect("/dashboard/admin/services");
   }
 
-  await prisma.service.update({
-    where: { id },
+  await prisma.service.updateMany({
+    where: { id, organizationId },
     data: { active: false },
   });
 
@@ -108,15 +124,15 @@ export async function deactivateService(formData: FormData): Promise<void> {
 }
 
 export async function activateService(formData: FormData): Promise<void> {
-  await requireAdmin();
+  const { organizationId } = await requireActiveOrgAdmin();
 
   const id = String(formData.get("id") ?? "");
   if (!id) {
     redirect("/dashboard/admin/services");
   }
 
-  await prisma.service.update({
-    where: { id },
+  await prisma.service.updateMany({
+    where: { id, organizationId },
     data: { active: true },
   });
 

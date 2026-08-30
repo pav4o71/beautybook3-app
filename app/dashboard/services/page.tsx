@@ -1,11 +1,11 @@
 import { formatPrice } from "@/lib/format";
 import { listCustomerCatalog } from "@/lib/catalog";
-import { requireUser } from "@/lib/require-user";
+import { requireActiveOrgContext } from "@/lib/require-org";
 
 export default async function ServicesPage() {
-  await requireUser();
+  const { organizationId } = await requireActiveOrgContext();
 
-  const categories = await listCustomerCatalog();
+  const categories = await listCustomerCatalog(organizationId);
 
   return (
     <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-10">

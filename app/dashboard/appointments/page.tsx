@@ -1,17 +1,17 @@
 import { appointmentPayCopy, statusBadgeClass, statusLabel } from "@/lib/appointment-status";
 import { getCustomerAppointments } from "@/lib/appointments";
 import { formatDay, formatTime } from "@/lib/format";
-import { requireUser } from "@/lib/require-user";
+import { requireActiveOrgContext } from "@/lib/require-org";
 
 export default async function AppointmentsPage({
   searchParams,
 }: {
   searchParams: Promise<{ booked?: string }>;
 }) {
-  const session = await requireUser();
+  const { session, organizationId } = await requireActiveOrgContext();
   const params = await searchParams;
 
-  const appointments = await getCustomerAppointments(session.user.id);
+  const appointments = await getCustomerAppointments(organizationId, session.user.id);
 
   return (
     <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-10">

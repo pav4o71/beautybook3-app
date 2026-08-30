@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getStaffForEdit, listActiveServicesForPicker } from "@/lib/catalog";
-import { requireAdmin } from "@/lib/require-admin";
+import { requireActiveOrgAdmin } from "@/lib/require-org";
 import {
   checkboxClass,
   controlClass,
@@ -18,12 +18,12 @@ export default async function EditStaffPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  await requireAdmin();
+  const { organizationId } = await requireActiveOrgAdmin();
   const { id } = await params;
 
   const [person, services] = await Promise.all([
-    getStaffForEdit(id),
-    listActiveServicesForPicker(),
+    getStaffForEdit(organizationId, id),
+    listActiveServicesForPicker(organizationId),
   ]);
 
   if (!person) {

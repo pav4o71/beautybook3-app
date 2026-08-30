@@ -15,6 +15,7 @@ import {
 } from "@/lib/schedule";
 
 export async function getAvailableSlots(input: {
+  organizationId: string;
   staffId: string;
   durationMin: number;
   days?: number;
@@ -26,10 +27,11 @@ export async function getAvailableSlots(input: {
 
   const [schedules, appointments, timeOff] = await Promise.all([
     prisma.staffSchedule.findMany({
-      where: { staffId: input.staffId },
+      where: { staffId: input.staffId, organizationId: input.organizationId },
     }),
     prisma.appointment.findMany({
       where: {
+        organizationId: input.organizationId,
         staffId: input.staffId,
         status: { not: AppointmentStatus.CANCELLED },
         startsAt: { lt: rangeEnd },
@@ -39,6 +41,7 @@ export async function getAvailableSlots(input: {
     }),
     prisma.timeOff.findMany({
       where: {
+        organizationId: input.organizationId,
         staffId: input.staffId,
         startsAt: { lt: rangeEnd },
         endsAt: { gt: rangeStart },
@@ -92,7 +95,9 @@ function isAppointmentOverlapError(error: unknown) {
 }
 
 export async function createAppointment(input: {
-  customerId: string;
+  organizationId: string;
+  locationId: string;
+  customerId: string | null;
   staffId: string;
   serviceId: string;
   startsAt: Date;
@@ -114,12 +119,14 @@ export async function createAppointment(input: {
         },
       },
     }),
-    prisma.service.findUnique({ where: { id: input.serviceId } }),
-    prisma.staff.findUnique({
-      where: { id: input.staffId },
-      select: { active: true },
+    prisma.service.findFirst({
+      where: { id: input.serviceId, organizationId: input.organizationId },
     }),
-    getStaffSchedules(input.staffId),
+    prisma.staff.findFirst({
+      where: { id: input.staffId, organizationId: input.organizationId },
+      select: { active: true, locationId: true },
+    }),
+    getStaffSchedules(input.organizationId, input.staffId),
   ]);
 
   if (!staff?.active) {
@@ -127,6 +134,9 @@ export async function createAppointment(input: {
   }
   if (!staffService || !service?.active) {
     throw new Error("That staff member does not offer this service.");
+  }
+  if (staff.locationId !== input.locationId) {
+    throw new Error("That staff member is not available at this location.");
   }
   if (!slotOnBookingGrid(startsAt)) {
     throw new Error("That time is not available.");
@@ -141,6 +151,7 @@ export async function createAppointment(input: {
     return await prisma.$transaction(async (tx) => {
       const clash = await tx.appointment.findFirst({
         where: {
+          organizationId: input.organizationId,
           staffId: input.staffId,
           status: { not: AppointmentStatus.CANCELLED },
           startsAt: { lt: endsAt },
@@ -154,6 +165,7 @@ export async function createAppointment(input: {
 
       const timeOff = await tx.timeOff.findMany({
         where: {
+          organizationId: input.organizationId,
           staffId: input.staffId,
           startsAt: { lt: endsAt },
           endsAt: { gt: startsAt },
@@ -167,6 +179,8 @@ export async function createAppointment(input: {
 
       return tx.appointment.create({
         data: {
+          organizationId: input.organizationId,
+          locationId: input.locationId,
           customerId: input.customerId,
           staffId: input.staffId,
           startsAt,

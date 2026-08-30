@@ -7,6 +7,7 @@ import {
 } from "../../lib/appointments";
 import { salonDayBounds } from "../../lib/timezone";
 import { prisma } from "../../lib/prisma";
+import { getDemoTenantContext } from "../../lib/tenant";
 
 function assert(condition: boolean, message: string) {
   if (!condition) {
@@ -30,11 +31,13 @@ async function expectRejects(
 }
 
 async function pickOpenSlot(input: {
+  organizationId: string;
   staffId: string;
   durationMin: number;
   exclude: Date[];
 }) {
   const slots = await getAvailableSlots({
+    organizationId: input.organizationId,
     staffId: input.staffId,
     durationMin: input.durationMin,
     days: 14,
@@ -50,6 +53,7 @@ async function pickOpenSlot(input: {
 }
 
 async function main() {
+  const tenant = await getDemoTenantContext();
   const customer = await prisma.user.findFirstOrThrow({
     where: { email: "customer@beautybook.local" },
   });
@@ -59,6 +63,7 @@ async function main() {
   const usedSlots: Date[] = [];
 
   const bookSlot = await pickOpenSlot({
+    organizationId: tenant.organizationId,
     staffId: maya.id,
     durationMin: cut.durationMin,
     exclude: usedSlots,
@@ -66,6 +71,8 @@ async function main() {
   usedSlots.push(bookSlot);
 
   const created = await createAppointment({
+    organizationId: tenant.organizationId,
+    locationId: tenant.locationId,
     customerId: customer.id,
     staffId: maya.id,
     serviceId: cut.id,
@@ -73,6 +80,7 @@ async function main() {
   });
 
   const noShowSlot = await pickOpenSlot({
+    organizationId: tenant.organizationId,
     staffId: maya.id,
     durationMin: cut.durationMin,
     exclude: usedSlots,
@@ -80,6 +88,8 @@ async function main() {
   usedSlots.push(noShowSlot);
 
   const noShowAppointment = await createAppointment({
+    organizationId: tenant.organizationId,
+    locationId: tenant.locationId,
     customerId: customer.id,
     staffId: maya.id,
     serviceId: cut.id,
@@ -87,12 +97,15 @@ async function main() {
   });
 
   const cancelledSlot = await pickOpenSlot({
+    organizationId: tenant.organizationId,
     staffId: maya.id,
     durationMin: cut.durationMin,
     exclude: usedSlots,
   });
 
   const cancelledAppointment = await createAppointment({
+    organizationId: tenant.organizationId,
+    locationId: tenant.locationId,
     customerId: customer.id,
     staffId: maya.id,
     serviceId: cut.id,
@@ -100,6 +113,7 @@ async function main() {
   });
 
   await updateAppointmentStatus({
+    organizationId: tenant.organizationId,
     appointmentId: created.id,
     status: AppointmentStatus.COMPLETED,
   });
@@ -112,6 +126,7 @@ async function main() {
   await expectRejects(
     () =>
       updateAppointmentStatus({
+        organizationId: tenant.organizationId,
         appointmentId: created.id,
         status: AppointmentStatus.CANCELLED,
       }),
@@ -119,17 +134,19 @@ async function main() {
   );
 
   await updateAppointmentStatus({
+    organizationId: tenant.organizationId,
     appointmentId: noShowAppointment.id,
     status: AppointmentStatus.NO_SHOW,
   });
 
   await updateAppointmentStatus({
+    organizationId: tenant.organizationId,
     appointmentId: cancelledAppointment.id,
     status: AppointmentStatus.CANCELLED,
   });
 
   const { start, end } = salonDayBounds();
-  const todayBoard = await getAppointmentsForDay();
+  const todayBoard = await getAppointmentsForDay(tenant.organizationId);
   for (const row of todayBoard) {
     assert(
       row.startsAt >= start && row.startsAt < end,

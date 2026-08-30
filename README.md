@@ -55,10 +55,14 @@ npm run test:e2e      # Playwright (seeds DB first; starts dev server when CI=1)
 
 ## Key routes
 
-- `/dashboard/book` — customer booking (pay at salon copy)
+- `/marketplace` — browse published salons
+- `/s/{orgSlug}/book` — public booking (no login required)
+- `/onboarding` — create a new business (authenticated)
+- `/dashboard/book` — customer booking (active org context)
 - `/dashboard/appointments` — my appointments
 - `/dashboard/admin/appointments` — today's board (complete / no-show / cancel)
-- `/dashboard/admin/*` — catalog, staff, schedules (admin only)
+- `/dashboard/admin/settings` — business profile and marketplace visibility
+- `/dashboard/admin/*` — catalog, staff, schedules (org admin only)
 
 ## Auth (Better Auth)
 
@@ -75,6 +79,7 @@ Server gates: `requireUser()`, `requireAdmin()` in `lib/`.
 - With the **pooler** URL, most migrations apply normally. If deploy fails with `must be owner of table` (DDL on pooler), run that migration’s SQL in the Supabase SQL editor, then `npx prisma migrate resolve --applied <name>`.
 - Optional: a **direct** `postgres.[REF]` URI on `db.*.supabase.co` avoids pooler DDL limits; this repo defaults to the pooler for simplicity.
 - **`20260830034500_appointment_staff_no_overlap`**: enables `btree_gist` and adds an exclusion constraint. On deploy it **deletes the newer row** in each overlapping non-cancelled pair (one-time cleanup). Re-applying on a DB with overlaps has the same effect — review before deploy on production data.
+- **`20260830100000`–`20260830100200` (tenancy)**: adds `Organization`, `Location`, `OrganizationMember`, and scopes catalog/booking tables. Migration C backfills `beautybook-demo` and enforces `NOT NULL`. If pooler DDL fails with `must be owner of table`, run migrations B and C SQL in the Supabase SQL editor, then `npx prisma migrate resolve --applied <name>` for each.
 
 ## Learn more
 

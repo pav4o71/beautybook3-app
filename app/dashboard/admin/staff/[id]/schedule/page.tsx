@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { formatDay, formatTime } from "@/lib/format";
 import { getStaffById } from "@/lib/catalog";
-import { requireAdmin } from "@/lib/require-admin";
+import { requireActiveOrgAdmin } from "@/lib/require-org";
 import {
   getStaffSchedules,
   listStaffTimeOff,
@@ -36,17 +36,17 @@ export default async function StaffSchedulePage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  await requireAdmin();
+  const { organizationId } = await requireActiveOrgAdmin();
   const { id } = await params;
 
-  const person = await getStaffById(id);
+  const person = await getStaffById(organizationId, id);
   if (!person) {
     notFound();
   }
 
   const [schedules, timeOff] = await Promise.all([
-    getStaffSchedules(id),
-    listStaffTimeOff(id),
+    getStaffSchedules(organizationId, id),
+    listStaffTimeOff(organizationId, id),
   ]);
 
   return (

@@ -5,8 +5,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { actionError, type ActionFormState } from "@/lib/action-form-state";
 import { parseOptionalString, parseRequiredString } from "@/lib/catalog";
-import { requireAdmin } from "@/lib/require-admin";
 import { prisma } from "@/lib/prisma";
+import { requireActiveOrgAdmin } from "@/lib/require-org";
 import {
   parseLocalDateTime,
   saveStaffWeekday,
@@ -36,7 +36,7 @@ export async function saveWeekdaySchedule(
   _prevState: ActionFormState,
   formData: FormData,
 ): Promise<ActionFormState> {
-  await requireAdmin();
+  const { organizationId, locationId } = await requireActiveOrgAdmin();
 
   let staffId = "";
 
@@ -45,13 +45,15 @@ export async function saveWeekdaySchedule(
     const weekday = parseWeekday(formData.get("weekday"));
     const closed = formData.get("closed") === "on";
 
-    const staff = await prisma.staff.findUnique({ where: { id: staffId } });
+    const staff = await prisma.staff.findFirst({
+      where: { id: staffId, organizationId },
+    });
     if (!staff) {
       throw new Error("Staff member not found.");
     }
 
     if (closed) {
-      await saveStaffWeekday(staffId, weekday, []);
+      await saveStaffWeekday(organizationId, locationId, staffId, weekday, []);
     } else {
       const startTime = parseRequiredString(formData.get("startTime"), "Start time");
       const endTime = parseRequiredString(formData.get("endTime"), "End time");
@@ -77,7 +79,7 @@ export async function saveWeekdaySchedule(
         windows.push({ startTime: start2, endTime: end2 });
       }
 
-      await saveStaffWeekday(staffId, weekday, windows);
+      await saveStaffWeekday(organizationId, locationId, staffId, weekday, windows);
     }
   } catch (error) {
     return actionError(error);
@@ -91,7 +93,7 @@ export async function createTimeOff(
   _prevState: ActionFormState,
   formData: FormData,
 ): Promise<ActionFormState> {
-  await requireAdmin();
+  const { organizationId, locationId } = await requireActiveOrgAdmin();
 
   let staffId = "";
 
@@ -99,7 +101,9 @@ export async function createTimeOff(
     staffId = parseRequiredString(formData.get("staffId"), "Staff");
     const reason = parseOptionalString(formData.get("reason"));
 
-    const staff = await prisma.staff.findUnique({ where: { id: staffId } });
+    const staff = await prisma.staff.findFirst({
+      where: { id: staffId, organizationId },
+    });
     if (!staff) {
       throw new Error("Staff member not found.");
     }
@@ -118,7 +122,14 @@ export async function createTimeOff(
     }
 
     await prisma.timeOff.create({
-      data: { staffId, startsAt, endsAt, reason },
+      data: {
+        organizationId,
+        locationId,
+        staffId,
+        startsAt,
+        endsAt,
+        reason,
+      },
     });
   } catch (error) {
     return actionError(error);
@@ -129,7 +140,7 @@ export async function createTimeOff(
 }
 
 export async function deleteTimeOff(formData: FormData): Promise<void> {
-  await requireAdmin();
+  const { organizationId } = await requireActiveOrgAdmin();
 
   const id = String(formData.get("id") ?? "").trim();
   const staffId = String(formData.get("staffId") ?? "").trim();
@@ -139,7 +150,7 @@ export async function deleteTimeOff(formData: FormData): Promise<void> {
   }
 
   const row = await prisma.timeOff.findFirst({
-    where: { id, staffId },
+    where: { id, staffId, organizationId },
   });
   if (!row) {
     redirect(schedulePath(staffId));

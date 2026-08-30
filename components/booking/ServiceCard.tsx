@@ -1,9 +1,15 @@
 'use client'
 
-import { Service } from '@prisma/client'
+type MarketplaceService = {
+  id: string
+  name: string
+  description?: string | null
+  priceCents: number
+  durationMin: number
+}
 
 interface ServiceCardProps {
-  service: Service
+  service: MarketplaceService
   isSelected: boolean
   onClick: () => void
 }
@@ -30,10 +36,10 @@ export function ServiceCard({ service, isSelected, onClick }: ServiceCardProps) 
         </div>
         <div className="text-right ml-4">
           <p className="font-bold text-blue-600">
-            ₱{Number(service.price).toLocaleString('en-PH')}
+            ₱{(service.priceCents / 100).toLocaleString('en-PH')}
           </p>
           <p className="text-xs text-gray-400 mt-1">
-            {service.duration} min
+            {service.durationMin} min
           </p>
         </div>
       </div>

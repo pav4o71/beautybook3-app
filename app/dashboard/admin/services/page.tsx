@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { formatPrice } from "@/lib/format";
 import { listAdminCatalog } from "@/lib/catalog";
-import { requireAdmin } from "@/lib/require-admin";
+import { requireActiveOrgAdmin } from "@/lib/require-org";
 import {
   checkboxClass,
   controlClass,
@@ -16,9 +16,9 @@ import { AdminCatalogNav } from "../admin-catalog-nav";
 import { activateService, createService, deactivateService } from "./actions";
 
 export default async function AdminServicesPage() {
-  await requireAdmin();
+  const { organizationId } = await requireActiveOrgAdmin();
 
-  const categories = await listAdminCatalog();
+  const categories = await listAdminCatalog(organizationId);
 
   const hasCategories = categories.length > 0;
 

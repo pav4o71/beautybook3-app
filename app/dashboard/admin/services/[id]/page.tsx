@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { formatPrice } from "@/lib/format";
 import { getServiceForEdit, listCategoryOptions } from "@/lib/catalog";
-import { requireAdmin } from "@/lib/require-admin";
+import { requireActiveOrgAdmin } from "@/lib/require-org";
 import {
   checkboxClass,
   controlClass,
@@ -19,12 +19,12 @@ export default async function EditServicePage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  await requireAdmin();
+  const { organizationId } = await requireActiveOrgAdmin();
   const { id } = await params;
 
   const [service, categories] = await Promise.all([
-    getServiceForEdit(id),
-    listCategoryOptions(),
+    getServiceForEdit(organizationId, id),
+    listCategoryOptions(organizationId),
   ]);
 
   if (!service) {

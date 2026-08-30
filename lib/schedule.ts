@@ -113,14 +113,16 @@ export function validateTimeWindow(startTime: string, endTime: string) {
   return { ok: true as const };
 }
 
-export async function getStaffSchedules(staffId: string) {
+export async function getStaffSchedules(organizationId: string, staffId: string) {
   return prisma.staffSchedule.findMany({
-    where: { staffId },
+    where: { staffId, organizationId },
     orderBy: [{ weekday: "asc" }, { startTime: "asc" }],
   });
 }
 
 export async function saveStaffWeekday(
+  organizationId: string,
+  locationId: string,
   staffId: string,
   weekday: Weekday,
   windows: { startTime: string; endTime: string }[],
@@ -133,11 +135,13 @@ export async function saveStaffWeekday(
   }
 
   await prisma.$transaction([
-    prisma.staffSchedule.deleteMany({ where: { staffId, weekday } }),
+    prisma.staffSchedule.deleteMany({ where: { staffId, weekday, organizationId } }),
     ...(windows.length > 0
       ? [
           prisma.staffSchedule.createMany({
             data: windows.map((window) => ({
+              organizationId,
+              locationId,
               staffId,
               weekday,
               startTime: window.startTime,
@@ -149,12 +153,13 @@ export async function saveStaffWeekday(
   ]);
 }
 
-export async function listStaffTimeOff(staffId: string) {
+export async function listStaffTimeOff(organizationId: string, staffId: string) {
   const now = new Date();
   const recentCutoff = salonDaysAgo(7, now);
 
   return prisma.timeOff.findMany({
     where: {
+      organizationId,
       staffId,
       endsAt: { gte: recentCutoff },
     },

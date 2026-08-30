@@ -5,34 +5,37 @@ import { redirect } from "next/navigation";
 import type { ActionFormState } from "@/lib/action-form-state";
 import { actionError } from "@/lib/action-form-state";
 import { createAppointment } from "@/lib/booking";
-import { getSession } from "@/lib/session";
+import { requireActiveOrgContext } from "@/lib/require-org";
+import {
+  bookSlotSchema,
+  formatZodError,
+} from "@/lib/validations/booking";
 
 /** Called from client slot forms — returns errors inline; redirects on success. */
 export async function bookSlot(formData: FormData): Promise<ActionFormState> {
-  const session = await getSession();
-  if (!session?.user) {
-    return { error: "Your session expired. Sign in again to book." };
-  }
+  const { session, organizationId, locationId } = await requireActiveOrgContext();
 
-  const serviceId = String(formData.get("serviceId") ?? "");
-  const staffId = String(formData.get("staffId") ?? "");
-  const startsAtValue = String(formData.get("startsAt") ?? "");
+  const parsed = bookSlotSchema.safeParse({
+    organizationId,
+    locationId,
+    customerId: session.user.id,
+    serviceId: formData.get("serviceId"),
+    staffId: formData.get("staffId"),
+    startsAt: formData.get("startsAt"),
+  });
 
-  if (!serviceId || !staffId || !startsAtValue) {
-    return { error: "Choose a service, staff member, and time." };
-  }
-
-  const startsAt = new Date(startsAtValue);
-  if (Number.isNaN(startsAt.getTime())) {
-    return { error: "Invalid time selected." };
+  if (!parsed.success) {
+    return { error: formatZodError(parsed.error) };
   }
 
   try {
     await createAppointment({
-      customerId: session.user.id,
-      serviceId,
-      staffId,
-      startsAt,
+      organizationId: parsed.data.organizationId,
+      locationId: parsed.data.locationId,
+      customerId: parsed.data.customerId ?? session.user.id,
+      serviceId: parsed.data.serviceId,
+      staffId: parsed.data.staffId,
+      startsAt: parsed.data.startsAt,
     });
   } catch (error) {
     return actionError(error);

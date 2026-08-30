@@ -8,18 +8,26 @@ export default function Home() {
           BeautyBook
         </p>
         <h1 className="text-3xl font-semibold tracking-tight">
-          Salon booking, starting with sign-in
+          Salon booking for customers and businesses
         </h1>
         <p className="text-zinc-600">
-          Email and password login is ready. Use the demo account to continue.
+          Browse salons, book online, or sign in to manage your business.
         </p>
       </div>
-      <Link
-        href="/login"
-        className="rounded-md bg-zinc-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-zinc-700"
-      >
-        Log in
-      </Link>
+      <div className="flex flex-wrap justify-center gap-3">
+        <Link
+          href="/marketplace"
+          className="rounded-md bg-zinc-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-zinc-700"
+        >
+          Browse marketplace
+        </Link>
+        <Link
+          href="/login"
+          className="rounded-md border border-zinc-300 bg-white px-5 py-2.5 text-sm font-medium text-zinc-900 hover:bg-zinc-50"
+        >
+          Log in
+        </Link>
+      </div>
     </main>
   );
 }
