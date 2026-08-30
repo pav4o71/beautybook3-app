@@ -109,7 +109,7 @@ export async function deactivateStaff(formData: FormData): Promise<void> {
 
   const id = String(formData.get("id") ?? "");
   if (!id) {
-    throw new Error("Staff id is required.");
+    redirect("/dashboard/admin/staff");
   }
 
   await prisma.staff.update({
@@ -126,7 +126,7 @@ export async function activateStaff(formData: FormData): Promise<void> {
 
   const id = String(formData.get("id") ?? "");
   if (!id) {
-    throw new Error("Staff id is required.");
+    redirect("/dashboard/admin/staff");
   }
 
   await prisma.staff.update({

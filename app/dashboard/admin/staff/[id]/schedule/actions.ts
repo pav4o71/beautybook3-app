@@ -131,14 +131,18 @@ export async function createTimeOff(
 export async function deleteTimeOff(formData: FormData): Promise<void> {
   await requireAdmin();
 
-  const id = parseRequiredString(formData.get("id"), "Time off");
-  const staffId = parseRequiredString(formData.get("staffId"), "Staff");
+  const id = String(formData.get("id") ?? "").trim();
+  const staffId = String(formData.get("staffId") ?? "").trim();
+
+  if (!id || !staffId) {
+    redirect("/dashboard/admin/staff");
+  }
 
   const row = await prisma.timeOff.findFirst({
     where: { id, staffId },
   });
   if (!row) {
-    throw new Error("Time off entry not found.");
+    redirect(schedulePath(staffId));
   }
 
   await prisma.timeOff.delete({ where: { id } });

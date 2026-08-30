@@ -5,11 +5,15 @@ import { redirect } from "next/navigation";
 import type { ActionFormState } from "@/lib/action-form-state";
 import { actionError } from "@/lib/action-form-state";
 import { createAppointment } from "@/lib/booking";
-import { requireUser } from "@/lib/require-user";
+import { getSession } from "@/lib/session";
 
-/** Called from client slot forms (not `<form action>`) — returns errors inline. */
-export async function bookSlot(formData: FormData): Promise<ActionFormState & { ok?: true }> {
-  const session = await requireUser();
+/** Called from client slot forms — returns errors inline; redirects on success. */
+export async function bookSlot(formData: FormData): Promise<ActionFormState> {
+  const session = await getSession();
+  if (!session?.user) {
+    return { error: "Your session expired. Sign in again to book." };
+  }
+
   const serviceId = String(formData.get("serviceId") ?? "");
   const staffId = String(formData.get("staffId") ?? "");
   const startsAtValue = String(formData.get("startsAt") ?? "");

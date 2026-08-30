@@ -180,8 +180,11 @@ export function BookingForm({
                     action={(formData) => {
                       startTransition(async () => {
                         const result = await bookSlot(formData);
-                        if (result?.error) {
+                        if (result.error) {
                           setMessage(result.error);
+                          if (result.error.includes("Sign in again")) {
+                            router.push("/login");
+                          }
                           return;
                         }
                       });

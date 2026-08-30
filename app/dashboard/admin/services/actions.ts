@@ -95,7 +95,7 @@ export async function deactivateService(formData: FormData): Promise<void> {
 
   const id = String(formData.get("id") ?? "");
   if (!id) {
-    throw new Error("Service id is required.");
+    redirect("/dashboard/admin/services");
   }
 
   await prisma.service.update({
@@ -112,7 +112,7 @@ export async function activateService(formData: FormData): Promise<void> {
 
   const id = String(formData.get("id") ?? "");
   if (!id) {
-    throw new Error("Service id is required.");
+    redirect("/dashboard/admin/services");
   }
 
   await prisma.service.update({
