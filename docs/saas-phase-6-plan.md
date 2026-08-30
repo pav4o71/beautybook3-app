@@ -130,7 +130,7 @@ Cap results (e.g. 50) to avoid N×M explosion on cold start.
 | `components/booking/AreaFilter.tsx` | Use `lib/areas.ts` + `lib/ui.ts` |
 | `components/booking/ServiceCard.tsx` | Wire into search results |
 | `components/booking/CategoryCard.tsx` | Wire into landing |
-| `components/booking/DateTimePicker.tsx` | Replace static times with URL-driven date + time select (or deprecate in favor of native inputs) |
+| `components/booking/DateTimePicker.tsx` | Deprecated — `/search` uses native date + time in `search-filters.tsx` |
 | `components/booking/BusinessCard.tsx` | Optional: show area badge; keep `data-testid` patterns |
 
 ---
