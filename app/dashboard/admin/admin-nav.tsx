@@ -18,13 +18,14 @@ export function AdminNav({ current }: { current?: AdminNavSection }) {
       <Link
         href="/dashboard/admin"
         className={current ? navChipClass : navChipActiveClass}
+        aria-current={current ? undefined : "page"}
       >
         Admin
       </Link>
       {links.map((link) => {
         const isCurrent = link.key === current;
         return isCurrent ? (
-          <span key={link.href} className={navChipActiveClass}>
+          <span key={link.href} className={navChipActiveClass} aria-current="page">
             {link.label}
           </span>
         ) : (

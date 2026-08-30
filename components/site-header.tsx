@@ -1,15 +1,15 @@
 import Link from "next/link";
 import { SignOutButton } from "@/app/dashboard/sign-out-button";
 import { getSession } from "@/lib/session";
-import { secondaryButtonClass } from "@/lib/ui";
+import { brandLinkClass, pageShellClass, secondaryButtonClass, textLinkClass } from "@/lib/ui";
 
 export async function SiteHeader() {
   const session = await getSession();
 
   return (
     <header className="border-b border-zinc-200 bg-white">
-      <div className="mx-auto flex w-full max-w-5xl items-center justify-between gap-3 px-4 py-3">
-        <Link href="/" className="text-sm font-semibold tracking-tight text-zinc-900">
+      <div className={`${pageShellClass} flex items-center justify-between gap-3 py-3`}>
+        <Link href="/" className={brandLinkClass}>
           BeautyBook
         </Link>
         <nav className="flex items-center gap-2 text-sm sm:gap-3">
@@ -18,7 +18,7 @@ export async function SiteHeader() {
               <span className="hidden max-w-40 truncate text-zinc-600 sm:inline">
                 {session.user.name}
               </span>
-              <Link href="/dashboard" className="text-zinc-600 hover:text-zinc-900">
+              <Link href="/dashboard" className={textLinkClass}>
                 Dashboard
               </Link>
               <SignOutButton />

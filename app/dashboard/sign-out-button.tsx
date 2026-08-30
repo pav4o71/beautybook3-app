@@ -1,20 +1,33 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { signOut } from "@/lib/auth-client";
+import { secondaryButtonClass } from "@/lib/ui";
 
 export function SignOutButton() {
   const router = useRouter();
+  const [pending, setPending] = useState(false);
 
   return (
     <button
       type="button"
+      disabled={pending}
+      aria-busy={pending ? true : undefined}
       onClick={async () => {
-        await signOut();
-        router.push("/login");
-        router.refresh();
+        if (pending) {
+          return;
+        }
+        setPending(true);
+        try {
+          await signOut();
+          router.push("/login");
+          router.refresh();
+        } catch {
+          setPending(false);
+        }
       }}
-      className="rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-sm font-medium text-zinc-900 hover:bg-zinc-100"
+      className={secondaryButtonClass}
     >
       Sign out
     </button>
