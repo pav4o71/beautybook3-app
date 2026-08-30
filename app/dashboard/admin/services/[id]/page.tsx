@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { formatPrice } from "@/lib/format";
-import { prisma } from "@/lib/prisma";
+import { getServiceForEdit, listCategoryOptions } from "@/lib/catalog";
 import { requireAdmin } from "@/lib/require-admin";
 import {
   checkboxClass,
@@ -23,8 +23,8 @@ export default async function EditServicePage({
   const { id } = await params;
 
   const [service, categories] = await Promise.all([
-    prisma.service.findUnique({ where: { id } }),
-    prisma.serviceCategory.findMany({ orderBy: { sortOrder: "asc" } }),
+    getServiceForEdit(id),
+    listCategoryOptions(),
   ]);
 
   if (!service) {

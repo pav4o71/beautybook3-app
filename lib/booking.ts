@@ -1,6 +1,11 @@
 import { AppointmentStatus } from "@/app/generated/prisma/enums";
 import { prisma } from "@/lib/prisma";
 import {
+  addSalonDays,
+  salonDayBounds,
+  salonTimeOnDay,
+} from "@/lib/timezone";
+import {
   getStaffSchedules,
   overlaps,
   slotBlockedByTimeOff,
@@ -9,13 +14,6 @@ import {
   weekdayFromDate,
 } from "@/lib/schedule";
 
-function atTime(day: Date, time: string) {
-  const [hours, minutes] = time.split(":").map(Number);
-  const next = new Date(day);
-  next.setHours(hours, minutes, 0, 0);
-  return next;
-}
-
 export async function getAvailableSlots(input: {
   staffId: string;
   durationMin: number;
@@ -23,10 +21,8 @@ export async function getAvailableSlots(input: {
 }) {
   const days = input.days ?? 7;
   const now = new Date();
-  const rangeStart = new Date(now);
-  rangeStart.setHours(0, 0, 0, 0);
-  const rangeEnd = new Date(rangeStart);
-  rangeEnd.setDate(rangeEnd.getDate() + days);
+  const { start: rangeStart } = salonDayBounds(now);
+  const rangeEnd = addSalonDays(rangeStart, days);
 
   const [schedules, appointments, timeOff] = await Promise.all([
     prisma.staffSchedule.findMany({
@@ -54,14 +50,13 @@ export async function getAvailableSlots(input: {
   const slots: Date[] = [];
 
   for (let offset = 0; offset < days; offset += 1) {
-    const day = new Date(rangeStart);
-    day.setDate(day.getDate() + offset);
-    const weekday = weekdayFromDate(day);
+    const dayStart = addSalonDays(rangeStart, offset);
+    const weekday = weekdayFromDate(dayStart);
     const daySchedules = schedules.filter((row) => row.weekday === weekday);
 
     for (const schedule of daySchedules) {
-      let cursor = atTime(day, schedule.startTime);
-      const end = atTime(day, schedule.endTime);
+      let cursor = salonTimeOnDay(dayStart, schedule.startTime);
+      const end = salonTimeOnDay(dayStart, schedule.endTime);
 
       while (new Date(cursor.getTime() + input.durationMin * 60_000) <= end) {
         const slotStart = new Date(cursor);

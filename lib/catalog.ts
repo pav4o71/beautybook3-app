@@ -1,5 +1,113 @@
 import { prisma } from "@/lib/prisma";
 
+const activeServicePickerInclude = {
+  category: true,
+} as const;
+
+const activeServicePickerOrder = [
+  { category: { sortOrder: "asc" as const } },
+  { name: "asc" as const },
+];
+
+export async function listCustomerCatalog() {
+  return prisma.serviceCategory.findMany({
+    orderBy: { sortOrder: "asc" },
+    include: {
+      services: {
+        where: { active: true },
+        orderBy: { name: "asc" },
+      },
+    },
+  });
+}
+
+export async function listActiveStaff() {
+  return prisma.staff.findMany({
+    where: { active: true },
+    orderBy: { name: "asc" },
+    include: {
+      services: {
+        include: { service: true },
+      },
+    },
+  });
+}
+
+export async function listBookingServices() {
+  return prisma.service.findMany({
+    where: { active: true },
+    include: { category: true, staff: true },
+    orderBy: activeServicePickerOrder,
+  });
+}
+
+export async function listBookingStaff() {
+  return prisma.staff.findMany({
+    where: { active: true },
+    include: { services: true },
+    orderBy: { name: "asc" },
+  });
+}
+
+export async function listAdminCategories() {
+  return prisma.serviceCategory.findMany({
+    orderBy: { sortOrder: "asc" },
+    include: { _count: { select: { services: true } } },
+  });
+}
+
+export async function getCategoryById(id: string) {
+  return prisma.serviceCategory.findUnique({ where: { id } });
+}
+
+export async function listAdminCatalog() {
+  return prisma.serviceCategory.findMany({
+    orderBy: { sortOrder: "asc" },
+    include: {
+      services: {
+        orderBy: { name: "asc" },
+      },
+    },
+  });
+}
+
+export async function listAdminStaffBoard() {
+  return prisma.staff.findMany({
+    include: {
+      services: { include: { service: true } },
+      schedules: true,
+    },
+    orderBy: { name: "asc" },
+  });
+}
+
+export async function listActiveServicesForPicker() {
+  return prisma.service.findMany({
+    where: { active: true },
+    include: activeServicePickerInclude,
+    orderBy: activeServicePickerOrder,
+  });
+}
+
+export async function getStaffForEdit(id: string) {
+  return prisma.staff.findUnique({
+    where: { id },
+    include: { services: true },
+  });
+}
+
+export async function getStaffById(id: string) {
+  return prisma.staff.findUnique({ where: { id } });
+}
+
+export async function getServiceForEdit(id: string) {
+  return prisma.service.findUnique({ where: { id } });
+}
+
+export async function listCategoryOptions() {
+  return prisma.serviceCategory.findMany({ orderBy: { sortOrder: "asc" } });
+}
+
 export function slugify(value: string) {
   return value
     .trim()

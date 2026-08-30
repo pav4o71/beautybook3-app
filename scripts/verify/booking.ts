@@ -1,6 +1,7 @@
 import "dotenv/config";
 import { createAppointment, getAvailableSlots } from "../../lib/booking";
 import { prisma } from "../../lib/prisma";
+import { addSalonDays, salonDateAtTime, salonDayBounds } from "../../lib/timezone";
 
 function assert(condition: boolean, message: string) {
   if (!condition) {
@@ -86,10 +87,10 @@ async function main() {
     }
   }
 
-  const offSchedule = new Date(sampleSlot);
-  offSchedule.setHours(3, 0, 0, 0);
+  const { start: sampleDayStart } = salonDayBounds(sampleSlot);
+  let offSchedule = salonDateAtTime(sampleDayStart, 3, 0);
   if (offSchedule.getTime() <= Date.now()) {
-    offSchedule.setDate(offSchedule.getDate() + 7);
+    offSchedule = salonDateAtTime(addSalonDays(sampleDayStart, 7), 3, 0);
   }
 
   await expectRejects(

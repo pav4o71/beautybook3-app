@@ -2,25 +2,34 @@ import { AppointmentStatus, Role, Weekday } from "@/app/generated/prisma/enums";
 import { auth } from "@/lib/auth";
 import { DEMO_ACCOUNT, DEMO_CUSTOMER } from "@/lib/demo-account";
 import { prisma } from "@/lib/prisma";
+import {
+  addSalonDays,
+  salonDateAtTime,
+  salonDayBounds,
+  salonWeekdayFromDate,
+} from "@/lib/timezone";
 
 const WEEKDAYS: Weekday[] = ["MON", "TUE", "WED", "THU", "FRI"];
 
+const JS_TO_SALON_WEEKDAY: Weekday[] = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
+
 function nextWeekday(targetDay: number) {
-  const date = new Date();
-  date.setHours(0, 0, 0, 0);
-  const current = date.getDay();
-  let delta = (targetDay - current + 7) % 7;
-  if (delta === 0) {
-    delta = 7;
+  const { start: todayStart } = salonDayBounds();
+  let cursor = todayStart;
+
+  for (let step = 1; step <= 7; step += 1) {
+    cursor = addSalonDays(todayStart, step);
+    const weekdayIndex = JS_TO_SALON_WEEKDAY.indexOf(salonWeekdayFromDate(cursor));
+    if (weekdayIndex === targetDay) {
+      return cursor;
+    }
   }
-  date.setDate(date.getDate() + delta);
-  return date;
+
+  return addSalonDays(todayStart, 7);
 }
 
-function atLocalTime(day: Date, hours: number, minutes: number) {
-  const next = new Date(day);
-  next.setHours(hours, minutes, 0, 0);
-  return next;
+function atSalonTime(day: Date, hours: number, minutes: number) {
+  return salonDateAtTime(day, hours, minutes);
 }
 
 async function upsertStaffSchedule(
@@ -348,13 +357,46 @@ async function seedCatalogAndStaff(customerId: string) {
   await upsertTimeOff(
     maya.id,
     "seed:lunch-block",
-    atLocalTime(nextMonday, 12, 0),
-    atLocalTime(nextMonday, 13, 0),
+    atSalonTime(nextMonday, 12, 0),
+    atSalonTime(nextMonday, 13, 0),
   );
 
-  const vacationStart = atLocalTime(nextWeekday(2), 0, 0);
-  const vacationEnd = atLocalTime(nextWeekday(4), 23, 59);
+  const vacationStart = atSalonTime(nextWeekday(2), 0, 0);
+  const vacationEnd = atSalonTime(nextWeekday(4), 23, 59);
   await upsertTimeOff(lena.id, "seed:vacation", vacationStart, vacationEnd);
+
+  const { start: today } = salonDayBounds();
+  await prisma.appointment.deleteMany({ where: { notes: "seed:today-confirmed" } });
+  await upsertSeedAppointment({
+    marker: "seed:today-complete",
+    customerId,
+    staffId: lena.id,
+    serviceId: gel.id,
+    startsAt: atSalonTime(today, 14, 0),
+    durationMin: gel.durationMin,
+    priceCents: gel.priceCents,
+    status: AppointmentStatus.CONFIRMED,
+  });
+  await upsertSeedAppointment({
+    marker: "seed:today-no-show",
+    customerId,
+    staffId: lena.id,
+    serviceId: cut.id,
+    startsAt: atSalonTime(today, 15, 0),
+    durationMin: cut.durationMin,
+    priceCents: cut.priceCents,
+    status: AppointmentStatus.CONFIRMED,
+  });
+  await upsertSeedAppointment({
+    marker: "seed:today-cancel",
+    customerId,
+    staffId: maya.id,
+    serviceId: cut.id,
+    startsAt: atSalonTime(today, 16, 0),
+    durationMin: cut.durationMin,
+    priceCents: cut.priceCents,
+    status: AppointmentStatus.CONFIRMED,
+  });
 
   const upcomingTuesday = nextWeekday(2);
   await upsertSeedAppointment({
@@ -362,23 +404,34 @@ async function seedCatalogAndStaff(customerId: string) {
     customerId,
     staffId: maya.id,
     serviceId: cut.id,
-    startsAt: atLocalTime(upcomingTuesday, 10, 0),
+    startsAt: atSalonTime(upcomingTuesday, 10, 0),
     durationMin: cut.durationMin,
     priceCents: cut.priceCents,
     status: AppointmentStatus.CONFIRMED,
   });
 
-  const pastMonday = new Date(nextMonday);
-  pastMonday.setDate(pastMonday.getDate() - 7);
+  const pastMonday = addSalonDays(nextMonday, -7);
   await upsertSeedAppointment({
     marker: "seed:past-completed",
     customerId,
     staffId: lena.id,
     serviceId: gel.id,
-    startsAt: atLocalTime(pastMonday, 11, 0),
+    startsAt: atSalonTime(pastMonday, 11, 0),
     durationMin: gel.durationMin,
     priceCents: gel.priceCents,
     status: AppointmentStatus.COMPLETED,
+  });
+
+  const pastTuesday = addSalonDays(pastMonday, 1);
+  await upsertSeedAppointment({
+    marker: "seed:past-no-show",
+    customerId,
+    staffId: maya.id,
+    serviceId: cut.id,
+    startsAt: atSalonTime(pastTuesday, 9, 30),
+    durationMin: cut.durationMin,
+    priceCents: cut.priceCents,
+    status: AppointmentStatus.NO_SHOW,
   });
 
   console.log(

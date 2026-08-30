@@ -1,37 +1,7 @@
-import { AppointmentStatus } from "@/app/generated/prisma/enums";
-import { formatDay, formatPrice, formatTime } from "@/lib/format";
-import { prisma } from "@/lib/prisma";
+import { appointmentPayCopy, statusBadgeClass, statusLabel } from "@/lib/appointment-status";
+import { getCustomerAppointments } from "@/lib/appointments";
+import { formatDay, formatTime } from "@/lib/format";
 import { requireUser } from "@/lib/require-user";
-
-function statusLabel(status: AppointmentStatus) {
-  switch (status) {
-    case AppointmentStatus.CONFIRMED:
-      return "Confirmed";
-    case AppointmentStatus.PENDING:
-      return "Pending";
-    case AppointmentStatus.COMPLETED:
-      return "Completed";
-    case AppointmentStatus.NO_SHOW:
-      return "No show";
-    default:
-      return status;
-  }
-}
-
-function statusBadgeClass(status: AppointmentStatus) {
-  switch (status) {
-    case AppointmentStatus.CONFIRMED:
-      return "bg-emerald-100 text-emerald-800";
-    case AppointmentStatus.PENDING:
-      return "bg-amber-100 text-amber-800";
-    case AppointmentStatus.COMPLETED:
-      return "bg-zinc-100 text-zinc-700";
-    case AppointmentStatus.NO_SHOW:
-      return "bg-red-100 text-red-800";
-    default:
-      return "bg-zinc-100 text-zinc-700";
-  }
-}
 
 export default async function AppointmentsPage({
   searchParams,
@@ -41,25 +11,7 @@ export default async function AppointmentsPage({
   const session = await requireUser();
   const params = await searchParams;
 
-  const now = new Date();
-  const recentCutoff = new Date(now);
-  recentCutoff.setDate(recentCutoff.getDate() - 7);
-
-  const appointments = await prisma.appointment.findMany({
-    where: {
-      customerId: session.user.id,
-      status: { not: AppointmentStatus.CANCELLED },
-      OR: [{ startsAt: { gte: now } }, { startsAt: { gte: recentCutoff, lt: now } }],
-    },
-    include: {
-      staff: true,
-      services: {
-        include: { service: true },
-        orderBy: { service: { name: "asc" } },
-      },
-    },
-    orderBy: { startsAt: "asc" },
-  });
+  const appointments = await getCustomerAppointments(session.user.id);
 
   return (
     <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-10">
@@ -88,6 +40,7 @@ export default async function AppointmentsPage({
             const serviceNames = appointment.services
               .map((row) => row.service.name)
               .join(", ");
+            const payCopy = appointmentPayCopy(appointment.status, totalCents);
 
             return (
               <article
@@ -109,15 +62,8 @@ export default async function AppointmentsPage({
                     {statusLabel(appointment.status)}
                   </span>
                 </div>
-                {appointment.status === AppointmentStatus.CONFIRMED ||
-                appointment.status === AppointmentStatus.PENDING ? (
-                  <p className="mt-3 text-sm font-medium text-emerald-900">
-                    Pay at salon: {formatPrice(totalCents)}
-                  </p>
-                ) : appointment.status === AppointmentStatus.COMPLETED ? (
-                  <p className="mt-3 text-sm font-medium text-zinc-700">
-                    Paid at salon: {formatPrice(totalCents)}
-                  </p>
+                {payCopy ? (
+                  <p className={payCopy.className}>{payCopy.text}</p>
                 ) : null}
               </article>
             );

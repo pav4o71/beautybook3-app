@@ -18,6 +18,7 @@
     "verify:seed": "tsx scripts/verify/seed-counts.ts",
     "verify:slots": "tsx scripts/verify/slots.ts",
     "verify:booking": "tsx scripts/verify/booking.ts",
+    "verify:appointments": "tsx scripts/verify/appointments.ts",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui"
   },

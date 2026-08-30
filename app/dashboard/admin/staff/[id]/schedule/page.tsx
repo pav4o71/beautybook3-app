@@ -2,7 +2,7 @@ import type { Weekday } from "@/app/generated/prisma/enums";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { formatDay, formatTime } from "@/lib/format";
-import { prisma } from "@/lib/prisma";
+import { getStaffById } from "@/lib/catalog";
 import { requireAdmin } from "@/lib/require-admin";
 import {
   getStaffSchedules,
@@ -39,7 +39,7 @@ export default async function StaffSchedulePage({
   await requireAdmin();
   const { id } = await params;
 
-  const person = await prisma.staff.findUnique({ where: { id } });
+  const person = await getStaffById(id);
   if (!person) {
     notFound();
   }

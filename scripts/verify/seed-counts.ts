@@ -51,7 +51,7 @@ async function main() {
   assert(inactiveStaff >= 1, "Expected at least 1 inactive staff");
   assert(schedules >= 10, "Expected weekday schedules to be seeded");
   assert(timeOff >= 2, "Expected lunch block and vacation time off");
-  assert(appointments >= 2, "Expected seeded demo appointments");
+  assert(appointments >= 5, "Expected seeded demo appointments (today x3, upcoming, past x2)");
   assert(admin?.role === "ADMIN", "Demo admin must have ADMIN role");
   assert(customer?.role === "CUSTOMER", "Demo customer must have CUSTOMER role");
   assert(mayaSplit === 2, "Maya should have split-shift Wednesday rows");

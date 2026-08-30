@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { prisma } from "@/lib/prisma";
+import { getCategoryById } from "@/lib/catalog";
 import { requireAdmin } from "@/lib/require-admin";
 import {
   controlClass,
@@ -20,7 +20,7 @@ export default async function EditCategoryPage({
   await requireAdmin();
   const { id } = await params;
 
-  const category = await prisma.serviceCategory.findUnique({ where: { id } });
+  const category = await getCategoryById(id);
   if (!category) {
     notFound();
   }
