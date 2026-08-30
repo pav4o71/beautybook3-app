@@ -8,6 +8,7 @@ const scripts = [
   "format.ts",
   "seed-counts.ts",
   "areas.ts",
+  "marketplace-search.ts",
   "org-scope.ts",
   "slots.ts",
   "booking.ts",

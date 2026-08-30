@@ -188,8 +188,8 @@ Categories (cross-org slugs): `hair`, `nails` (already in seed).
 
 ## Acceptance criteria
 
-- [ ] Visitor lands on `/`, picks **Hair**, sees hair services from multiple salons
-- [ ] Area filter shows only salons/branches in that area
+- [x] Visitor lands on `/`, picks **Hair**, sees hair services from multiple salons
+- [x] Area filter shows only salons/branches in that area
 - [ ] Date + time filter shows only offerings with **real** staff availability
 - [ ] “Book” lands on `/s/{slug}/book` with service/location/staff/slot prefilled
 - [ ] `npm run build`, `npm run verify`, `npm run test:e2e` pass in CI

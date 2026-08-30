@@ -67,8 +67,8 @@ See also: [`docs/saas-upgrade-progress.md`](./saas-upgrade-progress.md), [`docs/
 
 | PR | Item | Status |
 |----|------|--------|
-| #12 | `Location.area` migration + `lib/areas.ts` + admin | In progress |
-| #13 | Landing search + `/search` service discovery | Planned |
+| #12 | `Location.area` migration + `lib/areas.ts` + admin | Merged |
+| #13 | Landing search + `/search` service discovery | In progress |
 | #14 | Cross-org availability search + book deep-links | Planned |
 | #15 | Visual polish + E2E updates | Planned |
 

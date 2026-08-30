@@ -13,6 +13,7 @@ import {
 function revalidateSettingsPaths(slug: string) {
   revalidatePath("/dashboard/admin/settings");
   revalidatePath("/marketplace");
+  revalidatePath("/search");
   revalidatePath(`/s/${slug}`);
   revalidatePath(`/s/${slug}/book`);
 }

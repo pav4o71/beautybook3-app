@@ -67,5 +67,6 @@ export async function createOrganization(
 
   revalidatePath("/dashboard");
   revalidatePath("/marketplace");
+  revalidatePath("/search");
   redirect("/dashboard/admin");
 }

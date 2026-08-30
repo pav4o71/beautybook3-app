@@ -14,6 +14,7 @@ export type MarketplaceListing = {
     id: string;
     name: string;
     address: string | null;
+    area: string | null;
     isDefault: boolean;
   }[];
   serviceCount: number;
@@ -23,6 +24,28 @@ export type MarketplaceListing = {
     priceCents: number;
     categoryName: string;
   } | null;
+};
+
+export type MarketplaceServiceResult = {
+  id: string;
+  name: string;
+  description: string | null;
+  durationMin: number;
+  priceCents: number;
+  categorySlug: string;
+  categoryName: string;
+  organization: {
+    id: string;
+    name: string;
+    slug: string;
+  };
+  locations: {
+    id: string;
+    name: string;
+    address: string | null;
+    area: string | null;
+    isDefault: boolean;
+  }[];
 };
 
 export async function listMarketplaceCategoryFilters(): Promise<
@@ -112,4 +135,87 @@ export async function listMarketplaceOrganizations(
         }
       : null,
   }));
+}
+
+export async function listMarketplaceServices(input: {
+  categorySlug?: string;
+  area?: string;
+} = {}): Promise<MarketplaceServiceResult[]> {
+  const area = input.area?.trim() || undefined;
+  const categorySlug = input.categorySlug?.trim() || undefined;
+  const staffInArea = {
+    staff: {
+      active: true,
+      location: {
+        active: true,
+        ...(area ? { area } : {}),
+      },
+    },
+  } as const;
+
+  const services = await prisma.service.findMany({
+    where: {
+      active: true,
+      organization: { published: true },
+      staff: { some: staffInArea },
+      ...(categorySlug ? { category: { slug: categorySlug } } : {}),
+    },
+    include: {
+      category: { select: { slug: true, name: true } },
+      organization: {
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          published: true,
+        },
+      },
+      staff: {
+        where: staffInArea,
+        select: {
+          staff: {
+            select: {
+              location: {
+                select: {
+                  id: true,
+                  name: true,
+                  address: true,
+                  area: true,
+                  isDefault: true,
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    orderBy: [{ priceCents: "asc" }, { name: "asc" }],
+  });
+
+  return services
+    .filter((service) => service.organization.published)
+    .map((service) => {
+      const locations = [
+        ...new Map(
+          service.staff.map((row) => [row.staff.location.id, row.staff.location]),
+        ).values(),
+      ].sort((left, right) => Number(right.isDefault) - Number(left.isDefault) || left.name.localeCompare(right.name));
+
+      return {
+        id: service.id,
+        name: service.name,
+        description: service.description,
+        durationMin: service.durationMin,
+        priceCents: service.priceCents,
+        categorySlug: service.category.slug,
+        categoryName: service.category.name,
+        organization: {
+          id: service.organization.id,
+          name: service.organization.name,
+          slug: service.organization.slug,
+        },
+        locations,
+      };
+    })
+    .filter((service) => service.locations.length > 0);
 }
