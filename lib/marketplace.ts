@@ -143,20 +143,21 @@ export async function listMarketplaceServices(input: {
 } = {}): Promise<MarketplaceServiceResult[]> {
   const area = input.area?.trim() || undefined;
   const categorySlug = input.categorySlug?.trim() || undefined;
+  const staffInArea = {
+    staff: {
+      active: true,
+      location: {
+        active: true,
+        ...(area ? { area } : {}),
+      },
+    },
+  } as const;
 
   const services = await prisma.service.findMany({
     where: {
       active: true,
-      organization: {
-        published: true,
-        ...(area
-          ? {
-              locations: {
-                some: { active: true, area },
-              },
-            }
-          : {}),
-      },
+      organization: { published: true },
+      staff: { some: staffInArea },
       ...(categorySlug ? { category: { slug: categorySlug } } : {}),
     },
     include: {
@@ -167,18 +168,22 @@ export async function listMarketplaceServices(input: {
           name: true,
           slug: true,
           published: true,
-          locations: {
-            where: {
-              active: true,
-              ...(area ? { area } : {}),
-            },
-            orderBy: [{ isDefault: "desc" }, { name: "asc" }],
+        },
+      },
+      staff: {
+        where: staffInArea,
+        select: {
+          staff: {
             select: {
-              id: true,
-              name: true,
-              address: true,
-              area: true,
-              isDefault: true,
+              location: {
+                select: {
+                  id: true,
+                  name: true,
+                  address: true,
+                  area: true,
+                  isDefault: true,
+                },
+              },
             },
           },
         },
@@ -188,20 +193,29 @@ export async function listMarketplaceServices(input: {
   });
 
   return services
-    .filter((service) => service.organization.published && service.organization.locations.length > 0)
-    .map((service) => ({
-      id: service.id,
-      name: service.name,
-      description: service.description,
-      durationMin: service.durationMin,
-      priceCents: service.priceCents,
-      categorySlug: service.category.slug,
-      categoryName: service.category.name,
-      organization: {
-        id: service.organization.id,
-        name: service.organization.name,
-        slug: service.organization.slug,
-      },
-      locations: service.organization.locations,
-    }));
+    .filter((service) => service.organization.published)
+    .map((service) => {
+      const locations = [
+        ...new Map(
+          service.staff.map((row) => [row.staff.location.id, row.staff.location]),
+        ).values(),
+      ].sort((left, right) => Number(right.isDefault) - Number(left.isDefault) || left.name.localeCompare(right.name));
+
+      return {
+        id: service.id,
+        name: service.name,
+        description: service.description,
+        durationMin: service.durationMin,
+        priceCents: service.priceCents,
+        categorySlug: service.category.slug,
+        categoryName: service.category.name,
+        organization: {
+          id: service.organization.id,
+          name: service.organization.name,
+          slug: service.organization.slug,
+        },
+        locations,
+      };
+    })
+    .filter((service) => service.locations.length > 0);
 }

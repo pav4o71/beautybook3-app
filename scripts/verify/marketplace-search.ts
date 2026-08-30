@@ -57,6 +57,15 @@ async function main() {
   });
   assert(unpublished === 0, "Unpublished org services must not appear in marketplace search");
 
+  const nailsBgc = await listMarketplaceServices({
+    categorySlug: "nails",
+    area: "BGC (Taguig)",
+  });
+  assert(
+    !nailsBgc.some((row) => row.organization.slug === "beautybook-demo"),
+    "BGC nails search must not list demo gel (no BGC nail staff)",
+  );
+
   await prisma.$disconnect();
   console.log("verify-marketplace-search: ok", {
     hair: hair.length,
