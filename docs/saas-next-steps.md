@@ -1,6 +1,6 @@
 # SaaS Next Steps (after Phase 1 merge)
 
-Phase 1 (multi-tenant foundation) is implemented in PR #3. Phase 2 (multi-location + marketplace) is complete in PRs #4–#6.
+Phase 1 (multi-tenant foundation) is implemented in PR #3. Phase 2 (multi-location + marketplace) is complete in PRs #4–#6. Phase 5 (hardening) is complete in PRs #7–#10.
 
 ## Completed in Phase 1
 
@@ -42,13 +42,28 @@ See also: [`docs/saas-upgrade-progress.md`](./saas-upgrade-progress.md), [`docs/
 - Plan limits (staff count, locations)
 - Not started — keep pay-at-salon copy until then
 
-## Phase 5 — Hardening (next)
+## Phase 5 — Hardening — **complete**
 
-- [ ] Audit every Prisma query for `organizationId` filter
-- [ ] Playwright: cross-org isolation test (user A cannot access org B admin routes)
-- [ ] Staff admin: allow changing `locationId` on edit (today only set on create)
+**Plan:** [`docs/saas-phase-5-plan.md`](./saas-phase-5-plan.md)
+
+| PR | Item | Status |
+|----|------|--------|
+| #7 | Schedule saves use `staff.locationId` (not admin cookie) | Merged |
+| #8 | Cross-org isolation E2E (`e2e/isolation.spec.ts`) | Merged |
+| #9 | Staff admin: reassign `locationId` on edit | Merged |
+| #10 | `scripts/verify/org-scope.ts` org isolation check | Merged |
+
+**Deferred:**
+
+- [ ] `middleware.ts` → Next.js `proxy` when stable (deprecation warning only)
 - [ ] Rate-limit tuning per route in production
-- [ ] Migrate `middleware.ts` → Next.js `proxy` when stable (deprecation warning)
+- [ ] Staff edit: preserve inactive location in picker (Bugbot follow-up from #9)
+
+## Phase 6 — UI polish (next)
+
+- Marketplace, booking, and dashboard visual refresh
+- Reuse `lib/ui.ts` tokens; no schema changes
+- Gates: `npm run build`, `npm run test:e2e` (25 tests)
 
 ## Local dev quick start
 
