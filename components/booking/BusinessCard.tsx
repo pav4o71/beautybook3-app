@@ -1,96 +1,68 @@
-'use client'
+import Link from "next/link";
+import { formatPrice } from "@/lib/format";
+import type { MarketplaceListing } from "@/lib/marketplace";
+import { primaryButtonClass, secondaryButtonClass } from "@/lib/ui";
 
-type MarketplaceOrganization = {
-  id: string
-  name: string
-  logoUrl?: string | null
-}
+export function BusinessCard({ listing }: { listing: MarketplaceListing }) {
+  const { locations, featuredService, serviceCount } = listing;
 
-type MarketplaceLocation = {
-  name: string
-  area?: string | null
-  city?: string | null
-}
-
-type MarketplaceService = {
-  name: string
-  priceCents: number
-}
-
-interface BusinessCardProps {
-  tenant: MarketplaceOrganization
-  location: MarketplaceLocation
-  service: MarketplaceService
-  distance?: number
-  rating?: number
-  onBook: () => void
-}
-
-export function BusinessCard({
-  tenant,
-  location,
-  service,
-  distance,
-  rating = 5.0,
-  onBook,
-}: BusinessCardProps) {
   return (
-    <div
-      className="p-4 border-2 border-gray-200 rounded-xl bg-white hover:shadow-lg transition-all duration-200"
-      data-testid={`business-${tenant.id}`}
+    <article
+      className="flex h-full flex-col rounded-lg border border-zinc-200 bg-white p-4"
+      data-testid={`business-${listing.id}`}
     >
-      <div className="flex justify-between items-start">
-        <div className="flex-1">
-          <div className="flex items-center gap-2">
-            <h3 className="font-bold text-lg text-gray-900">
-              {tenant.name}
-            </h3>
-            <span className="flex items-center text-sm text-yellow-600">
-              ⭐ {rating.toFixed(1)}
-            </span>
-          </div>
-          
-          <p className="text-sm text-gray-600 mt-1">
-            {location.name}
-          </p>
-          
-          <div className="flex items-center gap-1 mt-1 text-sm text-gray-500">
-            <span>📍</span>
-            <span>{location.area}, {location.city}</span>
-          </div>
+      <h2 className="font-medium text-zinc-900">{listing.name}</h2>
 
-          {distance && (
-            <div className="flex items-center gap-1 mt-1 text-sm text-gray-500">
-              <span>🚗</span>
-              <span>{distance.toFixed(1)} km away</span>
-            </div>
-          )}
+      {featuredService ? (
+        <p className="mt-1 text-sm text-zinc-600">
+          From{" "}
+          <span className="font-medium text-zinc-900">
+            {formatPrice(featuredService.priceCents)}
+          </span>
+          {" · "}
+          {featuredService.name}
+        </p>
+      ) : (
+        <p className="mt-1 text-sm text-zinc-500">No bookable services yet</p>
+      )}
 
-          <div className="mt-3 flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">{service.name}</p>
-              <p className="font-bold text-blue-600">
-                ₱{(service.priceCents / 100).toLocaleString('en-PH')}
-              </p>
-            </div>
-            <button
-              onClick={onBook}
-              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
-              data-testid={`book-now-${tenant.id}`}
-            >
-              Book Now
-            </button>
-          </div>
-        </div>
+      <p className="mt-1 text-xs text-zinc-500">
+        {serviceCount} active service{serviceCount === 1 ? "" : "s"}
+      </p>
 
-        {tenant.logoUrl && (
-          <img
-            src={tenant.logoUrl}
-            alt={tenant.name}
-            className="w-16 h-16 rounded-lg object-cover ml-4"
-          />
-        )}
+      {locations.length === 0 ? (
+        <p className="mt-2 text-sm text-zinc-500">No active locations</p>
+      ) : (
+        <ul className="mt-2 flex-1 space-y-1">
+          {locations.map((location) => (
+            <li key={location.id} className="text-sm text-zinc-600">
+              <span className="font-medium text-zinc-800">{location.name}</span>
+              {location.isDefault ? (
+                <span className="ml-1 text-xs text-zinc-500">(default)</span>
+              ) : null}
+              {location.address ? (
+                <span className="block text-zinc-500">{location.address}</span>
+              ) : null}
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <div className="mt-4 flex flex-wrap gap-2">
+        <Link
+          href={`/s/${listing.slug}`}
+          className={secondaryButtonClass}
+        >
+          View salon
+        </Link>
+        <Link
+          href={`/s/${listing.slug}/book`}
+          className={primaryButtonClass}
+          data-testid={`book-now-${listing.id}`}
+        >
+          Book now
+        </Link>
       </div>
-    </div>
-  )
+    </article>
+  );
 }

@@ -1,7 +1,7 @@
 # Phase 2 Plan — Multi-location & marketplace depth
 
-**Status:** In progress (PR-4 / 2A)  
-**Base:** `main` @ PR #3 merged (`cac0b16`)  
+**Status:** 2A + 2B merged — **2C in PR #6**  
+**Base:** `main` @ PR #4 + #5 merged (`ae12f9b`)  
 **Hosted DB:** migrations A/B/C applied, smoke-tested via `npm run dev` + browser
 
 ---
@@ -119,12 +119,12 @@ flowchart LR
   B --> D[2D Invites]
 ```
 
-| PR | Scope | Est. |
-|----|-------|------|
-| PR-4 | 2A Location CRUD | 1–2 days |
-| PR-5 | 2B Location switcher + booking | 2–3 days |
-| PR-6 | 2C Marketplace filters + cards | 1–2 days |
-| PR-7 | 2D Invites (optional in Phase 2) | 2–3 days |
+| PR | Scope | Est. | Status |
+|----|-------|------|--------|
+| PR-4 | 2A Location CRUD | 1–2 days | **Merged** |
+| PR-5 | 2B Location switcher + booking | 2–3 days | **Merged** |
+| PR-6 | 2C Marketplace filters + cards | 1–2 days | **In PR** |
+| PR-7 | 2D Invites (optional in Phase 2) | 2–3 days | Deferred |
 
 **Recommendation:** Ship **2A + 2B** as minimum viable Phase 2; **2C** if time; **2D** can slip to Phase 2.5.
 
@@ -148,7 +148,9 @@ flowchart LR
 
 ## Approval checklist
 
-- [ ] Agree on PR order (2A → 2B → 2C → 2D)
-- [ ] Agree 2D invites can slip to Phase 2.5
-- [ ] Agree no schema change for 2A/2B (location table exists)
-- [ ] Approve start with **PR-4: Location admin CRUD**
+- [x] Agree on PR order (2A → 2B → 2C → 2D)
+- [x] Agree 2D invites can slip to Phase 2.5
+- [x] Agree no schema change for 2A/2B (location table exists)
+- [x] PR-4: Location admin CRUD — merged
+- [x] PR-5: Location switcher + booking — merged
+- [ ] PR-6: Marketplace filters + cards
