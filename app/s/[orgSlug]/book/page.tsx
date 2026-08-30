@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getAvailableSlots } from "@/lib/booking";
+import { getAvailableSlots, getAvailableSlotsForDay } from "@/lib/booking";
 import { listBookingServices, listBookingStaff } from "@/lib/catalog";
 import { getPublishedOrganizationBySlug } from "@/lib/tenant";
 import { successAlertClass } from "@/lib/ui";
@@ -57,14 +57,30 @@ export default async function PublicBookPage({
       : (staffForService[0]?.id ?? "");
 
   const selectedService = services.find((service) => service.id === serviceId);
-  const slots =
-    staffId && selectedService
-      ? await getAvailableSlots({
-          organizationId: organization.id,
-          staffId,
-          durationMin: selectedService.durationMin,
-        })
-      : [];
+  const requestedStartsAt = query.startsAt ? new Date(query.startsAt) : null;
+  const hasRequestedStartsAt =
+    requestedStartsAt != null && !Number.isNaN(requestedStartsAt.getTime());
+
+  let slots: Date[] = [];
+  if (staffId && selectedService) {
+    slots = await getAvailableSlots({
+      organizationId: organization.id,
+      staffId,
+      durationMin: selectedService.durationMin,
+    });
+    if (hasRequestedStartsAt) {
+      const daySlots = await getAvailableSlotsForDay({
+        organizationId: organization.id,
+        staffId,
+        durationMin: selectedService.durationMin,
+        date: requestedStartsAt,
+      });
+      const seen = new Set(slots.map((slot) => slot.getTime()));
+      slots = [...slots, ...daySlots.filter((slot) => !seen.has(slot.getTime()))].sort(
+        (left, right) => left.getTime() - right.getTime(),
+      );
+    }
+  }
 
   const bookAction = bookPublicSlot.bind(null, orgSlug);
 
