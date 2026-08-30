@@ -1,3 +1,4 @@
+import { Pool } from "pg";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@/app/generated/prisma/client";
 
@@ -12,7 +13,19 @@ function createPrismaClient() {
     throw new Error("DATABASE_URL is not set");
   }
 
-  const adapter = new PrismaPg({ connectionString });
+  const isLocal =
+    connectionString.includes("localhost") ||
+    connectionString.includes("127.0.0.1");
+
+  const pool = new Pool({
+    connectionString: connectionString
+      .replace(/[?&]sslmode=[^&]*/g, "")
+      .replace(/\?$/, ""),
+    ssl: isLocal ? undefined : { rejectUnauthorized: false },
+  });
+
+  const adapter = new PrismaPg(pool);
+
   return new PrismaClient({ adapter });
 }
 
