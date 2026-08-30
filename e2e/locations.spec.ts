@@ -41,7 +41,8 @@ test.describe("locations admin", () => {
 
     await jordanRow.getByRole("link", { name: "Edit" }).click();
     await page.waitForURL(/\/dashboard\/admin\/staff\/.+/);
-    await page.locator('select[name="locationId"]').selectOption({ label: "Main location (default)" });
+    const locationSelect = page.locator("main select[name='locationId']");
+    await locationSelect.selectOption({ label: "Main location (default)" });
     await page.getByRole("button", { name: "Save changes" }).click();
     await page.waitForURL("/dashboard/admin/staff");
 
@@ -54,7 +55,8 @@ test.describe("locations admin", () => {
     await page.goto("/dashboard/admin/staff");
     const jordanRowAfterBook = page.locator("li").filter({ hasText: "Jordan Reyes" });
     await jordanRowAfterBook.getByRole("link", { name: "Edit" }).click();
-    await page.locator('select[name="locationId"]').selectOption({ label: "BGC branch" });
+    await page.waitForURL(/\/dashboard\/admin\/staff\/.+/);
+    await page.locator("main select[name='locationId']").selectOption({ label: "BGC branch" });
     await page.getByRole("button", { name: "Save changes" }).click();
     await page.waitForURL("/dashboard/admin/staff");
   });
