@@ -1,7 +1,7 @@
 # Phase 2 Plan — Multi-location & marketplace depth
 
-**Status:** 2A + 2B merged — **2C in PR #6**  
-**Base:** `main` @ PR #4 + #5 merged (`ae12f9b`)  
+**Status:** Phase 2 complete (2A–2C merged). **2D invites** deferred.  
+**Base:** `main` @ PR #6 merged (`9d640f1`)  
 **Hosted DB:** migrations A/B/C applied, smoke-tested via `npm run dev` + browser
 
 ---
@@ -23,11 +23,11 @@ Let a single organization operate **multiple salon locations** and improve **pub
 
 | Area | Today | Phase 2 target |
 |------|-------|----------------|
-| Locations | Schema supports many; UI assumes **one default** | Admin CRUD + active location cookie |
-| Booking | `locationId` required; dashboard uses `active.location` from default only | User picks location when org has >1 |
-| Marketplace | Lists published orgs, links to `/s/[slug]/book` | Category filter; optional location line in card |
-| `components/booking/*` | Stub cards from origin; unused | Wire into marketplace or delete |
-| Team | `OrganizationMember` + roles exist | Invite flow (email link or code) |
+| Locations | Admin CRUD + active location cookie | Done (2A + 2B) |
+| Booking | Location picker; staff filtered by branch | Done (2B) |
+| Marketplace | Category filter + `BusinessCard` with prices | Done (2C) |
+| `components/booking/*` | Wired into marketplace | Done (2C) |
+| Team | `OrganizationMember` + roles exist | Invites deferred (2D) |
 
 ---
 
@@ -123,7 +123,7 @@ flowchart LR
 |----|-------|------|--------|
 | PR-4 | 2A Location CRUD | 1–2 days | **Merged** |
 | PR-5 | 2B Location switcher + booking | 2–3 days | **Merged** |
-| PR-6 | 2C Marketplace filters + cards | 1–2 days | **In PR** |
+| PR-6 | 2C Marketplace filters + cards | 1–2 days | **Merged** |
 | PR-7 | 2D Invites (optional in Phase 2) | 2–3 days | Deferred |
 
 **Recommendation:** Ship **2A + 2B** as minimum viable Phase 2; **2C** if time; **2D** can slip to Phase 2.5.
@@ -141,8 +141,8 @@ flowchart LR
 ## Docs updates (ongoing)
 
 - [x] `docs/supabase-migration-runbook.md` — ownership fix + B/C applied
-- [ ] Mark Phase 3 complete in `docs/saas-next-steps.md` after this session
-- [ ] Check off Phase 2 items as PRs land
+- [x] Mark Phase 2 complete in `docs/saas-next-steps.md`
+- [x] Check off Phase 2 items as PRs land
 
 ---
 
@@ -153,4 +153,5 @@ flowchart LR
 - [x] Agree no schema change for 2A/2B (location table exists)
 - [x] PR-4: Location admin CRUD — merged
 - [x] PR-5: Location switcher + booking — merged
-- [ ] PR-6: Marketplace filters + cards
+- [x] PR-6: Marketplace filters + cards — merged
+- [ ] PR-7: Org invites (Phase 2.5)

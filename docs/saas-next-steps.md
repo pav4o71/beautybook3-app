@@ -1,6 +1,6 @@
 # SaaS Next Steps (after Phase 1 merge)
 
-Phase 1 (multi-tenant foundation) is implemented in PR `feat/saas-tenancy-upgrade`. This doc tracks what comes next.
+Phase 1 (multi-tenant foundation) is implemented in PR #3. Phase 2 (multi-location + marketplace) is complete in PRs #4–#6.
 
 ## Completed in Phase 1
 
@@ -16,24 +16,25 @@ Phase 1 (multi-tenant foundation) is implemented in PR `feat/saas-tenancy-upgrad
 
 See also: [`docs/saas-upgrade-progress.md`](./saas-upgrade-progress.md), [`docs/IMPLEMENTATION-PHASES.md`](./IMPLEMENTATION-PHASES.md).
 
-## Phase 2 — Multi-location & marketplace depth
+## Phase 2 — Multi-location & marketplace depth — **complete**
 
-**Plan:** [`docs/saas-phase-2-plan.md`](./saas-phase-2-plan.md) (awaiting approval)
+**Plan:** [`docs/saas-phase-2-plan.md`](./saas-phase-2-plan.md)
 
-| Item | Why | Notes |
-|------|-----|-------|
-| Multiple locations per org | Real salons have branches | UI to add/switch locations; booking picks location |
-| Wire `components/booking/*` stubs | Origin added marketplace UI shells | Align with `Organization` / `priceCents` types |
-| Marketplace filters (area, category) | Discovery UX | Defer geo until location addresses are richer |
-| Org invites (email link) | Team growth | `OrganizationMember` already exists |
+| PR | Item | Status |
+|----|------|--------|
+| #4 | Location admin CRUD | Merged |
+| #5 | Location switcher + branch-scoped booking | Merged |
+| #6 | Marketplace category filters + `BusinessCard` | Merged |
 
-## Phase 3 — Hosted Supabase alignment
+**Deferred:** org invites (2D) — not planned for now.
 
-| Item | Why | Notes |
-|------|-----|-------|
-| Apply migrations B/C on hosted DB | Pooler DDL failed on FK/index | **Done** — see [`docs/supabase-migration-runbook.md`](./supabase-migration-runbook.md) |
-| Point staging `DATABASE_URL` at Supabase | Match production | `.env` already uses pooler; smoke-tested 2026-08-30 |
-| `VERIFY_ALLOW_REMOTE=1` on staging | Safe verify against hosted DB | **Done** — verify passed on hosted |
+## Phase 3 — Hosted Supabase alignment — **complete**
+
+| Item | Status |
+|------|--------|
+| Apply migrations B/C on hosted DB | Done — [`docs/supabase-migration-runbook.md`](./supabase-migration-runbook.md) |
+| Staging `DATABASE_URL` at Supabase pooler | Done — smoke-tested 2026-08-30 |
+| `VERIFY_ALLOW_REMOTE=1` on hosted | Done |
 
 ## Phase 4 — Billing (deferred)
 
@@ -41,10 +42,11 @@ See also: [`docs/saas-upgrade-progress.md`](./saas-upgrade-progress.md), [`docs/
 - Plan limits (staff count, locations)
 - Not started — keep pay-at-salon copy until then
 
-## Phase 5 — Hardening
+## Phase 5 — Hardening (next)
 
 - [ ] Audit every Prisma query for `organizationId` filter
-- [ ] Playwright: cross-org isolation test (user A cannot book org B admin routes)
+- [ ] Playwright: cross-org isolation test (user A cannot access org B admin routes)
+- [ ] Staff admin: allow changing `locationId` on edit (today only set on create)
 - [ ] Rate-limit tuning per route in production
 - [ ] Migrate `middleware.ts` → Next.js `proxy` when stable (deprecation warning)
 
@@ -59,3 +61,5 @@ npm run dev
 ```
 
 Demo logins: `demo@beautybook.local` / `Demo1234!` (admin), `customer@beautybook.local` / `Demo1234!`
+
+Additional marketplace owners: `owner@glow-nails.local`, `owner@luxe-hair.local` (same password).
