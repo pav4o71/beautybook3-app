@@ -8,7 +8,7 @@ import {
   searchMarketplaceAvailability,
 } from "@/lib/marketplace";
 import { parseSalonIsoDate, parseSalonTime, salonIsoDate } from "@/lib/timezone";
-import { pageMainClass } from "@/lib/ui";
+import { pageLeadClass, pageMainClass, pageTitleClass, sectionTitleClass } from "@/lib/ui";
 import { AvailabilityResults } from "./search/availability-results";
 import { BusinessResults } from "./search/business-results";
 import { SearchFilters } from "./search/search-filters";
@@ -64,10 +64,8 @@ export default async function Home({
       <SiteHeader />
       <main className={pageMainClass}>
         <div className="space-y-2">
-          <h1 className="text-3xl font-semibold tracking-tight text-zinc-900">
-            Find a salon
-          </h1>
-          <p className="max-w-xl text-sm text-zinc-600">
+          <h1 className={pageTitleClass}>Find a salon</h1>
+          <p className={pageLeadClass}>
             Browse hair and nail salons in Manila. Pick a service, then book a slot — pay
             at the salon when you arrive.
           </p>
@@ -106,14 +104,12 @@ export default async function Home({
 
         {date ? (
           <section className="space-y-3">
-            <h2 className="text-lg font-semibold tracking-tight text-zinc-900">
-              Available times
-            </h2>
+            <h2 className={sectionTitleClass}>Available times</h2>
             <AvailabilityResults results={availability} />
           </section>
         ) : (
           <section className="space-y-3">
-            <h2 className="text-lg font-semibold tracking-tight text-zinc-900">Salons</h2>
+            <h2 className={sectionTitleClass}>Salons</h2>
             <BusinessResults listings={listings} serviceName={serviceName} />
           </section>
         )}

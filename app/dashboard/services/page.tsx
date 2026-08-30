@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { EmptyState } from "@/components/empty-state";
+import { PageHeader } from "@/components/page-header";
 import { formatPrice } from "@/lib/format";
 import { listCustomerCatalog } from "@/lib/catalog";
 import { requireActiveOrgContext } from "@/lib/require-org";
@@ -12,15 +13,15 @@ export default async function ServicesPage() {
 
   return (
     <main className={pageMainClass}>
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">Services</h1>
-          <p className="text-sm text-zinc-600">Hair and nail treatments you can book.</p>
-        </div>
-        <Link href="/dashboard/book" className={primaryButtonClass}>
-          Book
-        </Link>
-      </div>
+      <PageHeader
+        title="Services"
+        lead="Hair and nail treatments you can book."
+        actions={
+          <Link href="/dashboard/book" className={primaryButtonClass}>
+            Book
+          </Link>
+        }
+      />
       {categories.length === 0 ? (
         <EmptyState
           title="No services yet"

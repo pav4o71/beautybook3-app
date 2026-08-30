@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { PageHeader } from "@/components/page-header";
 import { SiteHeader } from "@/components/site-header";
 import { listUserMemberships } from "@/lib/org-context";
 import { requireUser } from "@/lib/require-user";
@@ -8,6 +9,7 @@ import {
   labelTextClass,
   primaryButtonClass,
   secondaryButtonClass,
+  surfaceClass,
 } from "@/lib/ui";
 import { ActionForm } from "@/app/dashboard/admin/action-form";
 import { createOrganization } from "./actions";
@@ -21,12 +23,10 @@ export default async function OnboardingPage() {
       <>
         <SiteHeader />
         <main className="mx-auto flex w-full max-w-lg flex-1 flex-col gap-6 px-4 py-16">
-          <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">
-            You already have a business
-          </h1>
-          <p className="text-sm text-zinc-600">
-            Continue to your dashboard or create another salon later from settings.
-          </p>
+          <PageHeader
+            title="You already have a business"
+            lead="Continue to your dashboard or create another salon later from settings."
+          />
           <Link href="/dashboard" className={`w-fit ${primaryButtonClass}`}>
             Go to dashboard
           </Link>
@@ -39,18 +39,14 @@ export default async function OnboardingPage() {
     <>
       <SiteHeader />
       <main className="mx-auto flex w-full max-w-lg flex-1 flex-col gap-6 px-4 py-16">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">
-            Start your salon on BeautyBook
-          </h1>
-          <p className="text-sm text-zinc-600">
-            Create your business profile, add services, and accept bookings.
-          </p>
-        </div>
+        <PageHeader
+          title="Start your salon on BeautyBook"
+          lead="Create your business profile, add services, and accept bookings."
+        />
 
         <ActionForm
           action={createOrganization}
-          className="space-y-4 rounded-xl border border-zinc-200 bg-white p-5"
+          className={`${surfaceClass} space-y-4 p-5`}
         >
           <label className={labelClass}>
             <span className={labelTextClass}>Business name</span>

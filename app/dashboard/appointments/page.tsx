@@ -1,9 +1,10 @@
 import { appointmentPayCopy, statusBadgeClass, statusLabel } from "@/lib/appointment-status";
 import { EmptyState } from "@/components/empty-state";
+import { PageHeader } from "@/components/page-header";
 import { getCustomerAppointments } from "@/lib/appointments";
 import { formatDay, formatTime } from "@/lib/format";
 import { requireActiveOrgContext } from "@/lib/require-org";
-import { pageMainClass, primaryButtonClass } from "@/lib/ui";
+import { pageMainClass, primaryButtonClass, successAlertClass } from "@/lib/ui";
 import Link from "next/link";
 
 export default async function AppointmentsPage({
@@ -18,19 +19,13 @@ export default async function AppointmentsPage({
 
   return (
     <main className={pageMainClass}>
-      <div className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">
-          Appointments
-        </h1>
-        <p className="text-sm text-zinc-600">
-          Upcoming and recent bookings. Pay at the salon when you arrive.
-        </p>
-      </div>
+      <PageHeader
+        title="Appointments"
+        lead="Upcoming and recent bookings. Pay at the salon when you arrive."
+      />
 
       {params.booked === "1" ? (
-        <p className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900">
-          Booked! Pay at the salon when you arrive.
-        </p>
+        <p className={successAlertClass}>Booked! Pay at the salon when you arrive.</p>
       ) : null}
 
       {appointments.length === 0 ? (

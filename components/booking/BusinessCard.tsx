@@ -2,7 +2,7 @@ import Link from "next/link";
 import { LocationHeading } from "@/components/booking/location-heading";
 import { formatPrice } from "@/lib/format";
 import type { MarketplaceListing } from "@/lib/marketplace";
-import { primaryButtonClass, secondaryButtonClass } from "@/lib/ui";
+import { primaryButtonClass, secondaryButtonClass, surfaceInteractiveClass } from "@/lib/ui";
 
 export function BusinessCard({
   listing,
@@ -18,7 +18,7 @@ export function BusinessCard({
 
   return (
     <article
-      className="flex h-full flex-col overflow-hidden rounded-xl border border-zinc-200 bg-white transition hover:border-zinc-300 hover:shadow-sm"
+      className={`${surfaceInteractiveClass} flex h-full flex-col overflow-hidden`}
       data-testid={`business-${listing.slug}`}
     >
       {listing.coverImageUrl ? (

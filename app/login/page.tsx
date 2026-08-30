@@ -1,4 +1,5 @@
 import { SiteHeader } from "@/components/site-header";
+import { pageLeadClass, pageTitleClass, surfaceClass } from "@/lib/ui";
 import { LoginForm } from "./login-form";
 
 export default function LoginPage() {
@@ -6,12 +7,10 @@ export default function LoginPage() {
     <>
       <SiteHeader />
       <main className="flex flex-1 items-center justify-center px-4 py-16">
-        <div className="w-full max-w-sm space-y-6 rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
+        <div className={`${surfaceClass} w-full max-w-sm space-y-6 p-6`}>
           <div className="space-y-1">
-            <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">Sign in</h1>
-            <p className="text-sm text-zinc-600">
-              Use the demo account to open BeautyBook.
-            </p>
+            <h1 className={pageTitleClass}>Sign in</h1>
+            <p className={pageLeadClass}>Use the demo account to open BeautyBook.</p>
           </div>
           <LoginForm />
         </div>

@@ -14,8 +14,8 @@ import { formatDay, formatPrice, formatTime } from "@/lib/format";
 import {
   cardButtonClass,
   cardButtonSelectedClass,
+  infoAlertClass,
   slotButtonClass,
-  successAlertClass,
 } from "@/lib/ui";
 import { bookSlot } from "./actions";
 
@@ -169,7 +169,7 @@ export function BookingForm({
 
   return (
     <div className="space-y-6">
-      <p className={successAlertClass}>
+      <p className={infoAlertClass}>
         Your slot is held when you book. Pay at the salon when you arrive.
       </p>
 

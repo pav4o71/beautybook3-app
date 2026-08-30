@@ -2,7 +2,7 @@ export const focusRingClass =
   "outline-none focus-visible:ring-2 focus-visible:ring-zinc-900 focus-visible:ring-offset-2";
 
 export const controlClass =
-  `w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 ${focusRingClass} focus:border-zinc-900`;
+  `w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 disabled:cursor-not-allowed disabled:bg-zinc-50 disabled:text-zinc-500 ${focusRingClass} focus:border-zinc-900`;
 
 export const controlCompactClass =
   `min-h-10 rounded-md border border-zinc-300 bg-white px-2 py-1.5 text-sm text-zinc-900 ${focusRingClass} focus:border-zinc-900`;
@@ -61,7 +61,7 @@ export const slotButtonClass =
   `inline-flex min-h-10 min-w-16 items-center justify-center rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 hover:bg-zinc-100 disabled:opacity-50 ${focusRingClass}`;
 
 export const checkboxClass =
-  `size-4 rounded border-zinc-300 text-zinc-900 ${focusRingClass}`;
+  "size-4 rounded border-zinc-300 text-zinc-900 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-zinc-900";
 
 export const chipClass =
   "inline-flex shrink-0 items-center rounded-full border border-zinc-300 bg-white px-3 py-1.5 text-sm text-zinc-700 hover:bg-zinc-50 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-zinc-900";

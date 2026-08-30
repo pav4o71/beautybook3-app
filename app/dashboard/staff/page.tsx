@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { EmptyState } from "@/components/empty-state";
+import { PageHeader } from "@/components/page-header";
 import { listActiveStaff } from "@/lib/catalog";
 import { requireActiveOrgContext } from "@/lib/require-org";
 import { pageMainClass, primaryButtonClass } from "@/lib/ui";
@@ -11,15 +12,15 @@ export default async function StaffPage() {
 
   return (
     <main className={pageMainClass}>
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">Staff</h1>
-          <p className="text-sm text-zinc-600">Who can perform each service.</p>
-        </div>
-        <Link href="/dashboard/book" className={primaryButtonClass}>
-          Book
-        </Link>
-      </div>
+      <PageHeader
+        title="Staff"
+        lead="Who can perform each service."
+        actions={
+          <Link href="/dashboard/book" className={primaryButtonClass}>
+            Book
+          </Link>
+        }
+      />
       {staff.length === 0 ? (
         <EmptyState
           title="No staff listed yet"

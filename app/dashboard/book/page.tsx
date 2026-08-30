@@ -5,6 +5,7 @@ import { requireActiveOrgContext } from "@/lib/require-org";
 import { resolveSelectedServiceIds, firstQueryValue } from "@/lib/validations/booking";
 import { pageMainClass } from "@/lib/ui";
 import { EmptyState } from "@/components/empty-state";
+import { PageHeader } from "@/components/page-header";
 import { BookingForm } from "./booking-form";
 
 export default async function BookPage({
@@ -66,13 +67,10 @@ export default async function BookPage({
 
   return (
     <main className={pageMainClass}>
-      <div className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">Book</h1>
-        <p className="text-sm text-zinc-600">
-          Choose a location and one or more services, then pick staff and a time. Your slot is
-          held when you book; pay at the salon when you arrive.
-        </p>
-      </div>
+      <PageHeader
+        title="Book"
+        lead="Choose a location and one or more services, then pick staff and a time. Your slot is held when you book; pay at the salon when you arrive."
+      />
       {services.length === 0 ? (
         <EmptyState
           title="Nothing to book yet"

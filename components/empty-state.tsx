@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { emptyStateClass } from "@/lib/ui";
+import { emptyStateClass, sectionTitleClass } from "@/lib/ui";
 
 export function EmptyState({
   title,
@@ -11,8 +11,8 @@ export function EmptyState({
   children?: ReactNode;
 }) {
   return (
-    <div className={emptyStateClass}>
-      <p className="font-medium text-zinc-900">{title}</p>
+    <div className={emptyStateClass} role="status">
+      <h2 className={sectionTitleClass}>{title}</h2>
       {description ? <p className="mt-1">{description}</p> : null}
       {children ? <div className="mt-4 flex flex-wrap justify-center gap-2">{children}</div> : null}
     </div>
