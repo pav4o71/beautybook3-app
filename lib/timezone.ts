@@ -112,3 +112,39 @@ export function addSalonDays(dayStart: Date, days: number) {
 export function salonDaysAgo(days: number, anchor: Date = new Date()) {
   return new Date(anchor.getTime() - days * 86_400_000);
 }
+
+export function salonIsoDate(date: Date = new Date()) {
+  const { year, month, day } = readSalonParts(date);
+  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+
+export function parseSalonIsoDate(value: string) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value.trim());
+  if (!match) return null;
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const parsed = salonWallToUtc(year, month, day, 0, 0);
+  const parts = readSalonParts(parsed);
+  if (parts.year !== year || parts.month !== month || parts.day !== day) {
+    return null;
+  }
+  return parsed;
+}
+
+export function salonMinutesOfDay(date: Date) {
+  const formatted = new Intl.DateTimeFormat("en-GB", {
+    timeZone: SALON_TIMEZONE,
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(date);
+  const [hours, minutes] = formatted.split(":").map(Number);
+  return hours * 60 + minutes;
+}
+
+export function parseSalonTime(value: string) {
+  const match = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(value.trim());
+  if (!match) return null;
+  return Number(match[1]) * 60 + Number(match[2]);
+}

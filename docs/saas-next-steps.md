@@ -68,8 +68,8 @@ See also: [`docs/saas-upgrade-progress.md`](./saas-upgrade-progress.md), [`docs/
 | PR | Item | Status |
 |----|------|--------|
 | #12 | `Location.area` migration + `lib/areas.ts` + admin | Merged |
-| #13 | Landing search + `/search` service discovery | In progress |
-| #14 | Cross-org availability search + book deep-links | Planned |
+| #13 | Landing search + `/search` service discovery | Merged |
+| #14 | Cross-org availability search + book deep-links | In progress |
 | #15 | Visual polish + E2E updates | Planned |
 
 **One schema change:** `Location.area` (required for area filter). Everything else is UI + `lib/marketplace` queries.
