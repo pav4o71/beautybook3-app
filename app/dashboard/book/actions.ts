@@ -10,6 +10,7 @@ import { requireActiveOrgContext } from "@/lib/require-org";
 import {
   bookSlotSchema,
   formatZodError,
+  parseServiceIdsFromForm,
 } from "@/lib/validations/booking";
 
 /** Called from client slot forms — returns errors inline; redirects on success. */
@@ -31,7 +32,7 @@ export async function bookSlot(formData: FormData): Promise<ActionFormState> {
     organizationId,
     locationId,
     customerId: session.user.id,
-    serviceId: formData.get("serviceId"),
+    serviceIds: parseServiceIdsFromForm(formData),
     staffId: formData.get("staffId"),
     startsAt: formData.get("startsAt"),
   });
@@ -45,7 +46,7 @@ export async function bookSlot(formData: FormData): Promise<ActionFormState> {
       organizationId: parsed.data.organizationId,
       locationId: parsed.data.locationId,
       customerId: parsed.data.customerId ?? session.user.id,
-      serviceId: parsed.data.serviceId,
+      serviceIds: parsed.data.serviceIds,
       staffId: parsed.data.staffId,
       startsAt: parsed.data.startsAt,
     });

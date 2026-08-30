@@ -80,6 +80,16 @@ export default async function EditLocationPage({
         </label>
 
         <label className={labelClass}>
+          <span className={labelTextClass}>Phone</span>
+          <input
+            name="phone"
+            defaultValue={location.phone ?? ""}
+            className={controlClass}
+            placeholder="Optional branch phone"
+          />
+        </label>
+
+        <label className={labelClass}>
           <span className={labelTextClass}>Timezone</span>
           <select
             name="timezone"

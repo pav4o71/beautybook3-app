@@ -3,8 +3,17 @@ import { formatPrice } from "@/lib/format";
 import type { MarketplaceListing } from "@/lib/marketplace";
 import { primaryButtonClass, secondaryButtonClass } from "@/lib/ui";
 
-export function BusinessCard({ listing }: { listing: MarketplaceListing }) {
+export function BusinessCard({
+  listing,
+  serviceName,
+}: {
+  listing: MarketplaceListing;
+  serviceName?: string;
+}) {
   const { locations, featuredService, serviceCount } = listing;
+  const salonHref = serviceName
+    ? `/s/${listing.slug}?service=${encodeURIComponent(serviceName)}`
+    : `/s/${listing.slug}`;
 
   return (
     <article
@@ -69,11 +78,11 @@ export function BusinessCard({ listing }: { listing: MarketplaceListing }) {
         )}
 
         <div className="mt-4 flex flex-wrap gap-2">
-          <Link href={`/s/${listing.slug}`} className={secondaryButtonClass}>
+          <Link href={salonHref} className={secondaryButtonClass}>
             View salon
           </Link>
           <Link
-            href={`/s/${listing.slug}/book`}
+            href={salonHref}
             className={primaryButtonClass}
             data-testid={`book-now-${listing.slug}`}
           >

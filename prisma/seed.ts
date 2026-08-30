@@ -46,12 +46,18 @@ async function seedOrganization(): Promise<TenantContext> {
       name: "BeautyBook Demo Salon",
       published: true,
       coverImageUrl: salonCoverPath(DEMO_ORG_SLUG),
+      description:
+        "Makati salon for cuts, colour, and nails. Book online and pay at the salon when you arrive.",
+      phone: "+63 2 8888 0100",
     },
     create: {
       name: "BeautyBook Demo Salon",
       slug: DEMO_ORG_SLUG,
       published: true,
       coverImageUrl: salonCoverPath(DEMO_ORG_SLUG),
+      description:
+        "Makati salon for cuts, colour, and nails. Book online and pay at the salon when you arrive.",
+      phone: "+63 2 8888 0100",
     },
   });
 
@@ -66,15 +72,17 @@ async function seedOrganization(): Promise<TenantContext> {
         name: "Main location",
         address: "Makati City, Metro Manila",
         area: "Makati",
+        phone: "+63 2 8888 0101",
         isDefault: true,
       },
     });
-  } else if (!location.address || location.area !== "Makati") {
+  } else if (!location.address || location.area !== "Makati" || !location.phone) {
     location = await prisma.location.update({
       where: { id: location.id },
       data: {
         address: location.address ?? "Makati City, Metro Manila",
         area: "Makati",
+        phone: location.phone ?? "+63 2 8888 0101",
       },
     });
   }
@@ -329,6 +337,16 @@ async function upsertSeedAppointment(
 
   const endsAt = new Date(input.startsAt.getTime() + input.durationMin * 60_000);
 
+  await prisma.appointment.deleteMany({
+    where: {
+      staffId: input.staffId,
+      status: { not: AppointmentStatus.CANCELLED },
+      startsAt: { lt: endsAt },
+      endsAt: { gt: input.startsAt },
+      ...(existing ? { id: { not: existing.id } } : {}),
+    },
+  });
+
   if (existing) {
     await prisma.appointmentService.deleteMany({
       where: { appointmentId: existing.id },
@@ -488,7 +506,9 @@ async function seedCatalogAndStaff(tenant: TenantContext, customerId: string) {
   await upsertTimeOff(tenant, lena.id, "seed:vacation", vacationStart, vacationEnd);
 
   const { start: today } = salonDayBounds();
-  await prisma.appointment.deleteMany({ where: { notes: "seed:today-confirmed" } });
+  await prisma.appointment.deleteMany({
+    where: { organizationId: tenant.organizationId },
+  });
   await upsertSeedAppointment(tenant, {
     marker: "seed:today-complete",
     customerId,
@@ -532,7 +552,7 @@ async function seedCatalogAndStaff(tenant: TenantContext, customerId: string) {
     status: AppointmentStatus.CONFIRMED,
   });
 
-  const pastMonday = addSalonDays(nextMonday, -7);
+  const pastMonday = addSalonDays(today, -7);
   await upsertSeedAppointment(tenant, {
     marker: "seed:past-completed",
     customerId,

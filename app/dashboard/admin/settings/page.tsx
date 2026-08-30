@@ -83,6 +83,27 @@ export default async function BusinessSettingsPage({
           </select>
         </label>
 
+        <label className={labelClass}>
+          <span className={labelTextClass}>About this salon</span>
+          <textarea
+            name="description"
+            rows={4}
+            defaultValue={organization.description ?? ""}
+            placeholder="Tell customers what you offer."
+            className={controlClass}
+          />
+        </label>
+
+        <label className={labelClass}>
+          <span className={labelTextClass}>Phone</span>
+          <input
+            name="phone"
+            defaultValue={organization.phone ?? ""}
+            placeholder="+63 2 8888 0100"
+            className={controlClass}
+          />
+        </label>
+
         <label className="flex items-center gap-2 text-sm text-zinc-900">
           <input
             type="checkbox"

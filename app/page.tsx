@@ -108,7 +108,7 @@ export default async function Home({
       ) : (
         <section className="space-y-3">
           <h2 className="text-lg font-semibold tracking-tight text-zinc-900">Salons</h2>
-          <BusinessResults listings={listings} />
+          <BusinessResults listings={listings} serviceName={serviceName} />
         </section>
       )}
     </main>

@@ -22,18 +22,18 @@ test.describe("location booking", () => {
     await page.goto("/dashboard/book");
     await expect(page.getByRole("heading", { name: "Book" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Main location" })).toBeVisible();
+
+    await page.getByRole("button", { name: "Haircut" }).click();
     await expect(page.getByText("Maya Petrova")).toBeVisible();
 
     await page.getByRole("button", { name: "BGC branch" }).click();
     await page.waitForURL(/locationId=/);
-    await page.getByRole("button", { name: "Haircut" }).click();
-    await page.waitForURL(/serviceId=/);
+    await expect(page).toHaveURL(/serviceId=/);
     await expect(page.getByText("Jordan Reyes")).toBeVisible();
     await expect(page.getByText("Maya Petrova")).toHaveCount(0);
 
     await page.getByRole("button", { name: "Main location" }).click();
     await page.waitForURL(/locationId=/);
-    await page.getByRole("button", { name: "Haircut" }).click();
     await expect(page.getByText("Maya Petrova")).toBeVisible();
   });
 });

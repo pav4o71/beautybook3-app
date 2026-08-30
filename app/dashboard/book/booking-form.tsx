@@ -3,6 +3,12 @@
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
 import type { ActionFormState } from "@/lib/action-form-state";
+import {
+  MAX_BOOKING_SERVICES,
+  MAX_COMBINED_DURATION_MIN,
+  NO_STAFF_FOR_COMBINATION,
+  staffOffersAllServices,
+} from "@/lib/booking-limits";
 import { formatDay, formatPrice, formatTime } from "@/lib/format";
 import {
   cardButtonClass,
@@ -40,7 +46,7 @@ export function BookingForm({
   services,
   staff,
   locations = [],
-  initialServiceId,
+  initialServiceIds,
   initialStaffId,
   initialLocationId = "",
   initialStartsAt = "",
@@ -51,7 +57,7 @@ export function BookingForm({
   services: ServiceOption[];
   staff: StaffOption[];
   locations?: LocationOption[];
-  initialServiceId: string;
+  initialServiceIds: string[];
   initialStaffId: string;
   initialLocationId?: string;
   initialStartsAt?: string;
@@ -61,17 +67,24 @@ export function BookingForm({
 }) {
   const router = useRouter();
   const [locationId, setLocationId] = useState(initialLocationId);
-  const [serviceId, setServiceId] = useState(initialServiceId);
+  const [selectedIds, setSelectedIds] = useState(initialServiceIds);
   const [staffId, setStaffId] = useState(initialStaffId);
   const [message, setMessage] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
   const availableStaff = useMemo(
-    () => staff.filter((person) => person.serviceIds.includes(serviceId)),
-    [serviceId, staff],
+    () => staff.filter((person) => staffOffersAllServices(person.serviceIds, selectedIds)),
+    [selectedIds, staff],
   );
 
-  const selectedService = services.find((service) => service.id === serviceId);
+  const selectedServices = services.filter((service) => selectedIds.includes(service.id));
+  const totalMinutes = selectedServices.reduce(
+    (sum, service) => sum + service.durationMin,
+    0,
+  );
+  const totalCents = selectedServices.reduce((sum, service) => sum + service.priceCents, 0);
+  const overDurationCap = totalMinutes > MAX_COMBINED_DURATION_MIN;
+  const overServiceCap = selectedIds.length > MAX_BOOKING_SERVICES;
 
   const groupedSlots = useMemo(() => {
     const groups = new Map<string, string[]>();
@@ -90,44 +103,57 @@ export function BookingForm({
 
   function updateQuery(
     nextLocationId: string,
-    nextServiceId: string,
+    nextServiceIds: string[],
     nextStaffId: string,
   ) {
     const params = new URLSearchParams();
     if (nextLocationId) params.set("locationId", nextLocationId);
-    if (nextServiceId) params.set("serviceId", nextServiceId);
+    if (nextServiceIds.length > 0) {
+      params.set("serviceId", nextServiceIds[0]);
+    }
+    if (nextServiceIds.length > 1) {
+      params.set("serviceIds", nextServiceIds.join(","));
+    }
     if (nextStaffId) params.set("staffId", nextStaffId);
     router.push(`${bookPath}?${params.toString()}`);
   }
 
   function selectLocation(nextLocationId: string) {
     setLocationId(nextLocationId);
-    setServiceId("");
     setStaffId("");
     setMessage(null);
-    updateQuery(nextLocationId, "", "");
+    updateQuery(nextLocationId, selectedIds, "");
   }
 
-  function selectService(nextServiceId: string) {
-    const nextStaff =
-      availableStaff.find((person) => person.id === staffId) &&
-      staff.find(
-        (person) =>
-          person.id === staffId && person.serviceIds.includes(nextServiceId),
-      )
-        ? staffId
-        : (staff.find((person) => person.serviceIds.includes(nextServiceId))?.id ??
-          "");
-    setServiceId(nextServiceId);
+  function toggleService(nextServiceId: string) {
+    const exists = selectedIds.includes(nextServiceId);
+    const next = exists
+      ? selectedIds.filter((id) => id !== nextServiceId)
+      : [...selectedIds, nextServiceId];
+    if (!exists && next.length > MAX_BOOKING_SERVICES) {
+      return;
+    }
+
+    const nextStaff = nextStaffStillValid(next, staffId)
+      ? staffId
+      : (staff.find((person) => staffOffersAllServices(person.serviceIds, next))?.id ??
+        "");
+
+    setSelectedIds(next);
     setStaffId(nextStaff);
     setMessage(null);
-    updateQuery(locationId, nextServiceId, nextStaff);
+    updateQuery(locationId, next, nextStaff);
+  }
+
+  function nextStaffStillValid(nextServiceIds: string[], currentStaffId: string) {
+    const person = staff.find((row) => row.id === currentStaffId);
+    return person ? staffOffersAllServices(person.serviceIds, nextServiceIds) : false;
   }
 
   function selectStaff(nextStaffId: string) {
     setStaffId(nextStaffId);
     setMessage(null);
-    updateQuery(locationId, serviceId, nextStaffId);
+    updateQuery(locationId, selectedIds, nextStaffId);
   }
 
   return (
@@ -159,15 +185,15 @@ export function BookingForm({
         ) : null}
 
         <div className="space-y-2">
-          <p className="text-sm font-medium text-zinc-900">Service</p>
+          <p className="text-sm font-medium text-zinc-900">Services</p>
           <div className="grid gap-2 sm:grid-cols-2">
             {services.map((service) => {
-              const selected = service.id === serviceId;
+              const selected = selectedIds.includes(service.id);
               return (
                 <button
                   key={service.id}
                   type="button"
-                  onClick={() => selectService(service.id)}
+                  onClick={() => toggleService(service.id)}
                   className={selected ? cardButtonSelectedClass : cardButtonClass}
                 >
                   <span className="block font-medium">{service.name}</span>
@@ -185,7 +211,9 @@ export function BookingForm({
           <p className="text-sm font-medium text-zinc-900">Staff</p>
           {availableStaff.length === 0 ? (
             <p className="text-sm text-zinc-600">
-              No staff available for this service.
+              {selectedIds.length === 0
+                ? "Choose at least one service."
+                : NO_STAFF_FOR_COMBINATION}
             </p>
           ) : (
             <div className="grid gap-2 sm:grid-cols-2">
@@ -207,12 +235,17 @@ export function BookingForm({
         </div>
       </div>
 
-      {selectedService ? (
+      {selectedServices.length > 0 ? (
         <p className="text-sm text-zinc-700">
           Total at salon:{" "}
-          <span className="font-medium text-zinc-900">
-            {formatPrice(selectedService.priceCents)}
-          </span>
+          <span className="font-medium text-zinc-900">{formatPrice(totalCents)}</span>
+          {" · "}
+          {totalMinutes} min
+          {overDurationCap ? (
+            <span className="block text-red-700">
+              Combined duration cannot exceed {MAX_COMBINED_DURATION_MIN} minutes.
+            </span>
+          ) : null}
         </p>
       ) : null}
 
@@ -247,13 +280,20 @@ export function BookingForm({
                     }}
                   >
                     <input type="hidden" name="locationId" value={locationId} />
-                    <input type="hidden" name="serviceId" value={serviceId} />
+                    <input type="hidden" name="serviceIds" value={selectedIds.join(",")} />
                     <input type="hidden" name="staffId" value={staffId} />
                     <input type="hidden" name="startsAt" value={iso} />
                     <button
                       type="submit"
                       data-testid="book-slot"
-                      disabled={pending || !locationId || !serviceId || !staffId}
+                      disabled={
+                        pending ||
+                        !locationId ||
+                        selectedIds.length === 0 ||
+                        !staffId ||
+                        overServiceCap ||
+                        overDurationCap
+                      }
                       className={
                         iso === initialStartsAt
                           ? `${slotButtonClass} border-zinc-900 bg-zinc-900 text-white hover:bg-zinc-800`

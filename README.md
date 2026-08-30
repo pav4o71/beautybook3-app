@@ -55,14 +55,17 @@ npm run test:e2e      # Playwright (seeds DB first; starts dev server when CI=1)
 
 ## Key routes
 
-- `/marketplace` — browse published salons
-- `/s/{orgSlug}/book` — public booking (no login required)
+- `/` — search salons (category, service, area, date)
+- `/s/{orgSlug}` — salon storefront: catalog, hours, multi-service cart
+- `/s/{orgSlug}/book` — pick staff and a combined time slot (no login required)
 - `/onboarding` — create a new business (authenticated)
 - `/dashboard/book` — customer booking (active org context)
 - `/dashboard/appointments` — my appointments
 - `/dashboard/admin/appointments` — today's board (complete / no-show / cancel)
 - `/dashboard/admin/settings` — business profile and marketplace visibility
 - `/dashboard/admin/*` — catalog, staff, schedules (org admin only)
+
+Public flow: `/` → `/s/{orgSlug}` → `/s/{orgSlug}/book`. Availability search **Book** still deep-links to `/s/{orgSlug}/book` with a single `serviceId`.
 
 ## Auth (Better Auth)
 
@@ -80,6 +83,7 @@ Server gates: `requireUser()`, `requireAdmin()` in `lib/`.
 - Optional: a **direct** `postgres.[REF]` URI on `db.*.supabase.co` avoids pooler DDL limits; this repo defaults to the pooler for simplicity.
 - **`20260830034500_appointment_staff_no_overlap`**: enables `btree_gist` and adds an exclusion constraint. On deploy it **deletes the newer row** in each overlapping non-cancelled pair (one-time cleanup). Re-applying on a DB with overlaps has the same effect — review before deploy on production data.
 - **`20260830100000`–`20260830100200` (tenancy)**: adds `Organization`, `Location`, `OrganizationMember`, and scopes catalog/booking tables. Migration C backfills `beautybook-demo` and enforces `NOT NULL`. If pooler DDL fails with `must be owner of table`, run migrations B and C SQL in the Supabase SQL editor, then `npx prisma migrate resolve --applied <name>` for each.
+- **`20260830183000_salon_profile_and_appointment_service_unique`**: adds `Organization.description` / `phone`, `Location.phone`, and a unique constraint on `AppointmentService(appointmentId, serviceId)` (deletes duplicate join rows, keeping the lowest id).
 
 ## Learn more
 

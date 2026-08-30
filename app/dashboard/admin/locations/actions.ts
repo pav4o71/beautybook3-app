@@ -12,25 +12,30 @@ import {
   updateLocationSchema,
 } from "@/lib/validations/location";
 
-function revalidateLocationPaths() {
+function revalidateLocationPaths(slug?: string) {
   revalidatePath("/dashboard/admin/locations");
   revalidatePath("/dashboard/book");
   revalidatePath("/dashboard/staff");
   revalidatePath("/");
   revalidatePath("/marketplace");
   revalidatePath("/search");
+  if (slug) {
+    revalidatePath(`/s/${slug}`);
+    revalidatePath(`/s/${slug}/book`);
+  }
 }
 
 export async function createLocationAction(
   _prevState: ActionFormState,
   formData: FormData,
 ): Promise<ActionFormState> {
-  const { organizationId } = await requireActiveOrgAdmin();
+  const { organizationId, organization } = await requireActiveOrgAdmin();
 
   const parsed = createLocationSchema.safeParse({
     name: formData.get("name"),
     address: String(formData.get("address") ?? "").trim() || undefined,
     area: String(formData.get("area") ?? "").trim() || null,
+    phone: String(formData.get("phone") ?? ""),
     timezone: formData.get("timezone") || "Asia/Manila",
     isDefault: parseBooleanCheckbox(formData.get("isDefault")),
   });
@@ -45,7 +50,7 @@ export async function createLocationAction(
     return actionError(error);
   }
 
-  revalidateLocationPaths();
+  revalidateLocationPaths(organization.slug);
   redirect("/dashboard/admin/locations");
 }
 
@@ -53,7 +58,7 @@ export async function updateLocationAction(
   _prevState: ActionFormState,
   formData: FormData,
 ): Promise<ActionFormState> {
-  const { organizationId } = await requireActiveOrgAdmin();
+  const { organizationId, organization } = await requireActiveOrgAdmin();
 
   const id = String(formData.get("id") ?? "");
   if (!id) {
@@ -64,6 +69,7 @@ export async function updateLocationAction(
     name: formData.get("name"),
     address: String(formData.get("address") ?? "").trim() || undefined,
     area: String(formData.get("area") ?? "").trim() || null,
+    phone: String(formData.get("phone") ?? ""),
     timezone: formData.get("timezone") || "Asia/Manila",
     active: parseBooleanCheckbox(formData.get("active")),
     isDefault: parseBooleanCheckbox(formData.get("isDefault")),
@@ -79,7 +85,7 @@ export async function updateLocationAction(
     return actionError(error);
   }
 
-  revalidateLocationPaths();
+  revalidateLocationPaths(organization.slug);
   redirect("/dashboard/admin/locations");
 }
 
@@ -87,7 +93,7 @@ export async function makeDefaultLocation(
   _prevState: ActionFormState,
   formData: FormData,
 ): Promise<ActionFormState> {
-  const { organizationId } = await requireActiveOrgAdmin();
+  const { organizationId, organization } = await requireActiveOrgAdmin();
 
   const id = String(formData.get("id") ?? "");
   if (!id) {
@@ -100,6 +106,6 @@ export async function makeDefaultLocation(
     return actionError(error);
   }
 
-  revalidateLocationPaths();
+  revalidateLocationPaths(organization.slug);
   redirect("/dashboard/admin/locations");
 }

@@ -1,6 +1,13 @@
 import { z } from "zod";
 import { isManilaArea } from "@/lib/areas";
 
+const optionalPhone = z
+  .string()
+  .trim()
+  .max(40, "Phone must be 40 characters or fewer.")
+  .optional()
+  .transform((value) => (value && value.length > 0 ? value : null));
+
 export const createLocationSchema = z.object({
   name: z.string().trim().min(1, "Location name is required."),
   address: z.string().trim().optional(),
@@ -9,6 +16,7 @@ export const createLocationSchema = z.object({
     .nullable()
     .optional()
     .refine((value) => value == null || isManilaArea(value), "Select a valid Manila area."),
+  phone: optionalPhone,
   timezone: z.string().trim().min(1, "Timezone is required."),
   isDefault: z.boolean().optional(),
 });
@@ -21,6 +29,7 @@ export const updateLocationSchema = z.object({
     .nullable()
     .optional()
     .refine((value) => value == null || isManilaArea(value), "Select a valid Manila area."),
+  phone: optionalPhone,
   timezone: z.string().trim().min(1, "Timezone is required."),
   active: z.boolean(),
   isDefault: z.boolean(),
