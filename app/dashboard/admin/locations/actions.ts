@@ -17,6 +17,7 @@ function revalidateLocationPaths() {
   revalidatePath("/dashboard/book");
   revalidatePath("/dashboard/staff");
   revalidatePath("/marketplace");
+  revalidatePath("/search");
 }
 
 export async function createLocationAction(

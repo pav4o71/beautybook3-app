@@ -19,6 +19,7 @@ function revalidateServicePaths() {
   revalidatePath("/dashboard/staff");
   revalidatePath("/dashboard/book");
   revalidatePath("/marketplace");
+  revalidatePath("/search");
 }
 
 export async function createService(

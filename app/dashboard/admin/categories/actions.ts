@@ -16,6 +16,7 @@ function revalidateCategoryPaths() {
   revalidatePath("/dashboard/services");
   revalidatePath("/dashboard/book");
   revalidatePath("/marketplace");
+  revalidatePath("/search");
 }
 
 export async function createCategory(
