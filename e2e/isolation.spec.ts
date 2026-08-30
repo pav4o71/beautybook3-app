@@ -16,7 +16,7 @@ test.describe("cross-org isolation", () => {
   test("glow owner admin staff list excludes demo salon staff", async ({ page }) => {
     await signIn(page, GLOW_OWNER);
     await page.goto("/dashboard/admin/staff");
-    await expect(page.getByRole("heading", { name: "Staff" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Staff", exact: true })).toBeVisible();
     await expect(page.getByText("Ana Cruz")).toBeVisible();
     await expect(page.getByText("Maya Petrova")).toHaveCount(0);
     await expect(page.getByText("Lena Dimitrova")).toHaveCount(0);
@@ -25,7 +25,7 @@ test.describe("cross-org isolation", () => {
   test("demo admin staff list excludes glow salon staff", async ({ page }) => {
     await signIn(page, DEMO_ACCOUNT);
     await page.goto("/dashboard/admin/staff");
-    await expect(page.getByRole("heading", { name: "Staff" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Staff", exact: true })).toBeVisible();
     await expect(page.getByText("Maya Petrova")).toBeVisible();
     await expect(page.getByText("Ana Cruz")).toHaveCount(0);
     await expect(page.getByText("Bea Santos")).toHaveCount(0);
