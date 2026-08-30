@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AreaFilter } from "@/components/booking/AreaFilter";
 import type { MarketplaceCategoryFilter } from "@/lib/marketplace";
-import { controlClass, labelClass, labelTextClass } from "@/lib/ui";
+import { chipActiveClass, chipClass, controlClass, labelClass, labelTextClass } from "@/lib/ui";
 
 const TIME_OPTIONS = [
   "09:00",
@@ -54,12 +54,6 @@ function searchHref(input: {
   return query ? `/?${query}` : "/";
 }
 
-function filterLinkClass(active: boolean) {
-  return active
-    ? "rounded-full bg-zinc-900 px-3 py-1 text-sm font-medium text-white"
-    : "rounded-full border border-zinc-300 bg-white px-3 py-1 text-sm text-zinc-700 hover:bg-zinc-50";
-}
-
 export function SearchFilters({
   categories,
   services,
@@ -93,10 +87,13 @@ export function SearchFilters({
 
   return (
     <div className="space-y-4">
-      <nav aria-label="Filter by category" className="flex flex-nowrap gap-2 overflow-x-auto pb-1">
+      <nav
+        aria-label="Filter by category"
+        className="-mx-4 flex flex-nowrap gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0"
+      >
         <Link
           href={searchHref({ ...current, category: undefined, service: undefined })}
-          className={`${filterLinkClass(!activeSlug)} shrink-0`}
+          className={!activeSlug ? chipActiveClass : chipClass}
           data-testid="category-all"
         >
           All services
@@ -109,7 +106,7 @@ export function SearchFilters({
               category: category.slug,
               service: undefined,
             })}
-            className={`${filterLinkClass(activeSlug === category.slug)} shrink-0`}
+            className={activeSlug === category.slug ? chipActiveClass : chipClass}
             data-testid={`category-${category.slug}`}
           >
             {category.name}
@@ -118,7 +115,10 @@ export function SearchFilters({
         ))}
       </nav>
       {services.length > 0 ? (
-        <nav aria-label="Filter by service" className="flex flex-nowrap gap-2 overflow-x-auto pb-1">
+        <nav
+          aria-label="Filter by service"
+          className="-mx-4 flex flex-nowrap gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0"
+        >
           {services.map((service) => {
             const active = activeService === service.name;
             return (
@@ -128,7 +128,7 @@ export function SearchFilters({
                   ...current,
                   service: active ? undefined : service.name,
                 })}
-                className={`${filterLinkClass(active)} shrink-0`}
+                className={active ? chipActiveClass : chipClass}
                 data-testid={`service-chip-${serviceKey(service.name)}`}
               >
                 {service.name}
@@ -137,13 +137,13 @@ export function SearchFilters({
           })}
         </nav>
       ) : null}
-      <AreaFilter
-        selectedArea={area ?? ""}
-        onAreaChange={(nextArea) => {
-          router.push(searchHref({ ...current, area: nextArea || undefined }));
-        }}
-      />
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-3">
+        <AreaFilter
+          selectedArea={area ?? ""}
+          onAreaChange={(nextArea) => {
+            router.push(searchHref({ ...current, area: nextArea || undefined }));
+          }}
+        />
         <label className={labelClass}>
           <span className={labelTextClass}>Date</span>
           <input

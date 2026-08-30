@@ -13,7 +13,7 @@ test.describe("search marketplace", () => {
     await page.getByTestId("category-hair").click();
     await page.waitForURL("/?category=hair");
 
-    await expect(page.getByRole("heading", { name: "Search" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Find a salon" })).toBeVisible();
     await expect(page.getByTestId("category-hair")).toHaveClass(/bg-zinc-900/);
     await expect(page.getByTestId("service-chip-haircut")).toBeVisible();
 
@@ -55,7 +55,7 @@ test.describe("search marketplace", () => {
   }) => {
     await page.goto("/marketplace");
     await page.waitForURL("/");
-    await expect(page.getByRole("heading", { name: "Search" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Find a salon" })).toBeVisible();
 
     await page.getByTestId("category-nails").click();
     await page.waitForURL("/?category=nails");

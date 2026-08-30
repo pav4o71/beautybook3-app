@@ -282,7 +282,9 @@ export function BookingForm({
 
       <div className="space-y-4">
         {groupedSlots.length === 0 ? (
-          <p className="text-sm text-zinc-600">No open slots in the next 7 days.</p>
+          <p className="rounded-lg border border-dashed border-zinc-300 bg-zinc-50 px-4 py-8 text-center text-sm text-zinc-600">
+            No open slots in the next 7 days.
+          </p>
         ) : (
           groupedSlots.map((group) => (
             <section key={group.day}>

@@ -18,7 +18,7 @@ export function BusinessCard({
 
   return (
     <article
-      className="flex h-full flex-col overflow-hidden rounded-lg border border-zinc-200 bg-white"
+      className="flex h-full flex-col overflow-hidden rounded-xl border border-zinc-200 bg-white transition hover:border-zinc-300 hover:shadow-sm"
       data-testid={`business-${listing.slug}`}
     >
       {listing.coverImageUrl ? (
@@ -29,14 +29,16 @@ export function BusinessCard({
           width={800}
           height={400}
           loading="lazy"
-          className="h-40 w-full object-cover"
+          className="h-44 w-full object-cover sm:h-48"
           data-testid={`business-cover-${listing.slug}`}
         />
       ) : (
-        <div className="h-40 bg-zinc-100" />
+        <div className="flex h-44 items-end bg-zinc-100 px-4 py-3 sm:h-48">
+          <span className="text-sm font-medium text-zinc-500">{listing.name}</span>
+        </div>
       )}
       <div className="flex flex-1 flex-col p-4">
-        <h2 className="font-medium text-zinc-900">{listing.name}</h2>
+        <h2 className="text-lg font-semibold tracking-tight text-zinc-900">{listing.name}</h2>
 
         {featuredService ? (
           <p className="mt-1 text-sm text-zinc-600">
@@ -58,7 +60,7 @@ export function BusinessCard({
         {locations.length === 0 ? (
           <p className="mt-2 text-sm text-zinc-500">No active locations</p>
         ) : (
-          <ul className="mt-2 flex-1 space-y-1">
+          <ul className="mt-3 flex-1 space-y-2">
             {locations.map((location) => (
               <li key={location.id} className="text-sm text-zinc-600">
                 <LocationHeading
@@ -74,7 +76,7 @@ export function BusinessCard({
           </ul>
         )}
 
-        <div className="mt-4 flex flex-wrap gap-2">
+        <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
           <Link href={salonHref} className={secondaryButtonClass}>
             View salon
           </Link>

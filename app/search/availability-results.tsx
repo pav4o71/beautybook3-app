@@ -1,7 +1,8 @@
 import Link from "next/link";
+import { EmptyState } from "@/components/empty-state";
 import { formatDay, formatPrice, formatTime } from "@/lib/format";
 import type { MarketplaceAvailabilityResult } from "@/lib/marketplace";
-import { primaryButtonClass } from "@/lib/ui";
+import { primaryButtonClass, secondaryButtonClass } from "@/lib/ui";
 
 export function AvailabilityResults({
   results,
@@ -10,9 +11,14 @@ export function AvailabilityResults({
 }) {
   if (results.length === 0) {
     return (
-      <p className="text-sm text-zinc-600">
-        No staff availability matches these filters. Try another day or time.
-      </p>
+      <EmptyState
+        title="No staff availability matches these filters"
+        description="Try another day or time, or browse salons without a date."
+      >
+        <Link href="/" className={secondaryButtonClass}>
+          Browse salons
+        </Link>
+      </EmptyState>
     );
   }
 
@@ -30,10 +36,12 @@ export function AvailabilityResults({
         return (
           <li key={key}>
             <article
-              className="flex h-full flex-col rounded-lg border border-zinc-200 bg-white p-4"
+              className="flex h-full flex-col rounded-xl border border-zinc-200 bg-white p-4 transition hover:border-zinc-300 hover:shadow-sm"
               data-testid="availability-result"
             >
-              <h2 className="font-medium text-zinc-900">{result.service.name}</h2>
+              <h2 className="text-lg font-semibold tracking-tight text-zinc-900">
+                {result.service.name}
+              </h2>
               <p className="mt-1 text-sm text-zinc-600">
                 {result.organization.name}
                 {result.location.area ? ` · ${result.location.area}` : ""}
@@ -41,14 +49,14 @@ export function AvailabilityResults({
               <p className="mt-1 text-sm text-zinc-600">
                 {result.staff.name} · {result.location.name}
               </p>
-              <p className="mt-1 text-sm text-zinc-900">
+              <p className="mt-2 text-sm font-medium text-zinc-900">
                 {formatDay(result.startsAt)} · {formatTime(result.startsAt)} ·{" "}
                 {formatPrice(result.priceCents)}
               </p>
               <div className="mt-4">
                 <Link
                   href={`/s/${result.organization.slug}/book?${params.toString()}`}
-                  className={primaryButtonClass}
+                  className={`${primaryButtonClass} w-full sm:w-auto`}
                   data-testid="book-availability"
                 >
                   Book

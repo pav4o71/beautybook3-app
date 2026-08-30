@@ -8,6 +8,7 @@ import {
   searchMarketplaceAvailability,
 } from "@/lib/marketplace";
 import { parseSalonIsoDate, parseSalonTime, salonIsoDate } from "@/lib/timezone";
+import { pageMainClass } from "@/lib/ui";
 import { AvailabilityResults } from "./search/availability-results";
 import { BusinessResults } from "./search/business-results";
 import { SearchFilters } from "./search/search-filters";
@@ -61,60 +62,62 @@ export default async function Home({
   return (
     <>
       <SiteHeader />
-      <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-10">
-      <div className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">Search</h1>
-        <p className="text-sm text-zinc-600">
-          Pick a category and service, then choose a salon. Add a day to see real staff
-          availability.
-        </p>
-      </div>
+      <main className={pageMainClass}>
+        <div className="space-y-2">
+          <h1 className="text-3xl font-semibold tracking-tight text-zinc-900">
+            Find a salon
+          </h1>
+          <p className="max-w-xl text-sm text-zinc-600">
+            Browse hair and nail salons in Manila. Pick a service, then book a slot — pay
+            at the salon when you arrive.
+          </p>
+        </div>
 
-      <SearchFilters
-        categories={categories}
-        services={serviceChips}
-        activeSlug={activeCategory?.slug}
-        activeService={serviceName}
-        serviceId={serviceId}
-        area={area}
-        date={date ? salonIsoDate(date) : undefined}
-        time={time}
-        minDate={minDate}
-      />
+        <SearchFilters
+          categories={categories}
+          services={serviceChips}
+          activeSlug={activeCategory?.slug}
+          activeService={serviceName}
+          serviceId={serviceId}
+          area={area}
+          date={date ? salonIsoDate(date) : undefined}
+          time={time}
+          minDate={minDate}
+        />
 
-      {activeCategory ? (
-        <p className="text-sm text-zinc-600">
-          Showing <span className="font-medium">{activeCategory.name}</span>{" "}
-          {date ? "availability" : "salons"}
-          {serviceName ? (
-            <>
-              {" "}
-              for <span className="font-medium">{serviceName}</span>
-            </>
-          ) : null}
-          {area ? (
-            <>
-              {" "}
-              in <span className="font-medium">{area}</span>
-            </>
-          ) : null}
-        </p>
-      ) : null}
+        {activeCategory ? (
+          <p className="text-sm text-zinc-600">
+            Showing <span className="font-medium text-zinc-900">{activeCategory.name}</span>{" "}
+            {date ? "availability" : "salons"}
+            {serviceName ? (
+              <>
+                {" "}
+                for <span className="font-medium text-zinc-900">{serviceName}</span>
+              </>
+            ) : null}
+            {area ? (
+              <>
+                {" "}
+                in <span className="font-medium text-zinc-900">{area}</span>
+              </>
+            ) : null}
+          </p>
+        ) : null}
 
-      {date ? (
-        <section className="space-y-3">
-          <h2 className="text-lg font-semibold tracking-tight text-zinc-900">
-            Available times
-          </h2>
-          <AvailabilityResults results={availability} />
-        </section>
-      ) : (
-        <section className="space-y-3">
-          <h2 className="text-lg font-semibold tracking-tight text-zinc-900">Salons</h2>
-          <BusinessResults listings={listings} serviceName={serviceName} />
-        </section>
-      )}
-    </main>
+        {date ? (
+          <section className="space-y-3">
+            <h2 className="text-lg font-semibold tracking-tight text-zinc-900">
+              Available times
+            </h2>
+            <AvailabilityResults results={availability} />
+          </section>
+        ) : (
+          <section className="space-y-3">
+            <h2 className="text-lg font-semibold tracking-tight text-zinc-900">Salons</h2>
+            <BusinessResults listings={listings} serviceName={serviceName} />
+          </section>
+        )}
+      </main>
     </>
   );
 }

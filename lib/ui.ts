@@ -5,14 +5,17 @@ export const labelClass = "block space-y-1.5 text-sm";
 
 export const labelTextClass = "font-medium text-zinc-900";
 
+export const pageMainClass =
+  "mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-8 sm:py-10";
+
 export const primaryButtonClass =
-  "rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700 disabled:opacity-60";
+  "inline-flex items-center justify-center rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700 disabled:opacity-60";
 
 export const secondaryButtonClass =
-  "rounded-md border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-900 hover:bg-zinc-50 disabled:opacity-60";
+  "inline-flex items-center justify-center rounded-md border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-900 hover:bg-zinc-50 disabled:opacity-60";
 
 export const dangerButtonClass =
-  "rounded-md border border-red-300 bg-white px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-50 disabled:opacity-60";
+  "inline-flex items-center justify-center rounded-md border border-red-300 bg-white px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-50 disabled:opacity-60";
 
 export const cardButtonClass =
   "w-full rounded-lg border border-zinc-300 bg-white px-4 py-3 text-left text-sm text-zinc-900 transition hover:border-zinc-400";
@@ -27,6 +30,21 @@ export const successAlertClass =
   "rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900";
 
 export const slotButtonClass =
-  "rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-sm text-zinc-900 hover:bg-zinc-100 disabled:opacity-50";
+  "inline-flex min-h-10 min-w-16 items-center justify-center rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 hover:bg-zinc-100 disabled:opacity-50";
 
 export const checkboxClass = "size-4 rounded border-zinc-300 text-zinc-900";
+
+export const chipClass =
+  "inline-flex shrink-0 items-center rounded-full border border-zinc-300 bg-white px-3 py-1.5 text-sm text-zinc-700 hover:bg-zinc-50";
+
+export const chipActiveClass =
+  "inline-flex shrink-0 items-center rounded-full bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white";
+
+export const emptyStateClass =
+  "rounded-lg border border-dashed border-zinc-300 bg-zinc-50 px-4 py-10 text-center text-sm text-zinc-600";
+
+export const navChipClass =
+  "inline-flex shrink-0 items-center whitespace-nowrap rounded-full px-3 py-1.5 text-sm text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900";
+
+export const navChipActiveClass =
+  "inline-flex shrink-0 items-center whitespace-nowrap rounded-full bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white";

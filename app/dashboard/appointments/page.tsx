@@ -1,7 +1,10 @@
 import { appointmentPayCopy, statusBadgeClass, statusLabel } from "@/lib/appointment-status";
+import { EmptyState } from "@/components/empty-state";
 import { getCustomerAppointments } from "@/lib/appointments";
 import { formatDay, formatTime } from "@/lib/format";
 import { requireActiveOrgContext } from "@/lib/require-org";
+import { pageMainClass, primaryButtonClass } from "@/lib/ui";
+import Link from "next/link";
 
 export default async function AppointmentsPage({
   searchParams,
@@ -14,25 +17,34 @@ export default async function AppointmentsPage({
   const appointments = await getCustomerAppointments(organizationId, session.user.id);
 
   return (
-    <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-10">
-      <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">
-        Appointments
-      </h1>
-      <p className="mt-1 text-sm text-zinc-600">
-        Upcoming and recent bookings. Pay at the salon when you arrive.
-      </p>
+    <main className={pageMainClass}>
+      <div className="space-y-1">
+        <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">
+          Appointments
+        </h1>
+        <p className="text-sm text-zinc-600">
+          Upcoming and recent bookings. Pay at the salon when you arrive.
+        </p>
+      </div>
 
       {params.booked === "1" ? (
-        <p className="mt-4 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900">
+        <p className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900">
           Booked! Pay at the salon when you arrive.
         </p>
       ) : null}
 
-      <div className="mt-6 space-y-4">
-        {appointments.length === 0 ? (
-          <p className="text-sm text-zinc-600">No upcoming or recent appointments.</p>
-        ) : (
-          appointments.map((appointment) => {
+      {appointments.length === 0 ? (
+        <EmptyState
+          title="No upcoming or recent appointments"
+          description="Book a service to see it here."
+        >
+          <Link href="/dashboard/book" className={primaryButtonClass}>
+            Book
+          </Link>
+        </EmptyState>
+      ) : (
+        <div className="space-y-4">
+          {appointments.map((appointment) => {
             const totalCents = appointment.services.reduce(
               (sum, row) => sum + row.priceCents,
               0,
@@ -45,7 +57,7 @@ export default async function AppointmentsPage({
             return (
               <article
                 key={appointment.id}
-                className="rounded-lg border border-zinc-200 bg-white p-4"
+                className="rounded-xl border border-zinc-200 bg-white p-4"
               >
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="space-y-1">
@@ -67,9 +79,9 @@ export default async function AppointmentsPage({
                 ) : null}
               </article>
             );
-          })
-        )}
-      </div>
+          })}
+        </div>
+      )}
     </main>
   );
 }
