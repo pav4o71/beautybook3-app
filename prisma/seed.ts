@@ -60,13 +60,17 @@ async function seedOrganization(): Promise<TenantContext> {
         organizationId: org.id,
         name: "Main location",
         address: "Makati City, Metro Manila",
+        area: "Makati",
         isDefault: true,
       },
     });
-  } else if (!location.address) {
+  } else if (!location.address || location.area !== "Makati") {
     location = await prisma.location.update({
       where: { id: location.id },
-      data: { address: "Makati City, Metro Manila" },
+      data: {
+        address: location.address ?? "Makati City, Metro Manila",
+        area: "Makati",
+      },
     });
   }
 

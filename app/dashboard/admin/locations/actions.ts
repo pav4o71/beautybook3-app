@@ -28,6 +28,7 @@ export async function createLocationAction(
   const parsed = createLocationSchema.safeParse({
     name: formData.get("name"),
     address: String(formData.get("address") ?? "").trim() || undefined,
+    area: String(formData.get("area") ?? "").trim() || null,
     timezone: formData.get("timezone") || "Asia/Manila",
     isDefault: parseBooleanCheckbox(formData.get("isDefault")),
   });
@@ -60,6 +61,7 @@ export async function updateLocationAction(
   const parsed = updateLocationSchema.safeParse({
     name: formData.get("name"),
     address: String(formData.get("address") ?? "").trim() || undefined,
+    area: String(formData.get("area") ?? "").trim() || null,
     timezone: formData.get("timezone") || "Asia/Manila",
     active: parseBooleanCheckbox(formData.get("active")),
     isDefault: parseBooleanCheckbox(formData.get("isDefault")),

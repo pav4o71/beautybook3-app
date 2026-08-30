@@ -7,6 +7,7 @@ const root = path.resolve(import.meta.dirname, "../..");
 const scripts = [
   "format.ts",
   "seed-counts.ts",
+  "areas.ts",
   "org-scope.ts",
   "slots.ts",
   "booking.ts",

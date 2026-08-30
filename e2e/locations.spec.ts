@@ -27,12 +27,14 @@ test.describe("locations admin", () => {
 
     await page.locator('input[name="name"]').fill(branchName);
     await page.locator('input[name="address"]').fill(branchAddress);
+    await page.locator('select[name="area"]').selectOption("Quezon City");
     await page.getByRole("button", { name: "Create location" }).click();
 
     await page.waitForURL("/dashboard/admin/locations");
     const row = page.locator("li").filter({ hasText: branchName });
     await expect(row).toBeVisible();
     await expect(row.getByText(branchAddress)).toBeVisible();
+    await expect(row.getByText("Quezon City")).toBeVisible();
   });
 
   test("admin can reassign staff to another location", async ({ page }) => {

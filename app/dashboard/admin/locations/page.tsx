@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { MANILA_AREAS } from "@/lib/areas";
 import { listLocations } from "@/lib/locations";
 import { requireActiveOrgAdmin } from "@/lib/require-org";
 import {
@@ -58,6 +59,17 @@ export default async function AdminLocationsPage() {
             />
           </label>
           <label className={labelClass}>
+            <span className={labelTextClass}>Area</span>
+            <select name="area" defaultValue="" className={controlClass}>
+              <option value="">Select area</option>
+              {MANILA_AREAS.map((area) => (
+                <option key={area} value={area}>
+                  {area}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className={labelClass}>
             <span className={labelTextClass}>Timezone</span>
             <select name="timezone" defaultValue="Asia/Manila" className={controlClass}>
               <option value="Asia/Manila">Asia/Manila (Philippines)</option>
@@ -100,6 +112,7 @@ export default async function AdminLocationsPage() {
                 </p>
                 <p className="text-sm text-zinc-600">
                   {location.address ?? "No address"}
+                  {location.area ? ` · ${location.area}` : ""}
                   {" · "}
                   {location.timezone}
                 </p>

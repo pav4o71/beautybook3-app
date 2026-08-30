@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { MANILA_AREAS } from "@/lib/areas";
 import { getLocationById } from "@/lib/locations";
 import { requireActiveOrgAdmin } from "@/lib/require-org";
 import {
@@ -60,6 +61,22 @@ export default async function EditLocationPage({
             defaultValue={location.address ?? ""}
             className={controlClass}
           />
+        </label>
+
+        <label className={labelClass}>
+          <span className={labelTextClass}>Area</span>
+          <select
+            name="area"
+            defaultValue={location.area ?? ""}
+            className={controlClass}
+          >
+            <option value="">Select area</option>
+            {MANILA_AREAS.map((area) => (
+              <option key={area} value={area}>
+                {area}
+              </option>
+            ))}
+          </select>
         </label>
 
         <label className={labelClass}>

@@ -154,6 +154,7 @@ model Location {
   isDefault      Boolean  @default(false)
   timezone       String   @default("Asia/Manila")
   address        String?
+  area           String?
   active         Boolean  @default(true)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
@@ -165,6 +166,7 @@ model Location {
   appointments Appointment[]
 
   @@index([organizationId])
+  @@index([area])
 }
 
 model Staff {
