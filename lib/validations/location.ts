@@ -1,0 +1,20 @@
+import { z } from "zod";
+
+export const createLocationSchema = z.object({
+  name: z.string().trim().min(1, "Location name is required."),
+  address: z.string().trim().optional(),
+  timezone: z.string().trim().min(1, "Timezone is required."),
+  isDefault: z.boolean().optional(),
+});
+
+export const updateLocationSchema = z.object({
+  name: z.string().trim().min(1, "Location name is required."),
+  address: z.string().trim().optional(),
+  timezone: z.string().trim().min(1, "Timezone is required."),
+  active: z.boolean(),
+  isDefault: z.boolean(),
+});
+
+export function formatZodError(error: z.ZodError) {
+  return error.issues[0]?.message ?? "Invalid input.";
+}
