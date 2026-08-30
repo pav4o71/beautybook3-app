@@ -18,6 +18,8 @@ See also: [`docs/saas-upgrade-progress.md`](./saas-upgrade-progress.md), [`docs/
 
 ## Phase 2 — Multi-location & marketplace depth
 
+**Plan:** [`docs/saas-phase-2-plan.md`](./saas-phase-2-plan.md) (awaiting approval)
+
 | Item | Why | Notes |
 |------|-----|-------|
 | Multiple locations per org | Real salons have branches | UI to add/switch locations; booking picks location |
@@ -29,9 +31,9 @@ See also: [`docs/saas-upgrade-progress.md`](./saas-upgrade-progress.md), [`docs/
 
 | Item | Why | Notes |
 |------|-----|-------|
-| Apply migrations B/C on hosted DB | Pooler DDL failed on FK/index | Follow [`docs/supabase-migration-runbook.md`](./supabase-migration-runbook.md) |
-| Point staging `DATABASE_URL` at Supabase | Match production | Session pooler URI per `AGENTS.md` |
-| `VERIFY_ALLOW_REMOTE=1` on staging | Safe verify against hosted DB | Never on production without care |
+| Apply migrations B/C on hosted DB | Pooler DDL failed on FK/index | **Done** — see [`docs/supabase-migration-runbook.md`](./supabase-migration-runbook.md) |
+| Point staging `DATABASE_URL` at Supabase | Match production | `.env` already uses pooler; smoke-tested 2026-08-30 |
+| `VERIFY_ALLOW_REMOTE=1` on staging | Safe verify against hosted DB | **Done** — verify passed on hosted |
 
 ## Phase 4 — Billing (deferred)
 

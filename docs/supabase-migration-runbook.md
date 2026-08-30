@@ -7,8 +7,28 @@ Use this when `npx prisma migrate deploy` fails on the **session pooler** with e
 | Migration | Local Postgres | Hosted Supabase |
 |-----------|----------------|-----------------|
 | `20260830100000_add_tenancy_tables` | Applied | Applied |
-| `20260830100100_add_tenant_fks_nullable` | Applied | **Failed** (pooler DDL) |
-| `20260830100200_backfill_tenant_data` | Applied | Not applied |
+| `20260830100100_add_tenant_fks_nullable` | Applied | Applied (via MCP SQL editor) |
+| `20260830100200_backfill_tenant_data` | Applied | Applied (via MCP SQL editor) |
+
+## Mixed table ownership (Supabase pitfall)
+
+If migration A ran via **pooler** (`beautybook_prisma`), tenancy tables (`Organization`, `Location`, `OrganizationMember`) are owned by `beautybook_prisma`, while legacy tables are owned by `postgres`. Cross-table FK migrations then fail with `permission denied for table Organization`.
+
+**Fix before applying B/C via SQL editor (as `postgres`):**
+
+```sql
+-- Run as beautybook_prisma (pooler / prisma db execute):
+GRANT REFERENCES ON TABLE "Organization" TO postgres;
+GRANT REFERENCES ON TABLE "Location" TO postgres;
+GRANT ALL ON TABLE "Organization" TO postgres;
+GRANT ALL ON TABLE "Location" TO postgres;
+GRANT ALL ON TABLE "OrganizationMember" TO postgres;
+GRANT USAGE ON TYPE "OrgRole" TO postgres;
+```
+
+Then apply migrations B and C via Supabase MCP `apply_migration` or SQL editor, and `prisma migrate resolve --applied` for each.
+
+**Prevention (conn-pooling best practice):** run all Prisma DDL via **direct** `postgres` connection (`db.*.supabase.co:5432`), not the session pooler role, so one owner owns all tables.
 
 ## Prerequisites
 
