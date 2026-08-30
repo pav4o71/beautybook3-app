@@ -59,7 +59,7 @@ See also: [`docs/saas-upgrade-progress.md`](./saas-upgrade-progress.md), [`docs/
 - [ ] Rate-limit tuning per route in production
 - [ ] Staff edit: preserve inactive location in picker (Bugbot follow-up from #9)
 
-## Phase 6 — Search-first marketplace UI (next)
+## Phase 6 — Search-first marketplace UI — **complete**
 
 **Plan:** [`docs/saas-phase-6-plan.md`](./saas-phase-6-plan.md)
 
@@ -70,7 +70,9 @@ See also: [`docs/saas-upgrade-progress.md`](./saas-upgrade-progress.md), [`docs/
 | #12 | `Location.area` migration + `lib/areas.ts` + admin | Merged |
 | #13 | Landing search + `/search` service discovery | Merged |
 | #14 | Cross-org availability search + book deep-links | Merged |
-| #15 | Visual polish + E2E updates | In progress |
+| #15 | Visual polish + E2E updates | Merged |
+
+E2E: **27** Playwright tests (`e2e/search.spec.ts`, `e2e/search-availability.spec.ts`, plus existing admin/auth/booking/isolation).
 
 **One schema change:** `Location.area` (required for area filter). Everything else is UI + `lib/marketplace` queries.
 

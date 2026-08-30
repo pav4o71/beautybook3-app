@@ -1,6 +1,6 @@
 # Phase 6 — Search-first marketplace UI
 
-**Status:** In progress  
+**Status:** Complete (PRs [#12](https://github.com/pav4o71/beautybook3-app/pull/12)–[#15](https://github.com/pav4o71/beautybook3-app/pull/15))  
 **Base:** `main` after Phase 5 (PRs #7–#11)  
 **Goal:** Replace salon-first browsing with **service-first discovery**: category → services → area → day/time → available salons → book.
 
@@ -192,6 +192,6 @@ Categories (cross-org slugs): `hair`, `nails` (already in seed).
 - [x] Area filter shows only salons/branches in that area
 - [x] Date + time filter shows only offerings with **real** staff availability
 - [x] “Book” lands on `/s/{slug}/book` with service/location/staff/slot prefilled
-- [ ] `npm run build`, `npm run verify`, `npm run test:e2e` pass in CI
-- [ ] No org data leaks; unpublished salons hidden
+- [x] `npm run build`, `npm run verify`, `npm run test:e2e` pass in CI
+- [x] No org data leaks; unpublished salons hidden
 - [x] Admin can set location `area` when creating/editing branches
