@@ -1,136 +1,410 @@
 ---
-description: BeautyBook3 SaaS Platform - Multi-Tenant Booking System
+description: BeautyBook3 SaaS - Multi-Tenant Platform Rules
 globs: **/*
+alwaysApply: true
 ---
 
 ## Project Overview
-BeautyBook3 is a multi-tenant SaaS platform for appointment booking in Manila, Philippines.
-Multiple businesses (tenants) can list their services, and customers can book appointments
-through a unified marketplace.
 
-**User Flow:** Category → Service → Date/Time → Available Businesses (with prices & locations)
+BeautyBook3 is evolving from a single-salon MVP to a multi-tenant SaaS platform.
+Multiple beauty salons (organizations) can manage their services, staff, and appointments
+while customers can browse and book across all salons in Manila.
+
+**Current Phase:** Single-salon MVP → Multi-tenant SaaS migration
+**Stack:** Next.js 16, React 19, Prisma 7, Better Auth, Tailwind v4, Supabase Postgres
+
+---
 
 ## Core Principles
 
-### 1. Multi-Tenancy & Data Isolation
-- Every query MUST filter by tenantId unless explicitly public
-- Tenant isolation is critical - NEVER leak data between tenants
-- Use `requireTenantAuth()` middleware for all tenant routes
-- Always validate tenant ownership before any write operation
+### 1. Multi-Tenancy & Data Isolation (CRITICAL)
+
+**Rule:** Every query MUST scope data to the current organization unless explicitly public.
+
+```typescript
+// ✅ CORRECT - Organization-scoped query
+export async function listServices(organizationId: string) {
+  return prisma.service.findMany({
+    where: {
+      organizationId, // ALWAYS filter by organization
+      isActive: true,
+    },
+    include: { category: true }
+  });
+}
+
+// ❌ WRONG - Data leak!
+export async function listServices() {
+  return prisma.service.findMany({ // Missing organizationId filter!
+    where: { isActive: true }
+  });
+}
+```
+
+**Implementation:**
+- Get organizationId from session or middleware header (`x-organization-id`)
+- Use `requireOrgMembership()` to verify user belongs to org
+- Never trust client-provided organizationId without verification
+
+```typescript
+// lib/require-org-membership.ts
+import { getSession } from '@/lib/session';
+import { prisma } from '@/lib/prisma';
+
+export async function requireOrgMembership(organizationId: string) {
+  const session = await getSession();
+  if (!session?.user) throw new Error('Unauthorized');
+  
+  const membership = await prisma.organizationMember.findFirst({
+    where: {
+      userId: session.user.id,
+      organizationId,
+    },
+  });
+  
+  if (!membership) {
+    throw new Error('Access denied to this organization');
+  }
+  
+  return membership;
+}
+```
 
 ### 2. Database Safety
-- ALWAYS use transactions for operations affecting multiple tables
-- NEVER use raw SQL unless absolutely necessary (use Prisma)
-- ALWAYS validate input with Zod schemas before database operations
-- Use soft deletes where appropriate (isDeleted flags)
-- Run migrations in development before production
 
-### 3. API Design Standards
-- Public routes: `/api/public/*` - no auth required (booking flow)
-- Tenant routes: `/api/tenant/*` - requires tenant auth (business dashboard)
-- Admin routes: `/api/admin/*` - requires admin auth (platform management)
-- All responses MUST follow standard format: `{ success: boolean, data?: T, error?: string }`
-- Use proper HTTP status codes (200, 201, 400, 401, 403, 404, 500)
+**Prisma Usage:**
+- Use single Prisma client from `@/lib/prisma` (singleton pattern)
+- NEVER use raw SQL unless absolutely necessary
+- ALWAYS use transactions for multi-table operations
+- Add indexes on all foreign keys and filter columns
 
-### 4. Frontend Architecture (Next.js)
-- Use Server Components by default (app router)
+```typescript
+// ✅ CORRECT - Transaction for atomic operation
+export async function createAppointmentWithServices(data: CreateAppointmentData) {
+  return prisma.$transaction(async (tx) => {
+    const appointment = await tx.appointment.create({
+      data: {
+        organizationId: data.organizationId,
+        customerId: data.customerId,
+        scheduledAt: data.scheduledAt,
+        status: 'PENDING',
+      }
+    });
+    
+    await tx.appointmentService.createMany({
+      data: data.services.map(service => ({
+        appointmentId: appointment.id,
+        serviceId: service.serviceId,
+        price: service.price,
+      }))
+    });
+    
+    return appointment;
+  });
+}
+```
+
+**Migrations:**
+- Run `npm run prisma:migrate:dev` for development
+- Test migrations on staging before production
+- Never modify committed migration files
+- Use `npm run prisma:migrate` for production deployment
+
+### 3. Server Actions & API Design
+
+**Server Actions:**
+- Use server actions for all mutations (not API routes)
+- Validate input with FormData parsers
+- Always verify organization membership
+- Use `revalidatePath()` after mutations
+
+```typescript
+// app/dashboard/services/actions.ts
+'use server';
+
+import { getSession } from '@/lib/session';
+import { prisma } from '@/lib/prisma';
+import { revalidatePath } from 'next/cache';
+
+export async function createServiceAction(formData: FormData) {
+  const session = await getSession();
+  if (!session?.user) throw new Error('Unauthorized');
+  
+  const organizationId = formData.get('organizationId') as string;
+  
+  // Verify membership
+  await requireOrgMembership(organizationId);
+  
+  const name = formData.get('name') as string;
+  const priceCents = parseInt(formData.get('priceCents') as string);
+  
+  // Validate
+  if (!name || priceCents <= 0) {
+    throw new Error('Invalid service data');
+  }
+  
+  // Create
+  await prisma.service.create({
+    data: {
+      organizationId,
+      name,
+      priceCents,
+    }
+  });
+  
+  revalidatePath(`/dashboard/org/${organizationId}/services`);
+}
+```
+
+**API Routes:**
+- Only use for external integrations (Stripe webhooks, public API)
+- Return standard format: `{ success: boolean, data?: T, error?: string }`
+- Add rate limiting on public endpoints
+
+### 4. Component Architecture
+
+**Server Components Default:**
+- Use Server Components by default (no `"use client"`)
 - Client Components only for interactivity (useState, useEffect, onClick)
-- Implement proper loading states with Suspense and loading.tsx
-- Use optimistic updates for better UX (tanstack query)
-- Mobile-first responsive design
+- Colocate components with routes (no root `components/` folder)
 
-### 5. Error Handling & Logging
-- Wrap all async operations in try-catch
-- Log errors with context (tenantId, userId, operation, timestamp)
-- Return user-friendly error messages (never expose stack traces)
-- Use custom error classes for different error types
-- Implement proper error boundaries in React
-
-### 6. Security Best Practices
-- Validate ALL user input (Zod schemas)
-- Sanitize HTML content (DOMPurify if needed)
-- Use parameterized queries (Prisma handles this)
-- Implement rate limiting on public APIs (express-rate-limit)
-- Never expose sensitive data in client bundles
-- Use environment variables for secrets
-- Implement CSRF protection for forms
-
-## File Naming Conventions
-- Components: `PascalCase.tsx` (e.g., `ServiceCard.tsx`, `BookingForm.tsx`)
-- Utilities: `camelCase.ts` (e.g., `formatDate.ts`, `validateEmail.ts`)
-- API routes: folder structure matches URL path (`/api/public/categories/route.ts`)
-- Prisma models: `PascalCase` in schema, camelCase in code
-- Types: `PascalCase.ts` (e.g., `ServiceTypes.ts`, `BookingTypes.ts`)
-
-## Code Quality Standards
-- TypeScript strict mode enabled (no implicit any)
-- No `any` types - use proper type definitions or `unknown`
-- ESLint rules must pass before commit
-- All functions must have explicit return type annotations
-- Use `const` over `let` where possible
-- Prefer arrow functions for consistency
-- Use template literals over string concatenation
-
-## Testing Requirements
-- Write tests for critical business logic (vitest/jest)
-- E2E tests for booking flow (Playwright)
-- Integration tests for API routes
-- Test tenant isolation explicitly
-- Minimum 80% coverage for core modules
-
-## Performance Guidelines
-- Database queries should complete in <100ms
-- API responses should complete in <200ms
-- Implement caching for frequently accessed data (Redis)
-- Use database indexes on foreign keys and filter columns
-- Lazy load images and components
-- Implement pagination for large lists
-
-## Manila-Specific Considerations
-- Currency: PHP (₱) - use `Intl.NumberFormat('en-PH')`
-- Date format: "MMM DD, YYYY" (e.g., "Aug 30, 2026")
-- Time format: 12-hour with AM/PM (e.g., "9:00 AM")
-- Areas: Makati, BGC, Quezon City, Mandaluyong, Pasig, Ortigas, Alabang, Parañ±³³e, etc.
-- Language: English (primary), Tagalog support optional
-
-## Common Patterns
-
-### Tenant Query Pattern
 ```typescript
-const services = await db.service.findMany({
-  where: {
-    tenantId: authContext.tenantId, // ALWAYS filter by tenant
-    isActive: true,
-  },
-});
+// ✅ CORRECT - Server Component
+export default async function ServicesPage() {
+  const session = await getSession();
+  const services = await listServices(session.organizationId);
+  
+  return (
+    <div>
+      <h1>Services</h1>
+      <ServiceList services={services} />
+    </div>
+  );
+}
+
+// app/dashboard/services/service-list.tsx
+'use client'; // Only this file is client
+
+export function ServiceList({ services }) {
+  const [selected, setSelected] = useState(null);
+  
+  return (
+    <ul>
+      {services.map(service => (
+        <li key={service.id} onClick={() => setSelected(service)}>
+          {service.name}
+        </li>
+      ))}
+    </ul>
+  );
+}
 ```
 
-### Transaction Pattern
-```typescript
-await db.$transaction(async (tx) => {
-  await tx.appointment.create({ data: {...} });
-  await tx.timeSlot.update({ where: {...}, data: { isAvailable: false } });
-});
-```
+**Styling:**
+- Use Tailwind CSS v4 only
+- Reuse utility classes from `@/lib/ui.ts`
+- No CSS modules or styled-components
 
-### API Response Pattern
+### 5. Error Handling
+
+**Server Actions:**
 ```typescript
-export async function GET(req: NextRequest) {
+export async function updateServiceAction(formData: FormData) {
   try {
-    const data = await someOperation();
-    return NextResponse.json({ success: true, data });
+    const session = await getSession();
+    if (!session?.user) {
+      return { error: 'Unauthorized' };
+    }
+    
+    // ... operation
+    
+    return { success: true };
   } catch (error) {
-    console.error('Operation failed:', error);
-    return NextResponse.json(
-      { success: false, error: 'Failed to fetch data' },
-      { status: 500 }
-    );
+    console.error('Failed to update service:', error);
+    return { error: 'Failed to update service' };
   }
 }
 ```
 
+**Client-Side:**
+```typescript
+'use client';
+
+export function ServiceForm() {
+  const [error, setError] = useState<string | null>(null);
+  
+  const handleSubmit = async (formData: FormData) => {
+    const result = await updateServiceAction(formData);
+    
+    if (result.error) {
+      setError(result.error);
+    } else {
+      // Success
+    }
+  };
+  
+  return (
+    <form action={handleSubmit}>
+      {error && <div className="error-alert">{error}</div>}
+      {/* fields */}
+    </form>
+  );
+}
+```
+
+### 6. Security
+
+**Input Validation:**
+- Parse and validate all FormData in server actions
+- Use `parseRequiredString()`, `parsePesoToCentavos()` from `@/lib/catalog.ts`
+- Never trust client input
+
+**Rate Limiting:**
+- Add rate limiting to `/api/auth/*` endpoints
+- Use `rate-limiter-flexible` package
+- Limit: 5 attempts per minute per IP
+
+**Security Headers:**
+- Configure in `next.config.ts`
+- Include: X-Frame-Options, X-Content-Type-Options, CSP
+
+**Auth:**
+- Use Better Auth for all authentication
+- Sessions stored in `Session` table
+- Passwords in `Account.password` (hashed)
+
+### 7. Testing
+
+**E2E Tests (Playwright):**
+- Test multi-tenant flows
+- Verify organization isolation
+- Run with `npm run test:e2e`
+
+**Verify Scripts:**
+- Use `npm run verify` for integration tests
+- Scripts in `scripts/verify/`
+- Guard with `VERIFY_ALLOW_REMOTE=1` for hosted DB
+
+**Test Coverage:**
+- Minimum 80% for new features
+- Critical paths: booking, auth, organization management
+
+### 8. Performance
+
+**Caching:**
+- Use `unstable_cache` for catalog queries
+- Revalidate on mutations with `revalidatePath()`
+- Cache duration: 1 hour for catalogs, 5 min for availability
+
+**Pagination:**
+- Paginate appointment lists (20 per page)
+- Use `skip` and `take` in Prisma
+- Show total count and page numbers
+
+**Database:**
+- Add indexes on `organizationId`, `scheduledAt`, `status`
+- Use `Promise.all()` for parallel queries
+- Avoid N+1 queries with proper `include`
+
+### 9. Manila-Specific
+
+**Timezone:**
+- Default: `Asia/Manila` (UTC+8)
+- Use `@/lib/timezone.ts` helpers
+- Store all times in UTC, display in Manila time
+
+**Currency:**
+- Default: `PHP` (₱)
+- Store as `priceCents` (integer)
+- Format with `formatPeso()` from `@/lib/format.ts`
+
+**Areas:**
+- Use `MANILA_AREAS` from `@/lib/areas.ts`
+- Filter by area in marketplace queries
+- Calculate distances for sorting
+
+### 10. Code Quality
+
+**TypeScript:**
+- Strict mode enabled
+- No `any` types
+- Explicit return types on functions
+
+**ESLint:**
+- Follow `eslint-config-next` rules
+- No disabled rules
+
+**Naming:**
+- Server actions: `*Action` suffix
+- Components: PascalCase
+- Utilities: camelCase
+
+**Comments:**
+- Minimal inline comments
+- JSDoc for public functions
+- TODO with issue reference
+
+---
+
+## Common Patterns
+
+### Organization Query Pattern
+```typescript
+const session = await getSession();
+const membership = await prisma.organizationMember.findFirst({
+  where: { userId: session.user.id, organizationId }
+});
+if (!membership) throw new Error('Unauthorized');
+
+const services = await prisma.service.findMany({
+  where: { organizationId }
+});
+```
+
+### Public Marketplace Query
+```typescript
+const services = await prisma.service.findMany({
+  where: {
+    organization: {
+      isActive: true,
+      settings: { bookingEnabled: true }
+    },
+    category: { slug: categorySlug }
+  },
+  include: {
+    organization: {
+      include: { settings: true }
+    }
+  }
+});
+```
+
+### Appointment Creation
+```typescript
+const appointment = await prisma.appointment.create({
+  data: {
+    organizationId,
+    customerId,
+    scheduledAt,
+    startTime,
+    endTime,
+    status: 'PENDING',
+    services: {
+      create: services.map(s => ({
+        serviceId: s.serviceId,
+        price: s.price,
+      }))
+    }
+  }
+});
+```
+
+---
+
 ## When in Doubt
-1. Check existing code for patterns
-2. Ask before making breaking changes
-3. Test thoroughly before deploying
-4. Document any new patterns or conventions
+
+1. Check existing code in `lib/` for patterns
+2. Review `.cursor/rules/beautybook3-saas.mdc` (this file)
+3. Ask before making breaking changes
+4. Test organization isolation explicitly
+5. Run `npm run verify` before committing
