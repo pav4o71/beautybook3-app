@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 400" role="img" aria-label="BeautyBook Demo Salon">
+  <rect width="800" height="400" fill="#18181b"/>
+  <rect x="48" y="48" width="704" height="304" fill="none" stroke="#fafafa" stroke-width="2"/>
+  <text x="400" y="190" text-anchor="middle" fill="#fafafa" font-family="Georgia, serif" font-size="36">BeautyBook Demo Salon</text>
+  <text x="400" y="236" text-anchor="middle" fill="#a1a1aa" font-family="system-ui, sans-serif" font-size="18">Makati · BGC</text>
+</svg>

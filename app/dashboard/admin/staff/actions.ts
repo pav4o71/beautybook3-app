@@ -20,6 +20,7 @@ function revalidateStaffPaths() {
   revalidatePath("/dashboard/admin/staff");
   revalidatePath("/dashboard/staff");
   revalidatePath("/dashboard/book");
+  revalidatePath("/");
   revalidatePath("/marketplace");
   revalidatePath("/search");
 }

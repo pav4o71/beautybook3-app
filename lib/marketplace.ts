@@ -12,6 +12,7 @@ export type MarketplaceListing = {
   id: string;
   name: string;
   slug: string;
+  coverImageUrl: string | null;
   locations: {
     id: string;
     name: string;
@@ -82,34 +83,47 @@ export async function listMarketplaceCategoryFilters(): Promise<
   );
 }
 
-export async function listMarketplaceOrganizations(
-  categorySlug?: string,
-): Promise<MarketplaceListing[]> {
+export async function listMarketplaceOrganizations(input: {
+  categorySlug?: string;
+  area?: string;
+  serviceName?: string;
+} = {}): Promise<MarketplaceListing[]> {
+  const area = input.area?.trim() || undefined;
+  const categorySlug = input.categorySlug?.trim() || undefined;
+  const serviceName = input.serviceName?.trim() || undefined;
+  const staffedService = {
+    active: true,
+    ...(serviceName ? { name: serviceName } : {}),
+    ...(categorySlug ? { category: { slug: categorySlug } } : {}),
+    staff: {
+      some: {
+        staff: {
+          active: true,
+          location: {
+            active: true,
+            ...(area ? { area } : {}),
+          },
+        },
+      },
+    },
+  } as const;
+
   const orgs = await prisma.organization.findMany({
     where: {
       published: true,
-      ...(categorySlug
-        ? {
-            services: {
-              some: {
-                active: true,
-                category: { slug: categorySlug },
-              },
-            },
-          }
-        : {}),
+      services: { some: staffedService },
     },
     orderBy: { name: "asc" },
     include: {
       locations: {
-        where: { active: true },
+        where: {
+          active: true,
+          ...(area ? { area } : {}),
+        },
         orderBy: [{ isDefault: "desc" }, { name: "asc" }],
       },
       services: {
-        where: {
-          active: true,
-          ...(categorySlug ? { category: { slug: categorySlug } } : {}),
-        },
+        where: staffedService,
         include: { category: true },
         orderBy: { priceCents: "asc" },
         take: 1,
@@ -122,21 +136,32 @@ export async function listMarketplaceOrganizations(
     },
   });
 
-  return orgs.map((org) => ({
-    id: org.id,
-    name: org.name,
-    slug: org.slug,
-    locations: org.locations,
-    serviceCount: org._count.services,
-    featuredService: org.services[0]
-      ? {
-          id: org.services[0].id,
-          name: org.services[0].name,
-          priceCents: org.services[0].priceCents,
-          categoryName: org.services[0].category.name,
-        }
-      : null,
-  }));
+  return orgs
+    .filter((org) => org.locations.length > 0)
+    .map((org) => ({
+      id: org.id,
+      name: org.name,
+      slug: org.slug,
+      coverImageUrl: org.coverImageUrl,
+      locations: org.locations,
+      serviceCount: org._count.services,
+      featuredService: org.services[0]
+        ? {
+            id: org.services[0].id,
+            name: org.services[0].name,
+            priceCents: org.services[0].priceCents,
+            categoryName: org.services[0].category.name,
+          }
+        : null,
+    }));
+}
+
+export function listMarketplaceServiceChips(
+  services: MarketplaceServiceResult[],
+): { name: string }[] {
+  const names = [...new Set(services.map((service) => service.name))];
+  names.sort((left, right) => left.localeCompare(right));
+  return names.map((name) => ({ name }));
 }
 
 export async function listMarketplaceServices(input: {
@@ -260,6 +285,7 @@ function slotMatchesTime(slot: Date, time?: string) {
 export async function searchMarketplaceAvailability(input: {
   categorySlug?: string;
   serviceId?: string;
+  serviceName?: string;
   area?: string;
   date: Date;
   time?: string;
@@ -267,6 +293,7 @@ export async function searchMarketplaceAvailability(input: {
   const area = input.area?.trim() || undefined;
   const categorySlug = input.categorySlug?.trim() || undefined;
   const serviceId = input.serviceId?.trim() || undefined;
+  const serviceName = input.serviceName?.trim() || undefined;
   const staffInArea = {
     staff: {
       active: true,
@@ -283,6 +310,7 @@ export async function searchMarketplaceAvailability(input: {
       organization: { published: true },
       staff: { some: staffInArea },
       ...(serviceId ? { id: serviceId } : {}),
+      ...(serviceName && !serviceId ? { name: serviceName } : {}),
       ...(categorySlug && !serviceId ? { category: { slug: categorySlug } } : {}),
     },
     include: {

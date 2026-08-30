@@ -16,6 +16,7 @@ function revalidateLocationPaths() {
   revalidatePath("/dashboard/admin/locations");
   revalidatePath("/dashboard/book");
   revalidatePath("/dashboard/staff");
+  revalidatePath("/");
   revalidatePath("/marketplace");
   revalidatePath("/search");
 }

@@ -9,6 +9,7 @@ import {
   DEMO_ORG_SLUG,
   GLOW_ORG_SLUG,
   LUXE_ORG_SLUG,
+  salonCoverPath,
 } from "@/lib/demo-constants";
 import { prisma } from "@/lib/prisma";
 
@@ -50,10 +51,11 @@ async function ensureUser(
 }
 
 async function ensureOrg(slug: string, name: string, published: boolean) {
+  const coverImageUrl = salonCoverPath(slug);
   return prisma.organization.upsert({
     where: { slug },
-    update: { name, published },
-    create: { name, slug, published },
+    update: { name, published, coverImageUrl },
+    create: { name, slug, published, coverImageUrl },
   });
 }
 

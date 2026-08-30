@@ -9,14 +9,14 @@
 ## User journey (target)
 
 ```
-/  (landing)
-  └─ Pick category: Hair | Nails | …
-       └─ /search?category=hair
-            ├─ See all Hair services across Manila salons (name, price, salon, branch area)
-            ├─ Optional: filter by area (Makati, BGC, QC, …)
-            ├─ Optional: pick date + time window
-            └─ Results narrow to salons with real availability
-                 └─ “Book” → /s/{orgSlug}/book?serviceId&locationId&staffId&startsAt
+/  (homepage discovery)
+  ├─ Category chips: Hair | Nails
+  ├─ Service chips in a row (Haircut, Blowout, …)
+  ├─ Salon cards with cover images
+  ├─ Optional: filter by area (Makati, BGC, QC, …)
+  ├─ Optional: pick date + time window
+  └─ Date set → salons with real availability
+       └─ “Book” → /s/{orgSlug}/book?serviceId&locationId&staffId&startsAt
 ```
 
 Logged-in customers can still use `/dashboard/book` (org-scoped demo salon); public flow is the redesign focus.

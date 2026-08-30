@@ -1,6 +1,9 @@
 import "dotenv/config";
 import { GLOW_ORG_SLUG, LUXE_ORG_SLUG } from "../../lib/demo-constants";
-import { listMarketplaceServices } from "../../lib/marketplace";
+import {
+  listMarketplaceOrganizations,
+  listMarketplaceServices,
+} from "../../lib/marketplace";
 import { prisma } from "../../lib/prisma";
 
 function assert(condition: boolean, message: string) {
@@ -49,6 +52,25 @@ async function main() {
     "QC nails search must only return Quezon City locations",
   );
 
+  const hairSalons = await listMarketplaceOrganizations({ categorySlug: "hair" });
+  const hairSalonSlugs = new Set(hairSalons.map((row) => row.slug));
+  assert(hairSalonSlugs.has("beautybook-demo"), "Hair salon list must include demo");
+  assert(hairSalonSlugs.has(LUXE_ORG_SLUG), "Hair salon list must include Luxe");
+  assert(!hairSalonSlugs.has(GLOW_ORG_SLUG), "Hair salon list must exclude Glow");
+  assert(
+    hairSalons.every((row) => Boolean(row.coverImageUrl)),
+    "Published salon cards must include a cover image",
+  );
+
+  const haircutSalons = await listMarketplaceOrganizations({
+    categorySlug: "hair",
+    serviceName: "Haircut",
+  });
+  assert(
+    haircutSalons.every((row) => row.featuredService?.name === "Haircut"),
+    "Haircut chip must feature the Haircut offering",
+  );
+
   const unpublished = await prisma.organization.count({
     where: {
       published: false,
@@ -71,6 +93,8 @@ async function main() {
     hair: hair.length,
     hairMakati: hairMakati.length,
     nailsQc: nailsQc.length,
+    hairSalons: hairSalons.length,
+    haircutSalons: haircutSalons.length,
   });
 }
 

@@ -80,6 +80,12 @@ E2E: **27** Playwright tests (`e2e/search.spec.ts`, `e2e/search-availability.spe
 
 **Gates:** `npm run build`, `npm run verify`, `npm run test:e2e`
 
+## Homepage salon listings (in progress)
+
+**Spec:** [`docs/superpowers/specs/2026-08-30-homepage-salon-listings-design.md`](./superpowers/specs/2026-08-30-homepage-salon-listings-design.md)
+
+`/` is discovery: category chips → service chips → salon cards with `Organization.coverImageUrl`. `/search` and `/marketplace` redirect to `/`. Admin settings accept a cover URL or a disk upload under `public/uploads/orgs/` (not Supabase Storage).
+
 ## Local dev quick start
 
 ```bash

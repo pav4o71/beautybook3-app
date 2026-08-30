@@ -24,6 +24,15 @@ export default async function SalonLandingPage({
         </h1>
       </div>
 
+      {organization.coverImageUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element -- mixed local paths and owner-pasted http(s) URLs
+        <img
+          src={organization.coverImageUrl}
+          alt=""
+          className="h-48 w-full rounded-lg object-cover"
+        />
+      ) : null}
+
       {organization.locations.length > 0 ? (
         <section className="space-y-2">
           <h2 className="text-sm font-medium text-zinc-900">Locations</h2>
@@ -61,7 +70,7 @@ export default async function SalonLandingPage({
         <Link href={`/s/${orgSlug}/book`} className={primaryButtonClass}>
           Book an appointment
         </Link>
-        <Link href="/search" className={secondaryButtonClass}>
+        <Link href="/" className={secondaryButtonClass}>
           Back to search
         </Link>
       </div>

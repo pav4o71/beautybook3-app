@@ -27,19 +27,29 @@ const TIME_OPTIONS = [
   "18:30",
 ] as const;
 
+function serviceKey(name: string) {
+  return name
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
 function searchHref(input: {
   category?: string;
+  service?: string;
   area?: string;
   date?: string;
   time?: string;
 }) {
   const params = new URLSearchParams();
   if (input.category) params.set("category", input.category);
+  if (input.service) params.set("service", input.service);
   if (input.area) params.set("area", input.area);
   if (input.date) params.set("date", input.date);
   if (input.time) params.set("time", input.time);
   const query = params.toString();
-  return query ? `/search?${query}` : "/search";
+  return query ? `/?${query}` : "/";
 }
 
 function filterLinkClass(active: boolean) {
@@ -50,28 +60,32 @@ function filterLinkClass(active: boolean) {
 
 export function SearchFilters({
   categories,
+  services,
   activeSlug,
+  activeService,
   area,
   date,
   time,
   minDate,
 }: {
   categories: MarketplaceCategoryFilter[];
+  services: { name: string }[];
   activeSlug?: string;
+  activeService?: string;
   area?: string;
   date?: string;
   time?: string;
   minDate: string;
 }) {
   const router = useRouter();
-  const current = { category: activeSlug, area, date, time };
+  const current = { category: activeSlug, service: activeService, area, date, time };
 
   return (
     <div className="space-y-4">
-      <nav aria-label="Filter by category" className="flex flex-wrap gap-2">
+      <nav aria-label="Filter by category" className="flex flex-nowrap gap-2 overflow-x-auto pb-1">
         <Link
-          href={searchHref({ ...current, category: undefined })}
-          className={filterLinkClass(!activeSlug)}
+          href={searchHref({ ...current, category: undefined, service: undefined })}
+          className={`${filterLinkClass(!activeSlug)} shrink-0`}
           data-testid="category-all"
         >
           All services
@@ -79,8 +93,12 @@ export function SearchFilters({
         {categories.map((category) => (
           <Link
             key={category.slug}
-            href={searchHref({ ...current, category: category.slug })}
-            className={filterLinkClass(activeSlug === category.slug)}
+            href={searchHref({
+              ...current,
+              category: category.slug,
+              service: undefined,
+            })}
+            className={`${filterLinkClass(activeSlug === category.slug)} shrink-0`}
             data-testid={`category-${category.slug}`}
           >
             {category.name}
@@ -88,6 +106,26 @@ export function SearchFilters({
           </Link>
         ))}
       </nav>
+      {services.length > 0 ? (
+        <nav aria-label="Filter by service" className="flex flex-nowrap gap-2 overflow-x-auto pb-1">
+          {services.map((service) => {
+            const active = activeService === service.name;
+            return (
+              <Link
+                key={service.name}
+                href={searchHref({
+                  ...current,
+                  service: active ? undefined : service.name,
+                })}
+                className={`${filterLinkClass(active)} shrink-0`}
+                data-testid={`service-chip-${serviceKey(service.name)}`}
+              >
+                {service.name}
+              </Link>
+            );
+          })}
+        </nav>
+      ) : null}
       <AreaFilter
         selectedArea={area ?? ""}
         onAreaChange={(nextArea) => {

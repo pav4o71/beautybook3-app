@@ -6,68 +6,63 @@ import {
 } from "../lib/demo-constants";
 
 test.describe("search marketplace", () => {
-  test("landing category search lists hair services from multiple salons", async ({
+  test("landing category search lists hair salons from multiple businesses", async ({
     page,
   }) => {
     await page.goto("/");
     await page.getByTestId("category-hair").click();
-    await page.waitForURL("/search?category=hair");
+    await page.waitForURL("/?category=hair");
 
     await expect(page.getByRole("heading", { name: "Search" })).toBeVisible();
     await expect(page.getByTestId("category-hair")).toHaveClass(/bg-zinc-900/);
+    await expect(page.getByTestId("service-chip-haircut")).toBeVisible();
 
-    await expect(page.getByText("BeautyBook Demo Salon").first()).toBeVisible();
-    await expect(page.getByText("Luxe Hair Lounge").first()).toBeVisible();
-    await expect(page.getByText("Glow Nail Studio")).toHaveCount(0);
+    await expect(page.getByTestId(`business-${DEMO_ORG_SLUG}`)).toBeVisible();
+    await expect(page.getByTestId(`business-${LUXE_ORG_SLUG}`)).toBeVisible();
+    await expect(page.getByTestId(`business-${GLOW_ORG_SLUG}`)).toHaveCount(0);
+    await expect(page.getByTestId(`business-cover-${DEMO_ORG_SLUG}`)).toBeVisible();
     await expect(page.getByText("₱350.00").first()).toBeVisible();
     await expect(page.getByText("Haircut").first()).toBeVisible();
   });
 
   test("area filter keeps only branches in that Manila area", async ({ page }) => {
-    await page.goto("/search?category=hair");
+    await page.goto("/?category=hair");
     await page.getByTestId("area-filter").selectOption("Makati");
-    await page.waitForURL("/search?category=hair&area=Makati");
+    await page.waitForURL("/?category=hair&area=Makati");
 
-    await expect(page.getByText("BeautyBook Demo Salon").first()).toBeVisible();
+    await expect(page.getByTestId(`business-${DEMO_ORG_SLUG}`)).toBeVisible();
     await expect(
-      page.locator("[data-testid^='service-result-']").filter({ hasText: "Makati" }).first(),
+      page.getByTestId(`business-${DEMO_ORG_SLUG}`).getByText("Makati", { exact: true }),
     ).toBeVisible();
-    await expect(page.getByText("Luxe Hair Lounge")).toHaveCount(0);
-    await expect(page.getByText("Glow Nail Studio")).toHaveCount(0);
+    await expect(page.getByTestId(`business-${LUXE_ORG_SLUG}`)).toHaveCount(0);
+    await expect(page.getByTestId(`business-${GLOW_ORG_SLUG}`)).toHaveCount(0);
   });
 
   test("nails category and marketplace redirect preserve discovery", async ({
     page,
   }) => {
     await page.goto("/marketplace");
-    await page.waitForURL("/search");
+    await page.waitForURL("/");
     await expect(page.getByRole("heading", { name: "Search" })).toBeVisible();
 
     await page.getByTestId("category-nails").click();
-    await page.waitForURL("/search?category=nails");
-    await expect(page.getByText("Glow Nail Studio").first()).toBeVisible();
-    await expect(page.getByText("BeautyBook Demo Salon").first()).toBeVisible();
-    await expect(page.getByText("Luxe Hair Lounge")).toHaveCount(0);
+    await page.waitForURL("/?category=nails");
+    await expect(page.getByTestId(`business-${GLOW_ORG_SLUG}`)).toBeVisible();
+    await expect(page.getByTestId(`business-${DEMO_ORG_SLUG}`)).toBeVisible();
+    await expect(page.getByTestId(`business-${LUXE_ORG_SLUG}`)).toHaveCount(0);
 
     await page.getByTestId("category-all").click();
-    await page.waitForURL("/search");
-    await expect(page.getByText("Luxe Hair Lounge").first()).toBeVisible();
-    await expect(page.getByText("Glow Nail Studio").first()).toBeVisible();
+    await page.waitForURL("/");
+    await expect(page.getByTestId(`business-${LUXE_ORG_SLUG}`)).toBeVisible();
+    await expect(page.getByTestId(`business-${GLOW_ORG_SLUG}`)).toBeVisible();
 
-    await page
-      .locator("[data-testid^='service-result-']")
-      .filter({ hasText: "BeautyBook Demo Salon" })
-      .filter({ hasText: "Haircut" })
-      .getByRole("link", { name: "Book" })
-      .click();
+    await page.getByTestId(`book-now-${DEMO_ORG_SLUG}`).click();
     await page.waitForURL(new RegExp(`/s/${DEMO_ORG_SLUG}/book`));
     await expect(page.getByRole("heading", { name: "Book online" })).toBeVisible();
 
-    await page.goto("/search?category=nails");
+    await page.goto("/?category=nails");
     await page
-      .locator("[data-testid^='service-result-']")
-      .filter({ hasText: "Glow Nail Studio" })
-      .first()
+      .getByTestId(`business-${GLOW_ORG_SLUG}`)
       .getByRole("link", { name: "View salon" })
       .click();
     await page.waitForURL(`/s/${GLOW_ORG_SLUG}`);

@@ -113,14 +113,15 @@ model Verification {
 }
 
 model Organization {
-  id        String   @id @default(cuid())
-  name      String
-  slug      String   @unique
-  timezone  String   @default("Asia/Manila")
-  currency  String   @default("PHP")
-  published Boolean  @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id            String   @id @default(cuid())
+  name          String
+  slug          String   @unique
+  timezone      String   @default("Asia/Manila")
+  currency      String   @default("PHP")
+  published     Boolean  @default(false)
+  coverImageUrl String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   members      OrganizationMember[]
   locations    Location[]

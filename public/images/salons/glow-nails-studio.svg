@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 400" role="img" aria-label="Glow Nail Studio">
+  <rect width="800" height="400" fill="#4c1d95"/>
+  <rect x="48" y="48" width="704" height="304" fill="none" stroke="#f5f3ff" stroke-width="2"/>
+  <text x="400" y="190" text-anchor="middle" fill="#f5f3ff" font-family="Georgia, serif" font-size="36">Glow Nail Studio</text>
+  <text x="400" y="236" text-anchor="middle" fill="#ddd6fe" font-family="system-ui, sans-serif" font-size="18">Makati · Quezon City</text>
+</svg>

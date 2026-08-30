@@ -46,3 +46,6 @@ yarn-error.log*
 next-env.d.ts
 
 /app/generated/prisma
+
+# owner-uploaded salon covers (seeded images live in public/images/salons)
+/public/uploads/

@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 400" role="img" aria-label="Luxe Hair Lounge">
+  <rect width="800" height="400" fill="#1c1917"/>
+  <rect x="48" y="48" width="704" height="304" fill="none" stroke="#fef3c7" stroke-width="2"/>
+  <text x="400" y="190" text-anchor="middle" fill="#fef3c7" font-family="Georgia, serif" font-size="36">Luxe Hair Lounge</text>
+  <text x="400" y="236" text-anchor="middle" fill="#d6d3d1" font-family="system-ui, sans-serif" font-size="18">Ortigas</text>
+</svg>
