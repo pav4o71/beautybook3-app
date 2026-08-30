@@ -62,6 +62,7 @@ async function ensureLocation(
   input: {
     name: string;
     address?: string;
+    area?: string;
     isDefault?: boolean;
   },
 ) {
@@ -74,6 +75,7 @@ async function ensureLocation(
       where: { id: existing.id },
       data: {
         address: input.address ?? null,
+        area: input.area ?? null,
         isDefault: input.isDefault ?? existing.isDefault,
         active: true,
       },
@@ -92,6 +94,7 @@ async function ensureLocation(
       organizationId,
       name: input.name,
       address: input.address ?? null,
+      area: input.area ?? null,
       isDefault: input.isDefault ?? false,
       active: true,
     },
@@ -227,6 +230,7 @@ export async function seedDemoSecondLocation() {
   const bgc = await ensureLocation(org.id, {
     name: "BGC branch",
     address: "Bonifacio Global City, Taguig",
+    area: "BGC (Taguig)",
     isDefault: false,
   });
 
@@ -261,11 +265,13 @@ export async function seedGlowNailsStudio() {
   const makati = await ensureLocation(org.id, {
     name: "Makati Studio",
     address: "Poblacion, Makati",
+    area: "Makati",
     isDefault: true,
   });
   const qc = await ensureLocation(org.id, {
     name: "QC Studio",
     address: "Katipunan, Quezon City",
+    area: "Quezon City",
   });
 
   const owner = await ensureUser(GLOW_OWNER, Role.ADMIN);
@@ -317,6 +323,7 @@ export async function seedLuxeHairLounge() {
   const ortigas = await ensureLocation(org.id, {
     name: "Ortigas branch",
     address: "Ortigas Center, Pasig",
+    area: "Ortigas",
     isDefault: true,
   });
 

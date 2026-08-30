@@ -51,6 +51,7 @@ export async function createLocation(
   input: {
     name: string;
     address?: string | null;
+    area?: string | null;
     timezone: string;
     isDefault?: boolean;
   },
@@ -68,6 +69,7 @@ export async function createLocation(
         organizationId,
         name: input.name,
         address: input.address ?? null,
+        area: input.area ?? null,
         timezone: input.timezone,
         isDefault: shouldBeDefault,
         active: true,
@@ -82,6 +84,7 @@ export async function updateLocation(
   input: {
     name: string;
     address?: string | null;
+    area?: string | null;
     timezone: string;
     active: boolean;
     isDefault: boolean;
@@ -127,6 +130,7 @@ export async function updateLocation(
       data: {
         name: input.name,
         address: input.address ?? null,
+        area: input.area ?? null,
         timezone: input.timezone,
         active: input.active,
         isDefault: input.isDefault,

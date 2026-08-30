@@ -59,11 +59,24 @@ See also: [`docs/saas-upgrade-progress.md`](./saas-upgrade-progress.md), [`docs/
 - [ ] Rate-limit tuning per route in production
 - [ ] Staff edit: preserve inactive location in picker (Bugbot follow-up from #9)
 
-## Phase 6 — UI polish (next)
+## Phase 6 — Search-first marketplace UI (next)
 
-- Marketplace, booking, and dashboard visual refresh
-- Reuse `lib/ui.ts` tokens; no schema changes
-- Gates: `npm run build`, `npm run test:e2e` (25 tests)
+**Plan:** [`docs/saas-phase-6-plan.md`](./saas-phase-6-plan.md)
+
+**Vision:** Landing category search → list services (Hair, Nails, …) → filter by Manila area → pick day/time → see salons with real availability → book at `/s/{slug}/book`.
+
+| PR | Item | Status |
+|----|------|--------|
+| #12 | `Location.area` migration + `lib/areas.ts` + admin | In progress |
+| #13 | Landing search + `/search` service discovery | Planned |
+| #14 | Cross-org availability search + book deep-links | Planned |
+| #15 | Visual polish + E2E updates | Planned |
+
+**One schema change:** `Location.area` (required for area filter). Everything else is UI + `lib/marketplace` queries.
+
+**Reuse:** `components/booking/*` scaffolds, `lib/ui.ts`, `getAvailableSlots` logic, `BookingForm`.
+
+**Gates:** `npm run build`, `npm run verify`, `npm run test:e2e`
 
 ## Local dev quick start
 
