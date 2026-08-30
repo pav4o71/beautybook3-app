@@ -36,7 +36,7 @@ export async function saveWeekdaySchedule(
   _prevState: ActionFormState,
   formData: FormData,
 ): Promise<ActionFormState> {
-  const { organizationId, locationId } = await requireActiveOrgAdmin();
+  const { organizationId } = await requireActiveOrgAdmin();
 
   let staffId = "";
 
@@ -51,9 +51,18 @@ export async function saveWeekdaySchedule(
     if (!staff) {
       throw new Error("Staff member not found.");
     }
+    if (!staff.locationId) {
+      throw new Error("Staff member has no assigned location.");
+    }
 
     if (closed) {
-      await saveStaffWeekday(organizationId, locationId, staffId, weekday, []);
+      await saveStaffWeekday(
+        organizationId,
+        staff.locationId,
+        staffId,
+        weekday,
+        [],
+      );
     } else {
       const startTime = parseRequiredString(formData.get("startTime"), "Start time");
       const endTime = parseRequiredString(formData.get("endTime"), "End time");
@@ -79,7 +88,13 @@ export async function saveWeekdaySchedule(
         windows.push({ startTime: start2, endTime: end2 });
       }
 
-      await saveStaffWeekday(organizationId, locationId, staffId, weekday, windows);
+      await saveStaffWeekday(
+        organizationId,
+        staff.locationId,
+        staffId,
+        weekday,
+        windows,
+      );
     }
   } catch (error) {
     return actionError(error);
@@ -93,7 +108,7 @@ export async function createTimeOff(
   _prevState: ActionFormState,
   formData: FormData,
 ): Promise<ActionFormState> {
-  const { organizationId, locationId } = await requireActiveOrgAdmin();
+  const { organizationId } = await requireActiveOrgAdmin();
 
   let staffId = "";
 
@@ -106,6 +121,9 @@ export async function createTimeOff(
     });
     if (!staff) {
       throw new Error("Staff member not found.");
+    }
+    if (!staff.locationId) {
+      throw new Error("Staff member has no assigned location.");
     }
 
     const startsAt = parseLocalDateTime(
@@ -124,7 +142,7 @@ export async function createTimeOff(
     await prisma.timeOff.create({
       data: {
         organizationId,
-        locationId,
+        locationId: staff.locationId,
         staffId,
         startsAt,
         endsAt,
