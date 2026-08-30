@@ -19,6 +19,13 @@ export default async function AdminHomePage() {
           <p className="mt-1 text-sm text-zinc-600">Today&apos;s board — complete or cancel.</p>
         </Link>
         <Link
+          href="/dashboard/admin/locations"
+          className="rounded-lg border border-zinc-200 bg-white p-4 hover:border-zinc-400"
+        >
+          <h2 className="font-medium text-zinc-900">Locations</h2>
+          <p className="mt-1 text-sm text-zinc-600">Branches, addresses, and default site.</p>
+        </Link>
+        <Link
           href="/dashboard/admin/categories"
           className="rounded-lg border border-zinc-200 bg-white p-4 hover:border-zinc-400"
         >

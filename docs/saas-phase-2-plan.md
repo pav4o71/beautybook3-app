@@ -1,6 +1,6 @@
 # Phase 2 Plan — Multi-location & marketplace depth
 
-**Status:** Awaiting approval  
+**Status:** In progress (PR-4 / 2A)  
 **Base:** `main` @ PR #3 merged (`cac0b16`)  
 **Hosted DB:** migrations A/B/C applied, smoke-tested via `npm run dev` + browser
 
