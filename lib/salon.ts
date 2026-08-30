@@ -1,4 +1,5 @@
 import type { Weekday } from "@/app/generated/prisma/enums";
+import { publicLocationWhere } from "@/lib/locations";
 import { prisma } from "@/lib/prisma";
 import { orderedWeekdays } from "@/lib/schedule";
 
@@ -98,7 +99,7 @@ export async function getSalonStorefront(slug: string): Promise<SalonStorefront 
     where: { slug },
     include: {
       locations: {
-        where: { active: true, staff: { some: { active: true } } },
+        where: publicLocationWhere,
         orderBy: [{ isDefault: "desc" }, { name: "asc" }],
       },
       categories: {
