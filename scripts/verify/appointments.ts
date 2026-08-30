@@ -57,8 +57,12 @@ async function main() {
   const customer = await prisma.user.findFirstOrThrow({
     where: { email: "customer@beautybook.local" },
   });
-  const cut = await prisma.service.findFirstOrThrow({ where: { name: "Haircut" } });
-  const maya = await prisma.staff.findFirstOrThrow({ where: { name: "Maya Petrova" } });
+  const cut = await prisma.service.findFirstOrThrow({
+    where: { organizationId: tenant.organizationId, name: "Haircut" },
+  });
+  const maya = await prisma.staff.findFirstOrThrow({
+    where: { organizationId: tenant.organizationId, name: "Maya Petrova" },
+  });
 
   const usedSlots: Date[] = [];
 

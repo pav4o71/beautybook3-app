@@ -21,8 +21,9 @@ test.describe("locations admin", () => {
 
     await page.goto("/dashboard/admin/locations");
     await expect(page.getByRole("heading", { name: "Locations" })).toBeVisible();
-    await expect(page.getByText("Main location")).toBeVisible();
-    await expect(page.getByText("Default", { exact: true })).toBeVisible();
+    const mainLocationRow = page.getByRole("listitem").filter({ hasText: "Main location" });
+    await expect(mainLocationRow).toBeVisible();
+    await expect(mainLocationRow.getByText("Default", { exact: true })).toBeVisible();
 
     await page.locator('input[name="name"]').fill(branchName);
     await page.locator('input[name="address"]').fill(branchAddress);

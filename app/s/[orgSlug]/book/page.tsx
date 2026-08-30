@@ -12,7 +12,12 @@ export default async function PublicBookPage({
   searchParams,
 }: {
   params: Promise<{ orgSlug: string }>;
-  searchParams: Promise<{ serviceId?: string; staffId?: string; booked?: string }>;
+  searchParams: Promise<{
+    serviceId?: string;
+    staffId?: string;
+    locationId?: string;
+    booked?: string;
+  }>;
 }) {
   const { orgSlug } = await params;
   const query = await searchParams;
@@ -22,14 +27,19 @@ export default async function PublicBookPage({
     notFound();
   }
 
-  const location = organization.locations[0];
-  if (!location) {
+  if (organization.locations.length === 0) {
     notFound();
   }
 
+  const locationId =
+    query.locationId &&
+    organization.locations.some((location) => location.id === query.locationId)
+      ? query.locationId
+      : organization.locations[0].id;
+
   const [services, staff] = await Promise.all([
     listBookingServices(organization.id),
-    listBookingStaff(organization.id),
+    listBookingStaff(organization.id, locationId),
   ]);
 
   const serviceId =
@@ -83,16 +93,21 @@ export default async function PublicBookPage({
       ) : null}
 
       <p className="mb-6 text-sm text-zinc-600">
-        Choose a service and staff member, then pick a time. Pay at the salon when you arrive.
+        Choose a location, service, and staff member, then pick a time. Pay at the salon when you arrive.
       </p>
 
       {services.length === 0 ? (
         <p className="text-sm text-zinc-600">Nothing to book yet.</p>
       ) : (
         <BookingForm
-          key={`${serviceId}-${staffId}`}
+          key={`${locationId}-${serviceId}-${staffId}`}
           bookPath={`/s/${orgSlug}/book`}
           action={bookAction}
+          locations={organization.locations.map((location) => ({
+            id: location.id,
+            name: location.name,
+          }))}
+          initialLocationId={locationId}
           services={services.map((service) => ({
             id: service.id,
             name: service.name,

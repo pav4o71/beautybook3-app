@@ -9,7 +9,8 @@ function assert(condition: boolean, message: string) {
 
 async function main() {
   const [
-    organizations,
+    demoOrgCount,
+    publishedOrgs,
     orgMembers,
     categories,
     services,
@@ -26,6 +27,7 @@ async function main() {
     deepConditioning,
   ] = await Promise.all([
     prisma.organization.count({ where: { slug: "beautybook-demo" } }),
+    prisma.organization.count({ where: { published: true } }),
     prisma.organizationMember.count(),
     prisma.serviceCategory.count({ where: { slug: { in: ["hair", "nails"] } } }),
     prisma.service.count(),
@@ -47,13 +49,14 @@ async function main() {
     prisma.service.findFirst({ where: { name: "Deep conditioning" } }),
   ]);
 
-  assert(organizations >= 1, "Expected demo organization");
-  assert(orgMembers >= 2, "Expected admin and customer memberships");
+  assert(demoOrgCount >= 1, "Expected demo organization");
+  assert(publishedOrgs >= 3, "Expected at least 3 published marketplace salons");
+  assert(orgMembers >= 4, "Expected demo, glow, and luxe memberships");
   assert(categories >= 2, "Expected at least Hair and Nails categories");
   assert(services >= 4, "Expected at least 4 services including inactive demo");
   assert(activeServices >= 3, "Expected at least 3 active services");
   assert(inactiveServices >= 1, "Expected at least 1 inactive service");
-  assert(staff >= 2, "Expected at least 2 active staff");
+  assert(staff >= 5, "Expected staff across demo and marketplace salons");
   assert(inactiveStaff >= 1, "Expected at least 1 inactive staff");
   assert(schedules >= 10, "Expected weekday schedules to be seeded");
   assert(timeOff >= 2, "Expected lunch block and vacation time off");
@@ -63,7 +66,12 @@ async function main() {
   assert(mayaSplit === 2, "Maya should have split-shift Wednesday rows");
   assert(deepConditioning?.active === false, "Deep conditioning should be inactive");
 
-  const haircut = await prisma.service.findFirstOrThrow({ where: { name: "Haircut" } });
+  const demoOrg = await prisma.organization.findUniqueOrThrow({
+    where: { slug: "beautybook-demo" },
+  });
+  const haircut = await prisma.service.findFirstOrThrow({
+    where: { organizationId: demoOrg.id, name: "Haircut" },
+  });
   assert(haircut.priceCents === 35000, "Haircut should be ₱350 (35000 centavos)");
 
   await prisma.$disconnect();

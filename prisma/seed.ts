@@ -9,6 +9,7 @@ import {
   salonDayBounds,
   salonWeekdayFromDate,
 } from "@/lib/timezone";
+import { seedMarketplaceSalons } from "./seed-extra-orgs";
 
 const WEEKDAYS: Weekday[] = ["MON", "TUE", "WED", "THU", "FRI"];
 
@@ -58,8 +59,14 @@ async function seedOrganization(): Promise<TenantContext> {
       data: {
         organizationId: org.id,
         name: "Main location",
+        address: "Makati City, Metro Manila",
         isDefault: true,
       },
+    });
+  } else if (!location.address) {
+    location = await prisma.location.update({
+      where: { id: location.id },
+      data: { address: "Makati City, Metro Manila" },
     });
   }
 
@@ -280,7 +287,7 @@ async function findOrCreateStaff(
   if (existing) {
     return prisma.staff.update({
       where: { id: existing.id },
-      data: { bio, active },
+      data: { bio, active, locationId: tenant.locationId },
     });
   }
   return prisma.staff.create({
@@ -552,6 +559,7 @@ async function main() {
   await seedMembership(admin.id, tenant.organizationId, OrgRole.OWNER);
   await seedMembership(customer.id, tenant.organizationId, OrgRole.MEMBER);
   await seedCatalogAndStaff(tenant, customer.id);
+  await seedMarketplaceSalons();
 }
 
 main()

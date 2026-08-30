@@ -42,9 +42,13 @@ export async function listBookingServices(organizationId: string) {
   });
 }
 
-export async function listBookingStaff(organizationId: string) {
+export async function listBookingStaff(organizationId: string, locationId?: string) {
   return prisma.staff.findMany({
-    where: { organizationId, active: true },
+    where: {
+      organizationId,
+      active: true,
+      ...(locationId ? { locationId } : {}),
+    },
     include: { services: true },
     orderBy: { name: "asc" },
   });

@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import type { ActionFormState } from "@/lib/action-form-state";
 import { actionError } from "@/lib/action-form-state";
 import { createAppointment } from "@/lib/booking";
+import { prisma } from "@/lib/prisma";
 import { requireActiveOrgContext } from "@/lib/require-org";
 import {
   bookSlotSchema,
@@ -13,7 +14,18 @@ import {
 
 /** Called from client slot forms — returns errors inline; redirects on success. */
 export async function bookSlot(formData: FormData): Promise<ActionFormState> {
-  const { session, organizationId, locationId } = await requireActiveOrgContext();
+  const { session, organizationId, locationId: activeLocationId } =
+    await requireActiveOrgContext();
+
+  const formLocationId = String(formData.get("locationId") ?? "");
+  const locationId = formLocationId || activeLocationId;
+
+  const location = await prisma.location.findFirst({
+    where: { id: locationId, organizationId, active: true },
+  });
+  if (!location) {
+    return { error: "Choose a valid location." };
+  }
 
   const parsed = bookSlotSchema.safeParse({
     organizationId,
