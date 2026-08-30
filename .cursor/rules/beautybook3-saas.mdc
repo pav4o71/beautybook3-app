@@ -1,0 +1,136 @@
+---
+description: BeautyBook3 SaaS Platform - Multi-Tenant Booking System
+globs: **/*
+---
+
+## Project Overview
+BeautyBook3 is a multi-tenant SaaS platform for appointment booking in Manila, Philippines.
+Multiple businesses (tenants) can list their services, and customers can book appointments
+through a unified marketplace.
+
+**User Flow:** Category → Service → Date/Time → Available Businesses (with prices & locations)
+
+## Core Principles
+
+### 1. Multi-Tenancy & Data Isolation
+- Every query MUST filter by tenantId unless explicitly public
+- Tenant isolation is critical - NEVER leak data between tenants
+- Use `requireTenantAuth()` middleware for all tenant routes
+- Always validate tenant ownership before any write operation
+
+### 2. Database Safety
+- ALWAYS use transactions for operations affecting multiple tables
+- NEVER use raw SQL unless absolutely necessary (use Prisma)
+- ALWAYS validate input with Zod schemas before database operations
+- Use soft deletes where appropriate (isDeleted flags)
+- Run migrations in development before production
+
+### 3. API Design Standards
+- Public routes: `/api/public/*` - no auth required (booking flow)
+- Tenant routes: `/api/tenant/*` - requires tenant auth (business dashboard)
+- Admin routes: `/api/admin/*` - requires admin auth (platform management)
+- All responses MUST follow standard format: `{ success: boolean, data?: T, error?: string }`
+- Use proper HTTP status codes (200, 201, 400, 401, 403, 404, 500)
+
+### 4. Frontend Architecture (Next.js)
+- Use Server Components by default (app router)
+- Client Components only for interactivity (useState, useEffect, onClick)
+- Implement proper loading states with Suspense and loading.tsx
+- Use optimistic updates for better UX (tanstack query)
+- Mobile-first responsive design
+
+### 5. Error Handling & Logging
+- Wrap all async operations in try-catch
+- Log errors with context (tenantId, userId, operation, timestamp)
+- Return user-friendly error messages (never expose stack traces)
+- Use custom error classes for different error types
+- Implement proper error boundaries in React
+
+### 6. Security Best Practices
+- Validate ALL user input (Zod schemas)
+- Sanitize HTML content (DOMPurify if needed)
+- Use parameterized queries (Prisma handles this)
+- Implement rate limiting on public APIs (express-rate-limit)
+- Never expose sensitive data in client bundles
+- Use environment variables for secrets
+- Implement CSRF protection for forms
+
+## File Naming Conventions
+- Components: `PascalCase.tsx` (e.g., `ServiceCard.tsx`, `BookingForm.tsx`)
+- Utilities: `camelCase.ts` (e.g., `formatDate.ts`, `validateEmail.ts`)
+- API routes: folder structure matches URL path (`/api/public/categories/route.ts`)
+- Prisma models: `PascalCase` in schema, camelCase in code
+- Types: `PascalCase.ts` (e.g., `ServiceTypes.ts`, `BookingTypes.ts`)
+
+## Code Quality Standards
+- TypeScript strict mode enabled (no implicit any)
+- No `any` types - use proper type definitions or `unknown`
+- ESLint rules must pass before commit
+- All functions must have explicit return type annotations
+- Use `const` over `let` where possible
+- Prefer arrow functions for consistency
+- Use template literals over string concatenation
+
+## Testing Requirements
+- Write tests for critical business logic (vitest/jest)
+- E2E tests for booking flow (Playwright)
+- Integration tests for API routes
+- Test tenant isolation explicitly
+- Minimum 80% coverage for core modules
+
+## Performance Guidelines
+- Database queries should complete in <100ms
+- API responses should complete in <200ms
+- Implement caching for frequently accessed data (Redis)
+- Use database indexes on foreign keys and filter columns
+- Lazy load images and components
+- Implement pagination for large lists
+
+## Manila-Specific Considerations
+- Currency: PHP (₱) - use `Intl.NumberFormat('en-PH')`
+- Date format: "MMM DD, YYYY" (e.g., "Aug 30, 2026")
+- Time format: 12-hour with AM/PM (e.g., "9:00 AM")
+- Areas: Makati, BGC, Quezon City, Mandaluyong, Pasig, Ortigas, Alabang, Parañ±³³e, etc.
+- Language: English (primary), Tagalog support optional
+
+## Common Patterns
+
+### Tenant Query Pattern
+```typescript
+const services = await db.service.findMany({
+  where: {
+    tenantId: authContext.tenantId, // ALWAYS filter by tenant
+    isActive: true,
+  },
+});
+```
+
+### Transaction Pattern
+```typescript
+await db.$transaction(async (tx) => {
+  await tx.appointment.create({ data: {...} });
+  await tx.timeSlot.update({ where: {...}, data: { isAvailable: false } });
+});
+```
+
+### API Response Pattern
+```typescript
+export async function GET(req: NextRequest) {
+  try {
+    const data = await someOperation();
+    return NextResponse.json({ success: true, data });
+  } catch (error) {
+    console.error('Operation failed:', error);
+    return NextResponse.json(
+      { success: false, error: 'Failed to fetch data' },
+      { status: 500 }
+    );
+  }
+}
+```
+
+## When in Doubt
+1. Check existing code for patterns
+2. Ask before making breaking changes
+3. Test thoroughly before deploying
+4. Document any new patterns or conventions

@@ -1,0 +1,265 @@
+// This is your Prisma schema file for the SaaS multi-tenant version
+// Learn more: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// MULTI-TENANT CORE MODELS
+// ============================================
+
+model Tenant {
+  id            String    @id @default(cuid())
+  name          String
+  slug          String    @unique
+  email         String    @unique
+  phone         String?
+  logoUrl       String?
+  coverImageUrl String?
+  description   String?
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  locations     Location[]
+  services      Service[]
+  staff         Staff[]
+  subscriptions Subscription[]
+  appointments  Appointment[]
+
+  @@index([slug])
+}
+
+model Location {
+  id          String    @id @default(cuid())
+  tenantId    String
+  name        String    // e.g., "BGC Branch", "Makati Branch"
+  address     String
+  area        String    // e.g., "Makati", "BGC", "Quezon City"
+  city        String    @default("Manila")
+  region      String    @default("Metro Manila")
+  latitude    Float?
+  longitude   Float?
+  phone       String?
+  isActive    Boolean   @default(true)
+
+  // Relations
+  tenant      Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  services    Service[]
+  staff       Staff[]
+  appointments Appointment[]
+
+  @@index([tenantId])
+  @@index([area, city])
+  @@index([latitude, longitude])
+}
+
+model Category {
+  id          String    @id @default(cuid())
+  name        String    // e.g., "Hair Salon", "Nail Studio", "Spa"
+  slug        String    @unique
+  description String?
+  icon        String?   // Lucide icon name
+  isActive    Boolean   @default(true)
+
+  // Relations
+  services    Service[]
+
+  @@index([slug])
+}
+
+// ============================================
+// SERVICE & BOOKING MODELS
+// ============================================
+
+model Service {
+  id          String   @id @default(cuid())
+  tenantId    String
+  locationId  String?  // null = available at all locations
+  categoryId  String
+  name        String
+  description String?  @db.Text
+  duration    Int      // in minutes
+  price       Decimal  @db.Decimal(10, 2)
+  currency    String   @default("PHP")
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+
+  // Relations
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  location    Location? @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  category    Category @relation(fields: [categoryId], references: [id])
+  timeSlots   TimeSlot[]
+  appointmentServices AppointmentService[]
+
+  @@index([tenantId])
+  @@index([locationId])
+  @@index([categoryId])
+  @@index([tenantId, categoryId])
+}
+
+model Staff {
+  id          String   @id @default(cuid())
+  tenantId    String
+  locationId  String?
+  name        String
+  role        String?  // e.g., "Senior Stylist", "Nail Technician"
+  bio         String?  @db.Text
+  photoUrl    String?
+  isActive    Boolean  @default(true)
+
+  // Relations
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  location    Location? @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  availability StaffAvailability[]
+  appointments Appointment[]
+
+  @@index([tenantId])
+  @@index([locationId])
+}
+
+model StaffAvailability {
+  id          String   @id @default(cuid())
+  staffId     String
+  dayOfWeek   Int      // 0-6 (Sunday-Saturday)
+  startTime   String   // "09:00"
+  endTime     String   // "18:00"
+  isActive    Boolean  @default(true)
+
+  staff       Staff    @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@index([staffId])
+  @@unique([staffId, dayOfWeek, startTime, endTime])
+}
+
+model TimeSlot {
+  id          String   @id @default(cuid())
+  serviceId   String
+  date        DateTime @db.Date
+  startTime   String   // "09:00"
+  endTime     String   // "10:00"
+  isAvailable Boolean  @default(true)
+
+  // Relations
+  service     Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  appointments Appointment[]
+
+  @@index([serviceId, date])
+  @@index([date, startTime])
+  @@unique([serviceId, date, startTime])
+}
+
+model Appointment {
+  id          String            @id @default(cuid())
+  tenantId    String
+  locationId  String
+  customerId  String
+  staffId     String?
+  status      AppointmentStatus @default(PENDING)
+  scheduledAt DateTime          @db.Date
+  startTime   String
+  endTime     String
+  notes       String?           @db.Text
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  // Relations
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  location    Location @relation(fields: [locationId], references: [id])
+  customer    User     @relation(fields: [customerId], references: [id])
+  staff       Staff?   @relation(fields: [staffId], references: [id], onDelete: SetNull)
+  services    AppointmentService[]
+
+  @@index([tenantId])
+  @@index([locationId])
+  @@index([customerId])
+  @@index([scheduledAt])
+  @@index([status])
+}
+
+model AppointmentService {
+  id            String   @id @default(cuid())
+  appointmentId String
+  serviceId     String
+  quantity      Int      @default(1)
+  price         Decimal  @db.Decimal(10, 2) // Price at time of booking
+
+  appointment   Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  service       Service  @relation(fields: [serviceId], references: [id])
+
+  @@unique([appointmentId, serviceId])
+}
+
+// ============================================
+// USER & AUTH MODELS
+// ============================================
+
+model User {
+  id          String   @id @default(cuid())
+  email       String   @unique
+  name        String?
+  phone       String?
+  photoUrl    String?
+  role        UserRole @default(CUSTOMER)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  appointments Appointment[]
+
+  @@index([email])
+}
+
+enum UserRole {
+  CUSTOMER
+  BUSINESS_OWNER
+  STAFF
+  ADMIN
+}
+
+enum AppointmentStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+// ============================================
+// SUBSCRIPTION & BILLING MODELS
+// ============================================
+
+model Subscription {
+  id                 String             @id @default(cuid())
+  tenantId           String
+  plan               SubscriptionPlan   @default(FREE)
+  status             SubscriptionStatus @default(ACTIVE)
+  currentPeriodStart DateTime
+  currentPeriodEnd   DateTime
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  tenant             Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId])
+}
+
+enum SubscriptionPlan {
+  FREE       // 1 location, up to 50 appointments/month
+  BASIC      // 3 locations, up to 200 appointments/month
+  PRO        // Unlimited locations, unlimited appointments
+  ENTERPRISE // Custom
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  INACTIVE
+  PAST_DUE
+  CANCELLED
+}
