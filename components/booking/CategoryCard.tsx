@@ -1,48 +1,41 @@
-"use client";
+import Link from "next/link";
 
 const iconMap: Record<string, string> = {
+  hair: "💇",
+  nails: "💅",
   scissors: "💇",
   sparkles: "💅",
-  "flower-2": "🧘",
-  user: "👨",
-  brush: "💄",
-  eye: "👁️",
-  droplet: "💧",
-  heart: "💆",
 };
 
-type MarketplaceCategory = {
-  slug: string;
-  name: string;
-  icon?: string | null;
-  description?: string | null;
-  _count: { services: number };
-};
-
-interface CategoryCardProps {
-  category: MarketplaceCategory;
-  onClick: () => void;
-}
-
-export function CategoryCard({ category, onClick }: CategoryCardProps) {
-  const icon = iconMap[category.icon ?? ""] ?? "✨";
+export function CategoryCard({
+  category,
+  href,
+}: {
+  category: {
+    slug: string;
+    name: string;
+    salonCount: number;
+    icon?: string | null;
+    description?: string | null;
+  };
+  href: string;
+}) {
+  const icon = iconMap[category.icon ?? category.slug] ?? "✨";
 
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="w-full rounded-lg border border-zinc-300 bg-white p-6 text-left transition hover:border-zinc-400"
-      data-testid={`category-card-${category.slug}`}
+    <Link
+      href={href}
+      className="block rounded-lg border border-zinc-300 bg-white px-4 py-6 text-left transition hover:border-zinc-400"
+      data-testid={`category-${category.slug}`}
     >
-      <div className="mb-3 text-4xl">{icon}</div>
+      <div className="mb-3 text-3xl">{icon}</div>
       <h3 className="text-lg font-medium text-zinc-900">{category.name}</h3>
       <p className="mt-1 text-sm text-zinc-600">
-        {category._count.services} service
-        {category._count.services === 1 ? "" : "s"}
+        {category.salonCount} salon{category.salonCount === 1 ? "" : "s"}
       </p>
       {category.description ? (
         <p className="mt-2 line-clamp-2 text-xs text-zinc-500">{category.description}</p>
       ) : null}
-    </button>
+    </Link>
   );
 }

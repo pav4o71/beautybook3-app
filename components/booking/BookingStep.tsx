@@ -1,14 +1,9 @@
-'use client'
+"use client";
 
-import { ReactNode } from 'react'
+import type { ReactNode } from "react";
+import { secondaryButtonClass } from "@/lib/ui";
 
-interface BookingStepProps {
-  step: number
-  currentStep: number
-  title: string
-  children: ReactNode
-  onBack?: () => void
-}
+const progressWidthClass = ["w-1/4", "w-2/4", "w-3/4", "w-full"] as const;
 
 export function BookingStep({
   step,
@@ -16,38 +11,38 @@ export function BookingStep({
   title,
   children,
   onBack,
-}: BookingStepProps) {
-  if (step !== currentStep) return null
+}: {
+  step: number;
+  currentStep: number;
+  title: string;
+  children: ReactNode;
+  onBack?: () => void;
+}) {
+  if (step !== currentStep) return null;
+
+  const progressClass = progressWidthClass[Math.min(Math.max(step, 1), 4) - 1];
 
   return (
-    <div className="animate-fade-in">
-      {onBack && (
-        <button
-          onClick={onBack}
-          className="mb-4 text-gray-600 hover:text-gray-900 flex items-center gap-1"
-        >
-          ← Back
+    <div>
+      {onBack ? (
+        <button type="button" onClick={onBack} className={`${secondaryButtonClass} mb-4`}>
+          Back
         </button>
-      )}
-      
+      ) : null}
+
       <div className="mb-6">
-        <div className="flex items-center gap-2 mb-2">
-          <span className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-600 text-white text-sm font-bold">
+        <div className="mb-2 flex items-center gap-2">
+          <span className="flex size-6 items-center justify-center rounded-full bg-zinc-900 text-sm font-medium text-white">
             {step}
           </span>
-          <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
+          <h2 className="text-2xl font-semibold tracking-tight text-zinc-900">{title}</h2>
         </div>
-        
-        {/* Progress bar */}
-        <div className="w-full bg-gray-200 rounded-full h-2 mt-4">
-          <div
-            className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-            style={{ width: `${(step / 4) * 100}%` }}
-          />
+        <div className="mt-4 h-2 w-full rounded-full bg-zinc-200">
+          <div className={`h-2 rounded-full bg-zinc-900 ${progressClass}`} />
         </div>
       </div>
 
       {children}
     </div>
-  )
+  );
 }

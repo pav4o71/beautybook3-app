@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { CategoryCard } from "@/components/booking/CategoryCard";
 import { listMarketplaceCategoryFilters } from "@/lib/marketplace";
 import { secondaryButtonClass } from "@/lib/ui";
 
@@ -33,16 +34,10 @@ export default async function Home() {
           <ul className="grid gap-3 sm:grid-cols-2">
             {categories.map((category) => (
               <li key={category.slug}>
-                <Link
+                <CategoryCard
+                  category={category}
                   href={`/search?category=${category.slug}`}
-                  className="block rounded-lg border border-zinc-300 bg-white px-4 py-6 text-left transition hover:border-zinc-400"
-                  data-testid={`category-${category.slug}`}
-                >
-                  <span className="text-lg font-medium text-zinc-900">{category.name}</span>
-                  <span className="mt-1 block text-sm text-zinc-600">
-                    {category.salonCount} salon{category.salonCount === 1 ? "" : "s"}
-                  </span>
-                </Link>
+                />
               </li>
             ))}
           </ul>

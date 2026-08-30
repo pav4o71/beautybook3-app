@@ -1,5 +1,4 @@
-"use client";
-
+import type { ReactNode } from "react";
 import { formatPrice } from "@/lib/format";
 import { cardButtonClass, cardButtonSelectedClass } from "@/lib/ui";
 
@@ -11,27 +10,39 @@ type MarketplaceService = {
   durationMin: number;
 };
 
-interface ServiceCardProps {
+export function ServiceCard({
+  service,
+  isSelected = false,
+  onClick,
+  salonName,
+  areaLabel,
+  footer,
+  testId,
+}: {
   service: MarketplaceService;
-  isSelected: boolean;
-  onClick: () => void;
-}
-
-export function ServiceCard({ service, isSelected, onClick }: ServiceCardProps) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={isSelected ? cardButtonSelectedClass : cardButtonClass}
-      data-testid={`service-${service.id}`}
-    >
+  isSelected?: boolean;
+  onClick?: () => void;
+  salonName?: string;
+  areaLabel?: string;
+  footer?: ReactNode;
+  testId?: string;
+}) {
+  const selected = Boolean(onClick && isSelected);
+  const body = (
+    <>
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1">
           <h3 className="font-medium">{service.name}</h3>
+          {salonName ? (
+            <p className={`mt-1 text-sm ${selected ? "text-zinc-200" : "text-zinc-600"}`}>
+              {salonName}
+              {areaLabel ? ` · ${areaLabel}` : ""}
+            </p>
+          ) : null}
           {service.description ? (
             <p
               className={`mt-1 line-clamp-2 text-sm ${
-                isSelected ? "text-zinc-200" : "text-zinc-600"
+                selected ? "text-zinc-200" : "text-zinc-600"
               }`}
             >
               {service.description}
@@ -40,11 +51,34 @@ export function ServiceCard({ service, isSelected, onClick }: ServiceCardProps) 
         </div>
         <div className="text-right">
           <p className="font-medium">{formatPrice(service.priceCents)}</p>
-          <p className={`mt-0.5 text-xs ${isSelected ? "text-zinc-300" : "text-zinc-500"}`}>
+          <p className={`mt-0.5 text-xs ${selected ? "text-zinc-300" : "text-zinc-500"}`}>
             {service.durationMin} min
           </p>
         </div>
       </div>
-    </button>
+      {footer}
+    </>
+  );
+
+  if (onClick) {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        className={selected ? cardButtonSelectedClass : cardButtonClass}
+        data-testid={testId ?? `service-${service.id}`}
+      >
+        {body}
+      </button>
+    );
+  }
+
+  return (
+    <article
+      className="flex h-full flex-col rounded-lg border border-zinc-200 bg-white p-4"
+      data-testid={testId ?? `service-result-${service.id}`}
+    >
+      {body}
+    </article>
   );
 }

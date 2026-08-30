@@ -38,6 +38,11 @@ export default async function SalonLandingPage({
                   {location.isDefault ? (
                     <span className="ml-2 text-xs font-normal text-zinc-500">(default)</span>
                   ) : null}
+                  {location.area ? (
+                    <span className="ml-2 rounded bg-zinc-100 px-2 py-0.5 text-xs font-normal text-zinc-700">
+                      {location.area}
+                    </span>
+                  ) : null}
                 </p>
                 {location.address ? (
                   <p className="mt-1 text-zinc-600">{location.address}</p>
@@ -56,8 +61,8 @@ export default async function SalonLandingPage({
         <Link href={`/s/${orgSlug}/book`} className={primaryButtonClass}>
           Book an appointment
         </Link>
-        <Link href="/marketplace" className={secondaryButtonClass}>
-          Back to marketplace
+        <Link href="/search" className={secondaryButtonClass}>
+          Back to search
         </Link>
       </div>
     </main>
