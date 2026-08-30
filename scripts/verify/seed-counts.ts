@@ -9,6 +9,8 @@ function assert(condition: boolean, message: string) {
 
 async function main() {
   const [
+    organizations,
+    orgMembers,
     categories,
     services,
     activeServices,
@@ -23,6 +25,8 @@ async function main() {
     mayaSplit,
     deepConditioning,
   ] = await Promise.all([
+    prisma.organization.count({ where: { slug: "beautybook-demo" } }),
+    prisma.organizationMember.count(),
     prisma.serviceCategory.count({ where: { slug: { in: ["hair", "nails"] } } }),
     prisma.service.count(),
     prisma.service.count({ where: { active: true } }),
@@ -43,6 +47,8 @@ async function main() {
     prisma.service.findFirst({ where: { name: "Deep conditioning" } }),
   ]);
 
+  assert(organizations >= 1, "Expected demo organization");
+  assert(orgMembers >= 2, "Expected admin and customer memberships");
   assert(categories >= 2, "Expected at least Hair and Nails categories");
   assert(services >= 4, "Expected at least 4 services including inactive demo");
   assert(activeServices >= 3, "Expected at least 3 active services");

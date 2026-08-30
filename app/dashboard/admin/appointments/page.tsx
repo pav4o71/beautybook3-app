@@ -5,14 +5,16 @@ import {
 } from "@/lib/appointment-status";
 import { getAppointmentsForDay } from "@/lib/appointments";
 import { formatDay, formatPrice, formatTime } from "@/lib/format";
+import { requireActiveOrgAdmin } from "@/lib/require-org";
 import { secondaryButtonClass } from "@/lib/ui";
 import Link from "next/link";
 import { AdminNav } from "../admin-nav";
 import { AppointmentStatusActions } from "./appointment-status-actions";
 
 export default async function AdminAppointmentsPage() {
+  const { organizationId } = await requireActiveOrgAdmin();
   const today = new Date();
-  const appointments = await getAppointmentsForDay(today);
+  const appointments = await getAppointmentsForDay(organizationId, today);
 
   return (
     <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-10">

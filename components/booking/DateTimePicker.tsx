@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 
 interface DateTimePickerProps {
   selectedDate: string
@@ -23,13 +23,7 @@ export function DateTimePicker({
   onTimeChange,
   onContinue,
 }: DateTimePickerProps) {
-  const [minDate, setMinDate] = useState('')
-
-  useEffect(() => {
-    // Set minimum date to today
-    const today = new Date().toISOString().split('T')[0]
-    setMinDate(today)
-  }, [])
+  const [minDate] = useState(() => new Date().toISOString().split('T')[0])
 
   const formatTimeDisplay = (time: string) => {
     const [hours, minutes] = time.split(':')

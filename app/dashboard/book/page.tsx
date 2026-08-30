@@ -1,6 +1,6 @@
 import { getAvailableSlots } from "@/lib/booking";
 import { listBookingServices, listBookingStaff } from "@/lib/catalog";
-import { requireUser } from "@/lib/require-user";
+import { requireActiveOrgContext } from "@/lib/require-org";
 import { BookingForm } from "./booking-form";
 
 export default async function BookPage({
@@ -8,12 +8,12 @@ export default async function BookPage({
 }: {
   searchParams: Promise<{ serviceId?: string; staffId?: string }>;
 }) {
-  await requireUser();
+  const { organizationId } = await requireActiveOrgContext();
   const params = await searchParams;
 
   const [services, staff] = await Promise.all([
-    listBookingServices(),
-    listBookingStaff(),
+    listBookingServices(organizationId),
+    listBookingStaff(organizationId),
   ]);
 
   const serviceId =
@@ -33,6 +33,7 @@ export default async function BookPage({
   const slots =
     staffId && selectedService
       ? await getAvailableSlots({
+          organizationId,
           staffId,
           durationMin: selectedService.durationMin,
         })

@@ -16,6 +16,13 @@ enum Role {
   ADMIN
 }
 
+enum OrgRole {
+  OWNER
+  ADMIN
+  STAFF
+  MEMBER
+}
+
 enum AppointmentStatus {
   PENDING
   CONFIRMED
@@ -35,19 +42,20 @@ enum Weekday {
 }
 
 model User {
-  id            String    @id
-  name          String
-  email         String
-  emailVerified Boolean   @default(false)
-  image         String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  role          Role      @default(CUSTOMER)
-  phone         String?
-  sessions      Session[]
-  accounts      Account[]
-  staff         Staff?
-  appointments  Appointment[] @relation("CustomerAppointments")
+  id                  String               @id
+  name                String
+  email               String
+  emailVerified       Boolean              @default(false)
+  image               String?
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  role                Role                 @default(CUSTOMER)
+  phone               String?
+  sessions            Session[]
+  accounts            Account[]
+  staff               Staff?
+  appointments        Appointment[]        @relation("CustomerAppointments")
+  organizationMembers OrganizationMember[]
 
   @@unique([email])
   @@index([role])
@@ -104,49 +112,119 @@ model Verification {
   @@map("verification")
 }
 
-model Staff {
+model Organization {
   id        String   @id @default(cuid())
-  userId    String?  @unique
-  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
   name      String
-  bio       String?
-  photoUrl  String?
-  active    Boolean  @default(true)
+  slug      String   @unique
+  timezone  String   @default("Asia/Manila")
+  currency  String   @default("PHP")
+  published Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  services     StaffService[]
+  members      OrganizationMember[]
+  locations    Location[]
+  categories   ServiceCategory[]
+  services     Service[]
+  staff        Staff[]
   schedules    StaffSchedule[]
   timeOff      TimeOff[]
   appointments Appointment[]
 }
 
-model ServiceCategory {
-  id        String   @id @default(cuid())
-  name      String
-  slug      String   @unique
-  sortOrder Int      @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+model OrganizationMember {
+  id             String   @id @default(cuid())
+  organizationId String
+  userId         String
+  role           OrgRole  @default(MEMBER)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
-  services Service[]
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, userId])
+  @@index([userId])
+}
+
+model Location {
+  id             String   @id @default(cuid())
+  organizationId String
+  name           String
+  isDefault      Boolean  @default(false)
+  timezone       String   @default("Asia/Manila")
+  address        String?
+  active         Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  staff        Staff[]
+  schedules    StaffSchedule[]
+  timeOff      TimeOff[]
+  appointments Appointment[]
+
+  @@index([organizationId])
+}
+
+model Staff {
+  id             String   @id @default(cuid())
+  organizationId String
+  locationId     String
+  userId         String?  @unique
+  user           User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  name           String
+  bio            String?
+  photoUrl       String?
+  active         Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  location     Location        @relation(fields: [locationId], references: [id], onDelete: Restrict)
+  services     StaffService[]
+  schedules    StaffSchedule[]
+  timeOff      TimeOff[]
+  appointments Appointment[]
+
+  @@index([organizationId, active])
+  @@index([locationId])
+}
+
+model ServiceCategory {
+  id             String   @id @default(cuid())
+  organizationId String
+  name           String
+  slug           String
+  sortOrder      Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  services     Service[]
+
+  @@unique([organizationId, slug])
+  @@index([organizationId])
 }
 
 model Service {
-  id          String          @id @default(cuid())
-  categoryId  String
-  category    ServiceCategory @relation(fields: [categoryId], references: [id])
-  name        String
-  description String?
-  durationMin Int
-  priceCents  Int
-  active      Boolean         @default(true)
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
+  id             String          @id @default(cuid())
+  organizationId String
+  categoryId     String
+  category       ServiceCategory @relation(fields: [categoryId], references: [id])
+  name           String
+  description    String?
+  durationMin    Int
+  priceCents     Int
+  active         Boolean         @default(true)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
 
+  organization Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   staff        StaffService[]
   appointments AppointmentService[]
 
+  @@index([organizationId, active])
   @@index([categoryId, active])
 }
 
@@ -160,49 +238,69 @@ model StaffService {
 }
 
 model StaffSchedule {
-  id        String   @id @default(cuid())
-  staffId   String
-  staff     Staff    @relation(fields: [staffId], references: [id], onDelete: Cascade)
-  weekday   Weekday
-  startTime String
-  endTime   String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id             String   @id @default(cuid())
+  organizationId String
+  locationId     String
+  staffId        String
+  staff          Staff    @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  weekday        Weekday
+  startTime      String
+  endTime        String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  location     Location     @relation(fields: [locationId], references: [id], onDelete: Cascade)
 
   @@unique([staffId, weekday, startTime])
   @@index([staffId, weekday])
+  @@index([organizationId])
+  @@index([locationId])
 }
 
 model TimeOff {
-  id        String   @id @default(cuid())
-  staffId   String
-  staff     Staff    @relation(fields: [staffId], references: [id], onDelete: Cascade)
-  startsAt  DateTime
-  endsAt    DateTime
-  reason    String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id             String   @id @default(cuid())
+  organizationId String
+  locationId     String
+  staffId        String
+  staff          Staff    @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  startsAt       DateTime
+  endsAt         DateTime
+  reason         String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  location     Location     @relation(fields: [locationId], references: [id], onDelete: Cascade)
 
   @@index([staffId, startsAt, endsAt])
+  @@index([organizationId])
+  @@index([locationId])
 }
 
 /// Non-cancelled appointments for the same staff cannot overlap (Postgres EXCLUDE gist).
 /// See migration 20260830034500_appointment_staff_no_overlap.
 model Appointment {
-  id         String            @id @default(cuid())
-  customerId String?
-  customer   User?             @relation("CustomerAppointments", fields: [customerId], references: [id], onDelete: SetNull)
-  staffId    String
-  staff      Staff             @relation(fields: [staffId], references: [id])
-  startsAt   DateTime
-  endsAt     DateTime
-  status     AppointmentStatus @default(PENDING)
-  notes      String?
-  createdAt  DateTime          @default(now())
-  updatedAt  DateTime          @updatedAt
+  id             String            @id @default(cuid())
+  organizationId String
+  locationId     String
+  customerId     String?
+  customer       User?             @relation("CustomerAppointments", fields: [customerId], references: [id], onDelete: SetNull)
+  staffId        String
+  staff          Staff             @relation(fields: [staffId], references: [id])
+  startsAt       DateTime
+  endsAt         DateTime
+  status         AppointmentStatus @default(PENDING)
+  notes          String?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
 
-  services AppointmentService[]
+  organization Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  location     Location             @relation(fields: [locationId], references: [id], onDelete: Restrict)
+  services     AppointmentService[]
 
+  @@index([organizationId, startsAt])
+  @@index([locationId, startsAt])
   @@index([staffId, startsAt])
   @@index([customerId, startsAt])
   @@index([status])

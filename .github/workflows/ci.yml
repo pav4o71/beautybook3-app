@@ -9,10 +9,25 @@ on:
 jobs:
   verify:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ci -d ci"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     env:
       DATABASE_URL: postgresql://ci:ci@localhost:5432/ci?sslmode=disable
       BETTER_AUTH_SECRET: ci-better-auth-secret-min-32-chars
       BETTER_AUTH_URL: http://localhost:3000
+      CI: "1"
     steps:
       - uses: actions/checkout@v4
 
@@ -23,6 +38,52 @@ jobs:
 
       - run: npm ci
 
+      - run: npx prisma migrate deploy
+
+      - run: npm run prisma:seed
+
       - run: npm run lint
 
       - run: npm run build
+
+      - run: npm run verify
+
+  e2e:
+    needs: verify
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ci -d ci"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://ci:ci@localhost:5432/ci?sslmode=disable
+      BETTER_AUTH_SECRET: ci-better-auth-secret-min-32-chars
+      BETTER_AUTH_URL: http://localhost:3000
+      CI: "1"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - run: npm ci
+
+      - run: npx prisma migrate deploy
+
+      - run: npm run prisma:seed
+
+      - run: npx playwright install --with-deps chromium
+
+      - run: npm run test:e2e

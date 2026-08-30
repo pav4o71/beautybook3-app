@@ -9,8 +9,9 @@ const activeServicePickerOrder = [
   { name: "asc" as const },
 ];
 
-export async function listCustomerCatalog() {
+export async function listCustomerCatalog(organizationId: string) {
   return prisma.serviceCategory.findMany({
+    where: { organizationId },
     orderBy: { sortOrder: "asc" },
     include: {
       services: {
@@ -21,9 +22,9 @@ export async function listCustomerCatalog() {
   });
 }
 
-export async function listActiveStaff() {
+export async function listActiveStaff(organizationId: string) {
   return prisma.staff.findMany({
-    where: { active: true },
+    where: { organizationId, active: true },
     orderBy: { name: "asc" },
     include: {
       services: {
@@ -33,35 +34,39 @@ export async function listActiveStaff() {
   });
 }
 
-export async function listBookingServices() {
+export async function listBookingServices(organizationId: string) {
   return prisma.service.findMany({
-    where: { active: true },
+    where: { organizationId, active: true },
     include: { category: true, staff: true },
     orderBy: activeServicePickerOrder,
   });
 }
 
-export async function listBookingStaff() {
+export async function listBookingStaff(organizationId: string) {
   return prisma.staff.findMany({
-    where: { active: true },
+    where: { organizationId, active: true },
     include: { services: true },
     orderBy: { name: "asc" },
   });
 }
 
-export async function listAdminCategories() {
+export async function listAdminCategories(organizationId: string) {
   return prisma.serviceCategory.findMany({
+    where: { organizationId },
     orderBy: { sortOrder: "asc" },
     include: { _count: { select: { services: true } } },
   });
 }
 
-export async function getCategoryById(id: string) {
-  return prisma.serviceCategory.findUnique({ where: { id } });
+export async function getCategoryById(organizationId: string, id: string) {
+  return prisma.serviceCategory.findFirst({
+    where: { id, organizationId },
+  });
 }
 
-export async function listAdminCatalog() {
+export async function listAdminCatalog(organizationId: string) {
   return prisma.serviceCategory.findMany({
+    where: { organizationId },
     orderBy: { sortOrder: "asc" },
     include: {
       services: {
@@ -71,8 +76,9 @@ export async function listAdminCatalog() {
   });
 }
 
-export async function listAdminStaffBoard() {
+export async function listAdminStaffBoard(organizationId: string) {
   return prisma.staff.findMany({
+    where: { organizationId },
     include: {
       services: { include: { service: true } },
       schedules: true,
@@ -81,31 +87,40 @@ export async function listAdminStaffBoard() {
   });
 }
 
-export async function listActiveServicesForPicker() {
+export async function listActiveServicesForPicker(organizationId: string) {
   return prisma.service.findMany({
-    where: { active: true },
+    where: { organizationId, active: true },
     include: activeServicePickerInclude,
     orderBy: activeServicePickerOrder,
   });
 }
 
-export async function getStaffForEdit(id: string) {
-  return prisma.staff.findUnique({
-    where: { id },
+export async function getStaffForEdit(organizationId: string, id: string) {
+  return prisma.staff.findFirst({
+    where: { id, organizationId },
     include: { services: true },
   });
 }
 
-export async function getStaffById(id: string) {
-  return prisma.staff.findUnique({ where: { id } });
+export async function getStaffById(organizationId: string, id: string) {
+  return prisma.staff.findFirst({ where: { id, organizationId } });
 }
 
-export async function getServiceForEdit(id: string) {
-  return prisma.service.findUnique({ where: { id } });
+export async function getServiceForEdit(organizationId: string, id: string) {
+  return prisma.service.findFirst({
+    where: { id, organizationId },
+  });
 }
 
-export async function listCategoryOptions() {
-  return prisma.serviceCategory.findMany({ orderBy: { sortOrder: "asc" } });
+export async function listCategoryOptions(organizationId: string) {
+  return prisma.serviceCategory.findMany({
+    where: { organizationId },
+    orderBy: { sortOrder: "asc" },
+  });
+}
+
+export async function getOrganizationForSettings(organizationId: string) {
+  return prisma.organization.findUnique({ where: { id: organizationId } });
 }
 
 export function slugify(value: string) {
@@ -116,7 +131,11 @@ export function slugify(value: string) {
     .replace(/^-+|-+$/g, "");
 }
 
-export async function uniqueCategorySlug(name: string, excludeId?: string) {
+export async function uniqueCategorySlug(
+  organizationId: string,
+  name: string,
+  excludeId?: string,
+) {
   const base = slugify(name) || "category";
   let candidate = base;
   let suffix = 2;
@@ -124,6 +143,7 @@ export async function uniqueCategorySlug(name: string, excludeId?: string) {
   while (
     await prisma.serviceCategory.findFirst({
       where: {
+        organizationId,
         slug: candidate,
         ...(excludeId ? { id: { not: excludeId } } : {}),
       },

@@ -8,28 +8,29 @@ import {
   parseSortOrder,
   uniqueCategorySlug,
 } from "@/lib/catalog";
-import { requireAdmin } from "@/lib/require-admin";
 import { prisma } from "@/lib/prisma";
+import { requireActiveOrgAdmin } from "@/lib/require-org";
 
 function revalidateCategoryPaths() {
   revalidatePath("/dashboard/admin/categories");
   revalidatePath("/dashboard/services");
   revalidatePath("/dashboard/book");
+  revalidatePath("/marketplace");
 }
 
 export async function createCategory(
   _prevState: ActionFormState,
   formData: FormData,
 ): Promise<ActionFormState> {
-  await requireAdmin();
+  const { organizationId } = await requireActiveOrgAdmin();
 
   try {
     const name = parseRequiredString(formData.get("name"), "Name");
     const sortOrder = parseSortOrder(formData.get("sortOrder"));
-    const slug = await uniqueCategorySlug(name);
+    const slug = await uniqueCategorySlug(organizationId, name);
 
     await prisma.serviceCategory.create({
-      data: { name, slug, sortOrder },
+      data: { organizationId, name, slug, sortOrder },
     });
   } catch (error) {
     return actionError(error);
@@ -43,7 +44,7 @@ export async function updateCategory(
   _prevState: ActionFormState,
   formData: FormData,
 ): Promise<ActionFormState> {
-  await requireAdmin();
+  const { organizationId } = await requireActiveOrgAdmin();
 
   try {
     const id = String(formData.get("id") ?? "");
@@ -53,7 +54,14 @@ export async function updateCategory(
 
     const name = parseRequiredString(formData.get("name"), "Name");
     const sortOrder = parseSortOrder(formData.get("sortOrder"));
-    const slug = await uniqueCategorySlug(name, id);
+    const slug = await uniqueCategorySlug(organizationId, name, id);
+
+    const existing = await prisma.serviceCategory.findFirst({
+      where: { id, organizationId },
+    });
+    if (!existing) {
+      throw new Error("Category not found.");
+    }
 
     await prisma.serviceCategory.update({
       where: { id },
@@ -71,12 +79,19 @@ export async function deleteCategory(
   _prevState: ActionFormState,
   formData: FormData,
 ): Promise<ActionFormState> {
-  await requireAdmin();
+  const { organizationId } = await requireActiveOrgAdmin();
 
   try {
     const id = String(formData.get("id") ?? "");
     if (!id) {
       throw new Error("Category id is required.");
+    }
+
+    const existing = await prisma.serviceCategory.findFirst({
+      where: { id, organizationId },
+    });
+    if (!existing) {
+      throw new Error("Category not found.");
     }
 
     const serviceCount = await prisma.service.count({ where: { categoryId: id } });

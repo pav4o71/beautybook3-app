@@ -7,7 +7,7 @@ import {
   parseAdminSettableStatus,
   updateAppointmentStatus,
 } from "@/lib/appointments";
-import { requireAdmin } from "@/lib/require-admin";
+import { requireActiveOrgAdmin } from "@/lib/require-org";
 
 function revalidateAppointmentPaths() {
   revalidatePath("/dashboard/admin/appointments");
@@ -18,7 +18,7 @@ export async function setAppointmentStatus(
   _prevState: ActionFormState,
   formData: FormData,
 ): Promise<ActionFormState> {
-  await requireAdmin();
+  const { organizationId } = await requireActiveOrgAdmin();
 
   const id = String(formData.get("id") ?? "");
   const statusRaw = String(formData.get("status") ?? "");
@@ -29,7 +29,7 @@ export async function setAppointmentStatus(
 
   try {
     const status = parseAdminSettableStatus(statusRaw);
-    await updateAppointmentStatus({ appointmentId: id, status });
+    await updateAppointmentStatus({ organizationId, appointmentId: id, status });
   } catch (error) {
     return actionError(error);
   }

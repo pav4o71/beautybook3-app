@@ -8,13 +8,14 @@ import {
   parseOptionalString,
   parseRequiredString,
 } from "@/lib/catalog";
-import { requireAdmin } from "@/lib/require-admin";
 import { prisma } from "@/lib/prisma";
+import { requireActiveOrgAdmin } from "@/lib/require-org";
 
 function revalidateStaffPaths() {
   revalidatePath("/dashboard/admin/staff");
   revalidatePath("/dashboard/staff");
   revalidatePath("/dashboard/book");
+  revalidatePath("/marketplace");
 }
 
 function parseServiceIds(formData: FormData) {
@@ -24,12 +25,16 @@ function parseServiceIds(formData: FormData) {
     .filter(Boolean);
 }
 
-async function syncStaffServices(staffId: string, serviceIds: string[]) {
+async function syncStaffServices(
+  organizationId: string,
+  staffId: string,
+  serviceIds: string[],
+) {
   const uniqueIds = [...new Set(serviceIds)];
 
   if (uniqueIds.length > 0) {
     const count = await prisma.service.count({
-      where: { id: { in: uniqueIds }, active: true },
+      where: { id: { in: uniqueIds }, organizationId, active: true },
     });
     if (count !== uniqueIds.length) {
       throw new Error("One or more selected services are invalid.");
@@ -52,7 +57,7 @@ export async function createStaff(
   _prevState: ActionFormState,
   formData: FormData,
 ): Promise<ActionFormState> {
-  await requireAdmin();
+  const { organizationId, locationId } = await requireActiveOrgAdmin();
 
   try {
     const name = parseRequiredString(formData.get("name"), "Name");
@@ -61,10 +66,10 @@ export async function createStaff(
     const serviceIds = parseServiceIds(formData);
 
     const staff = await prisma.staff.create({
-      data: { name, bio, active },
+      data: { organizationId, locationId, name, bio, active },
     });
 
-    await syncStaffServices(staff.id, serviceIds);
+    await syncStaffServices(organizationId, staff.id, serviceIds);
   } catch (error) {
     return actionError(error);
   }
@@ -77,7 +82,7 @@ export async function updateStaff(
   _prevState: ActionFormState,
   formData: FormData,
 ): Promise<ActionFormState> {
-  await requireAdmin();
+  const { organizationId } = await requireActiveOrgAdmin();
 
   try {
     const id = String(formData.get("id") ?? "");
@@ -90,12 +95,19 @@ export async function updateStaff(
     const active = parseBooleanCheckbox(formData.get("active"));
     const serviceIds = parseServiceIds(formData);
 
+    const existing = await prisma.staff.findFirst({
+      where: { id, organizationId },
+    });
+    if (!existing) {
+      throw new Error("Staff member not found.");
+    }
+
     await prisma.staff.update({
       where: { id },
       data: { name, bio, active },
     });
 
-    await syncStaffServices(id, serviceIds);
+    await syncStaffServices(organizationId, id, serviceIds);
   } catch (error) {
     return actionError(error);
   }
@@ -105,15 +117,15 @@ export async function updateStaff(
 }
 
 export async function deactivateStaff(formData: FormData): Promise<void> {
-  await requireAdmin();
+  const { organizationId } = await requireActiveOrgAdmin();
 
   const id = String(formData.get("id") ?? "");
   if (!id) {
     redirect("/dashboard/admin/staff");
   }
 
-  await prisma.staff.update({
-    where: { id },
+  await prisma.staff.updateMany({
+    where: { id, organizationId },
     data: { active: false },
   });
 
@@ -122,15 +134,15 @@ export async function deactivateStaff(formData: FormData): Promise<void> {
 }
 
 export async function activateStaff(formData: FormData): Promise<void> {
-  await requireAdmin();
+  const { organizationId } = await requireActiveOrgAdmin();
 
   const id = String(formData.get("id") ?? "");
   if (!id) {
     redirect("/dashboard/admin/staff");
   }
 
-  await prisma.staff.update({
-    where: { id },
+  await prisma.staff.updateMany({
+    where: { id, organizationId },
     data: { active: true },
   });
 

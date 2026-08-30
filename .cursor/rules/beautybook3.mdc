@@ -47,3 +47,8 @@ alwaysApply: true
 - Verify scripts: `npm run verify` (mutates DB — set `VERIFY_ALLOW_REMOTE=1` when `DATABASE_URL` is hosted Supabase).
 - E2E: `npm run test:e2e` (Playwright)
 - Demo accounts: `lib/demo-account.ts` (`demo@beautybook.local`, `customer@beautybook.local`)
+
+## Validation
+
+- Use Zod schemas in `lib/validations/` for new server actions; `safeParse` + `actionError` on failure.
+- Legacy `parse*` helpers in `lib/catalog.ts` remain for existing forms until migrated.

@@ -19,12 +19,16 @@ export function parseAdminSettableStatus(value: string): AdminSettableStatus {
   throw new Error("Invalid status.");
 }
 
-export async function getCustomerAppointments(customerId: string) {
+export async function getCustomerAppointments(
+  organizationId: string,
+  customerId: string,
+) {
   const now = new Date();
   const recentCutoff = salonDaysAgo(7, now);
 
   return prisma.appointment.findMany({
     where: {
+      organizationId,
       customerId,
       status: { not: AppointmentStatus.CANCELLED },
       OR: [{ startsAt: { gte: now } }, { startsAt: { gte: recentCutoff, lt: now } }],
@@ -40,11 +44,12 @@ export async function getCustomerAppointments(customerId: string) {
   });
 }
 
-export async function getAppointmentsForDay(day: Date = new Date()) {
+export async function getAppointmentsForDay(organizationId: string, day: Date = new Date()) {
   const { start, end } = salonDayBounds(day);
 
   return prisma.appointment.findMany({
     where: {
+      organizationId,
       startsAt: { gte: start, lt: end },
     },
     include: {
@@ -60,11 +65,12 @@ export async function getAppointmentsForDay(day: Date = new Date()) {
 }
 
 export async function updateAppointmentStatus(input: {
+  organizationId: string;
   appointmentId: string;
   status: AdminSettableStatus;
 }) {
-  const appointment = await prisma.appointment.findUnique({
-    where: { id: input.appointmentId },
+  const appointment = await prisma.appointment.findFirst({
+    where: { id: input.appointmentId, organizationId: input.organizationId },
     select: { id: true, status: true },
   });
 

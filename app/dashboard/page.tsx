@@ -1,16 +1,22 @@
 import Link from "next/link";
+import { resolveActiveOrganization } from "@/lib/org-context";
+import { isOrgAdminRole } from "@/lib/org-roles";
 import { requireUser } from "@/lib/require-user";
 
 export default async function DashboardPage() {
   const session = await requireUser();
-  const isAdmin = session.user.role === "ADMIN";
+  const active = await resolveActiveOrganization(session.user.id);
+  const isOrgAdmin =
+    session.user.role === "ADMIN" ||
+    (active ? isOrgAdminRole(active.membership.role) : false);
 
   return (
     <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-10">
       <div className="space-y-1">
         <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">Dashboard</h1>
         <p className="text-sm text-zinc-600">
-          Signed in as {session.user.name} ({session.user.role ?? "CUSTOMER"}).
+          Signed in as {session.user.name}
+          {active ? ` · ${active.organization.name} (${active.membership.role})` : ""}.
         </p>
       </div>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -44,7 +50,7 @@ export default async function DashboardPage() {
             Upcoming bookings and pay-at-salon totals.
           </p>
         </Link>
-        {isAdmin ? (
+        {isOrgAdmin ? (
           <Link
             href="/dashboard/admin"
             className="rounded-lg border border-zinc-200 bg-white p-4 hover:border-zinc-400"

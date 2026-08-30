@@ -2,8 +2,14 @@
 
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
+import type { ActionFormState } from "@/lib/action-form-state";
 import { formatDay, formatPrice, formatTime } from "@/lib/format";
-import { cardButtonClass, cardButtonSelectedClass, slotButtonClass, successAlertClass } from "@/lib/ui";
+import {
+  cardButtonClass,
+  cardButtonSelectedClass,
+  slotButtonClass,
+  successAlertClass,
+} from "@/lib/ui";
 import { bookSlot } from "./actions";
 
 type ServiceOption = {
@@ -31,12 +37,16 @@ export function BookingForm({
   initialServiceId,
   initialStaffId,
   slots,
+  action = bookSlot,
+  bookPath = "/dashboard/book",
 }: {
   services: ServiceOption[];
   staff: StaffOption[];
   initialServiceId: string;
   initialStaffId: string;
   slots: string[];
+  action?: (formData: FormData) => Promise<ActionFormState>;
+  bookPath?: string;
 }) {
   const router = useRouter();
   const [serviceId, setServiceId] = useState(initialServiceId);
@@ -70,7 +80,7 @@ export function BookingForm({
     const params = new URLSearchParams();
     if (nextServiceId) params.set("serviceId", nextServiceId);
     if (nextStaffId) params.set("staffId", nextStaffId);
-    router.push(`/dashboard/book?${params.toString()}`);
+    router.push(`${bookPath}?${params.toString()}`);
   }
 
   function selectService(nextServiceId: string) {
@@ -179,7 +189,7 @@ export function BookingForm({
                     key={iso}
                     action={(formData) => {
                       startTransition(async () => {
-                        const result = await bookSlot(formData);
+                        const result = await action(formData);
                         if (result.error) {
                           setMessage(result.error);
                           if (result.error.includes("Sign in again")) {

@@ -1,11 +1,26 @@
 'use client'
 
-import { Location, Service, Tenant } from '@prisma/client'
+type MarketplaceOrganization = {
+  id: string
+  name: string
+  logoUrl?: string | null
+}
+
+type MarketplaceLocation = {
+  name: string
+  area?: string | null
+  city?: string | null
+}
+
+type MarketplaceService = {
+  name: string
+  priceCents: number
+}
 
 interface BusinessCardProps {
-  tenant: Tenant
-  location: Location
-  service: Service
+  tenant: MarketplaceOrganization
+  location: MarketplaceLocation
+  service: MarketplaceService
   distance?: number
   rating?: number
   onBook: () => void
@@ -55,7 +70,7 @@ export function BusinessCard({
             <div>
               <p className="text-sm text-gray-600">{service.name}</p>
               <p className="font-bold text-blue-600">
-                ₱{Number(service.price).toLocaleString('en-PH')}
+                ₱{(service.priceCents / 100).toLocaleString('en-PH')}
               </p>
             </div>
             <button

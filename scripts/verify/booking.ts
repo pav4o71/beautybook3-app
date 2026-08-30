@@ -1,6 +1,7 @@
 import "dotenv/config";
 import { createAppointment, getAvailableSlots } from "../../lib/booking";
 import { prisma } from "../../lib/prisma";
+import { getDemoTenantContext } from "../../lib/tenant";
 import { addSalonDays, salonDateAtTime, salonDayBounds } from "../../lib/timezone";
 
 function assert(condition: boolean, message: string) {
@@ -25,6 +26,7 @@ async function expectRejects(
 }
 
 async function main() {
+  const tenant = await getDemoTenantContext();
   const customer = await prisma.user.findFirstOrThrow({
     where: { email: "customer@beautybook.local" },
   });
@@ -35,6 +37,7 @@ async function main() {
   });
 
   const slots = await getAvailableSlots({
+    organizationId: tenant.organizationId,
     staffId: maya.id,
     durationMin: cut.durationMin,
     days: 14,
@@ -71,6 +74,8 @@ async function main() {
     await expectRejects(
       () =>
         createAppointment({
+          organizationId: tenant.organizationId,
+          locationId: tenant.locationId,
           customerId: customer.id,
           staffId: inactiveStaffId,
           serviceId: cut.id,
@@ -96,6 +101,8 @@ async function main() {
   await expectRejects(
     () =>
       createAppointment({
+        organizationId: tenant.organizationId,
+        locationId: tenant.locationId,
         customerId: customer.id,
         staffId: maya.id,
         serviceId: cut.id,
@@ -109,6 +116,8 @@ async function main() {
     slots[slots.length - 1];
 
   const created = await createAppointment({
+    organizationId: tenant.organizationId,
+    locationId: tenant.locationId,
     customerId: customer.id,
     staffId: maya.id,
     serviceId: cut.id,
@@ -118,6 +127,8 @@ async function main() {
   await expectRejects(
     () =>
       createAppointment({
+        organizationId: tenant.organizationId,
+        locationId: tenant.locationId,
         customerId: customer.id,
         staffId: maya.id,
         serviceId: cut.id,
@@ -133,6 +144,7 @@ async function main() {
   });
 
   const freshSlots = await getAvailableSlots({
+    organizationId: tenant.organizationId,
     staffId: maya.id,
     durationMin: cut.durationMin,
     days: 14,
@@ -145,12 +157,16 @@ async function main() {
 
   const parallelResults = await Promise.allSettled([
     createAppointment({
+      organizationId: tenant.organizationId,
+      locationId: tenant.locationId,
       customerId: customer.id,
       staffId: maya.id,
       serviceId: cut.id,
       startsAt: parallelSlot,
     }),
     createAppointment({
+      organizationId: tenant.organizationId,
+      locationId: tenant.locationId,
       customerId: admin.id,
       staffId: maya.id,
       serviceId: cut.id,

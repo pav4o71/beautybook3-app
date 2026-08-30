@@ -33,6 +33,13 @@ export default async function AdminHomePage() {
           <p className="mt-1 text-sm text-zinc-600">Treatments, duration, and price.</p>
         </Link>
         <Link
+          href="/dashboard/admin/settings"
+          className="rounded-lg border border-zinc-200 bg-white p-4 hover:border-zinc-400"
+        >
+          <h2 className="font-medium text-zinc-900">Settings</h2>
+          <p className="mt-1 text-sm text-zinc-600">Marketplace visibility and timezone.</p>
+        </Link>
+        <Link
           href="/dashboard/admin/staff"
           className="rounded-lg border border-zinc-200 bg-white p-4 hover:border-zinc-400"
         >
