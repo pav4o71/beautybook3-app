@@ -1,6 +1,6 @@
 # Phase 6 — Search-first marketplace UI
 
-**Status:** Planned  
+**Status:** In progress  
 **Base:** `main` after Phase 5 (PRs #7–#11)  
 **Goal:** Replace salon-first browsing with **service-first discovery**: category → services → area → day/time → available salons → book.
 

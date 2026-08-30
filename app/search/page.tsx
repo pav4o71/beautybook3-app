@@ -1,3 +1,4 @@
+import { BookingStep } from "@/components/booking/BookingStep";
 import { isManilaArea } from "@/lib/areas";
 import {
   listMarketplaceCategoryFilters,
@@ -82,9 +83,13 @@ export default async function SearchPage({
       ) : null}
 
       {date ? (
-        <AvailabilityResults results={availability} />
+        <BookingStep step={2} currentStep={2} title="Available times">
+          <AvailabilityResults results={availability} />
+        </BookingStep>
       ) : (
-        <ServiceResults services={services} />
+        <BookingStep step={1} currentStep={1} title="Services">
+          <ServiceResults services={services} />
+        </BookingStep>
       )}
     </main>
   );

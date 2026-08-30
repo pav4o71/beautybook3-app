@@ -43,6 +43,11 @@ export function BusinessCard({ listing }: { listing: MarketplaceListing }) {
               {location.address ? (
                 <span className="block text-zinc-500">{location.address}</span>
               ) : null}
+              {location.area ? (
+                <span className="mt-0.5 inline-block rounded bg-zinc-100 px-2 py-0.5 text-xs text-zinc-700">
+                  {location.area}
+                </span>
+              ) : null}
             </li>
           ))}
         </ul>
