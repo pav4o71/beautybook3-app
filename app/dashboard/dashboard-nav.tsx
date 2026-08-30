@@ -57,7 +57,7 @@ export async function DashboardNav() {
               {link.label}
             </Link>
           ))}
-          <Link href="/search" className="text-zinc-600 hover:text-zinc-900">
+          <Link href="/" className="text-zinc-600 hover:text-zinc-900">
             Search
           </Link>
           {isOrgAdmin ? (

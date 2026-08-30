@@ -9,14 +9,14 @@
 ## User journey (target)
 
 ```
-/  (landing)
-  └─ Pick category: Hair | Nails | …
-       └─ /search?category=hair
-            ├─ See all Hair services across Manila salons (name, price, salon, branch area)
-            ├─ Optional: filter by area (Makati, BGC, QC, …)
-            ├─ Optional: pick date + time window
-            └─ Results narrow to salons with real availability
-                 └─ “Book” → /s/{orgSlug}/book?serviceId&locationId&staffId&startsAt
+/  (homepage discovery)
+  ├─ Category chips: Hair | Nails
+  ├─ Service chips in a row (Haircut, Blowout, …)
+  ├─ Salon cards with cover images
+  ├─ Optional: filter by area (Makati, BGC, QC, …)
+  ├─ Optional: pick date + time window
+  └─ Date set → salons with real availability
+       └─ “Book” → /s/{orgSlug}/book?serviceId&locationId&staffId&startsAt
 ```
 
 Logged-in customers can still use `/dashboard/book` (org-scoped demo salon); public flow is the redesign focus.
@@ -130,7 +130,7 @@ Cap results (e.g. 50) to avoid N×M explosion on cold start.
 | `components/booking/AreaFilter.tsx` | Use `lib/areas.ts` + `lib/ui.ts` |
 | `components/booking/ServiceCard.tsx` | Wire into search results |
 | `components/booking/CategoryCard.tsx` | Wire into landing |
-| `components/booking/DateTimePicker.tsx` | Replace static times with URL-driven date + time select (or deprecate in favor of native inputs) |
+| `components/booking/DateTimePicker.tsx` | Deprecated — `/search` uses native date + time in `search-filters.tsx` |
 | `components/booking/BusinessCard.tsx` | Optional: show area badge; keep `data-testid` patterns |
 
 ---

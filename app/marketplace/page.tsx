@@ -10,5 +10,5 @@ export default async function MarketplacePage({
   if (query.category) params.set("category", query.category);
   if (query.area) params.set("area", query.area);
   const qs = params.toString();
-  permanentRedirect(qs ? `/search?${qs}` : "/search");
+  permanentRedirect(qs ? `/?${qs}` : "/");
 }

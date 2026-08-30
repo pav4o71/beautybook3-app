@@ -50,6 +50,7 @@ export default async function BusinessSettingsPage({
 
       <ActionForm
         action={updateOrganizationSettings}
+        encType="multipart/form-data"
         className="mt-6 space-y-4 rounded-lg border border-zinc-200 bg-white p-4"
       >
         <label className={labelClass}>
@@ -90,6 +91,35 @@ export default async function BusinessSettingsPage({
             className={checkboxClass}
           />
           List on marketplace ({`/s/${organization.slug}`})
+        </label>
+
+        {organization.coverImageUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element -- mixed local paths and owner-pasted http(s) URLs
+          <img
+            src={organization.coverImageUrl}
+            alt=""
+            className="h-32 w-full rounded-md object-cover"
+          />
+        ) : null}
+
+        <label className={labelClass}>
+          <span className={labelTextClass}>Cover image URL</span>
+          <input
+            name="coverImageUrl"
+            defaultValue={organization.coverImageUrl ?? ""}
+            placeholder="/images/salons/your-salon.jpg"
+            className={controlClass}
+          />
+        </label>
+
+        <label className={labelClass}>
+          <span className={labelTextClass}>Or upload a cover (JPEG, PNG, or WebP, max 2MB)</span>
+          <input
+            type="file"
+            name="coverImage"
+            accept="image/jpeg,image/png,image/webp"
+            className={controlClass}
+          />
         </label>
 
         <button type="submit" className={primaryButtonClass}>

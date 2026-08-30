@@ -15,6 +15,7 @@ function revalidateCategoryPaths() {
   revalidatePath("/dashboard/admin/categories");
   revalidatePath("/dashboard/services");
   revalidatePath("/dashboard/book");
+  revalidatePath("/");
   revalidatePath("/marketplace");
   revalidatePath("/search");
 }

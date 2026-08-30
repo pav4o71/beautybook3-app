@@ -25,7 +25,7 @@ test.describe("search availability", () => {
     page,
   }) => {
     const date = nextManilaWeekdayIso();
-    await page.goto(`/search?category=hair&date=${date}`);
+    await page.goto(`/?category=hair&date=${date}`);
     await expect(page.getByTestId("date-picker")).toHaveValue(date);
 
     const result = page.getByTestId("availability-result").first();

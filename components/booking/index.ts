@@ -1,6 +1,2 @@
-export { CategoryCard } from './CategoryCard'
-export { ServiceCard } from './ServiceCard'
 export { BusinessCard } from './BusinessCard'
-export { BookingStep } from './BookingStep'
-export { DateTimePicker } from './DateTimePicker'
 export { AreaFilter } from './AreaFilter'

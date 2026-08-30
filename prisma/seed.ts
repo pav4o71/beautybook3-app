@@ -1,7 +1,7 @@
 import { AppointmentStatus, OrgRole, Role, Weekday } from "@/app/generated/prisma/enums";
 import { auth } from "@/lib/auth";
 import { DEMO_ACCOUNT, DEMO_CUSTOMER } from "@/lib/demo-account";
-import { DEMO_ORG_SLUG } from "@/lib/demo-constants";
+import { DEMO_ORG_SLUG, salonCoverPath } from "@/lib/demo-constants";
 import { prisma } from "@/lib/prisma";
 import {
   addSalonDays,
@@ -42,11 +42,16 @@ function atSalonTime(day: Date, hours: number, minutes: number) {
 async function seedOrganization(): Promise<TenantContext> {
   const org = await prisma.organization.upsert({
     where: { slug: DEMO_ORG_SLUG },
-    update: { name: "BeautyBook Demo Salon", published: true },
+    update: {
+      name: "BeautyBook Demo Salon",
+      published: true,
+      coverImageUrl: salonCoverPath(DEMO_ORG_SLUG),
+    },
     create: {
       name: "BeautyBook Demo Salon",
       slug: DEMO_ORG_SLUG,
       published: true,
+      coverImageUrl: salonCoverPath(DEMO_ORG_SLUG),
     },
   });
 

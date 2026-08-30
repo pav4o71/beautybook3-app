@@ -18,6 +18,7 @@ function revalidateServicePaths() {
   revalidatePath("/dashboard/services");
   revalidatePath("/dashboard/staff");
   revalidatePath("/dashboard/book");
+  revalidatePath("/");
   revalidatePath("/marketplace");
   revalidatePath("/search");
 }

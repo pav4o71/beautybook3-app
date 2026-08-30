@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { actionError, type ActionFormState } from "@/lib/action-form-state";
+import { CoverImageError, parseCoverImageUrl, saveOrganizationCover } from "@/lib/org-cover";
 import { prisma } from "@/lib/prisma";
 import { requireActiveOrgAdmin } from "@/lib/require-org";
 import {
@@ -12,6 +13,7 @@ import {
 
 function revalidateSettingsPaths(slug: string) {
   revalidatePath("/dashboard/admin/settings");
+  revalidatePath("/");
   revalidatePath("/marketplace");
   revalidatePath("/search");
   revalidatePath(`/s/${slug}`);
@@ -34,6 +36,24 @@ export async function updateOrganizationSettings(
     return { error: formatZodError(parsed.error) };
   }
 
+  const uploaded = formData.get("coverImage");
+  let coverImageUrl: string | null;
+  try {
+    if (uploaded instanceof File && uploaded.size > 0) {
+      coverImageUrl = await saveOrganizationCover(organizationId, uploaded);
+    } else {
+      coverImageUrl = parseCoverImageUrl(
+        String(formData.get("coverImageUrl") ?? ""),
+        organizationId,
+      );
+    }
+  } catch (error) {
+    if (error instanceof CoverImageError) {
+      return { error: error.message };
+    }
+    return actionError(error);
+  }
+
   try {
     await prisma.organization.update({
       where: { id: organizationId },
@@ -41,6 +61,7 @@ export async function updateOrganizationSettings(
         name: parsed.data.name,
         timezone: parsed.data.timezone,
         published: parsed.data.published,
+        coverImageUrl,
       },
     });
 
