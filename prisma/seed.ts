@@ -1,0 +1,402 @@
+import { AppointmentStatus, Role, Weekday } from "@/app/generated/prisma/enums";
+import { auth } from "@/lib/auth";
+import { DEMO_ACCOUNT, DEMO_CUSTOMER } from "@/lib/demo-account";
+import { prisma } from "@/lib/prisma";
+
+const WEEKDAYS: Weekday[] = ["MON", "TUE", "WED", "THU", "FRI"];
+
+function nextWeekday(targetDay: number) {
+  const date = new Date();
+  date.setHours(0, 0, 0, 0);
+  const current = date.getDay();
+  let delta = (targetDay - current + 7) % 7;
+  if (delta === 0) {
+    delta = 7;
+  }
+  date.setDate(date.getDate() + delta);
+  return date;
+}
+
+function atLocalTime(day: Date, hours: number, minutes: number) {
+  const next = new Date(day);
+  next.setHours(hours, minutes, 0, 0);
+  return next;
+}
+
+async function upsertStaffSchedule(
+  staffId: string,
+  weekday: Weekday,
+  startTime: string,
+  endTime: string,
+) {
+  await prisma.staffSchedule.upsert({
+    where: {
+      staffId_weekday_startTime: {
+        staffId,
+        weekday,
+        startTime,
+      },
+    },
+    update: { endTime },
+    create: { staffId, weekday, startTime, endTime },
+  });
+}
+
+async function replaceWeekdaySchedule(
+  staffId: string,
+  weekday: Weekday,
+  windows: { startTime: string; endTime: string }[],
+) {
+  await prisma.staffSchedule.deleteMany({ where: { staffId, weekday } });
+  for (const window of windows) {
+    await prisma.staffSchedule.create({
+      data: {
+        staffId,
+        weekday,
+        startTime: window.startTime,
+        endTime: window.endTime,
+      },
+    });
+  }
+}
+
+async function upsertTimeOff(
+  staffId: string,
+  reason: string,
+  startsAt: Date,
+  endsAt: Date,
+) {
+  const existing = await prisma.timeOff.findFirst({
+    where: { staffId, reason },
+  });
+
+  if (existing) {
+    return prisma.timeOff.update({
+      where: { id: existing.id },
+      data: { startsAt, endsAt },
+    });
+  }
+
+  return prisma.timeOff.create({
+    data: { staffId, reason, startsAt, endsAt },
+  });
+}
+
+async function seedDemoUser() {
+  const existing = await prisma.user.findUnique({
+    where: { email: DEMO_ACCOUNT.email },
+  });
+
+  if (existing) {
+    if (existing.role !== Role.ADMIN) {
+      await prisma.user.update({
+        where: { email: DEMO_ACCOUNT.email },
+        data: { role: Role.ADMIN },
+      });
+    }
+
+    console.log(`Demo admin already exists: ${DEMO_ACCOUNT.email}`);
+    return existing;
+  }
+
+  const result = await auth.api.signUpEmail({
+    body: {
+      name: DEMO_ACCOUNT.name,
+      email: DEMO_ACCOUNT.email,
+      password: DEMO_ACCOUNT.password,
+    },
+  });
+
+  if (!result.user) {
+    throw new Error("Better Auth did not return a user for the demo admin");
+  }
+
+  return prisma.user.update({
+    where: { email: DEMO_ACCOUNT.email },
+    data: { role: Role.ADMIN },
+  });
+}
+
+async function seedDemoCustomer() {
+  const existing = await prisma.user.findUnique({
+    where: { email: DEMO_CUSTOMER.email },
+  });
+
+  if (existing) {
+    if (existing.role !== Role.CUSTOMER) {
+      await prisma.user.update({
+        where: { email: DEMO_CUSTOMER.email },
+        data: { role: Role.CUSTOMER },
+      });
+    }
+
+    console.log(`Demo customer already exists: ${DEMO_CUSTOMER.email}`);
+    return existing;
+  }
+
+  const result = await auth.api.signUpEmail({
+    body: {
+      name: DEMO_CUSTOMER.name,
+      email: DEMO_CUSTOMER.email,
+      password: DEMO_CUSTOMER.password,
+    },
+  });
+
+  if (!result.user) {
+    throw new Error("Better Auth did not return a user for the demo customer");
+  }
+
+  return prisma.user.update({
+    where: { email: DEMO_CUSTOMER.email },
+    data: { role: Role.CUSTOMER },
+  });
+}
+
+async function upsertService(input: {
+  categoryId: string;
+  name: string;
+  description: string;
+  durationMin: number;
+  priceCents: number;
+  active?: boolean;
+}) {
+  const existing = await prisma.service.findFirst({
+    where: { name: input.name, categoryId: input.categoryId },
+  });
+
+  if (existing) {
+    return prisma.service.update({
+      where: { id: existing.id },
+      data: {
+        description: input.description,
+        durationMin: input.durationMin,
+        priceCents: input.priceCents,
+        active: input.active ?? true,
+      },
+    });
+  }
+
+  return prisma.service.create({
+    data: {
+      categoryId: input.categoryId,
+      name: input.name,
+      description: input.description,
+      durationMin: input.durationMin,
+      priceCents: input.priceCents,
+      active: input.active ?? true,
+    },
+  });
+}
+
+async function findOrCreateStaff(name: string, bio: string, active = true) {
+  const existing = await prisma.staff.findFirst({ where: { name } });
+  if (existing) {
+    return prisma.staff.update({
+      where: { id: existing.id },
+      data: { bio, active },
+    });
+  }
+  return prisma.staff.create({ data: { name, bio, active } });
+}
+
+async function upsertSeedAppointment(input: {
+  marker: string;
+  customerId: string;
+  staffId: string;
+  serviceId: string;
+  startsAt: Date;
+  durationMin: number;
+  priceCents: number;
+  status: AppointmentStatus;
+}) {
+  const existing = await prisma.appointment.findFirst({
+    where: { notes: input.marker },
+  });
+
+  const endsAt = new Date(input.startsAt.getTime() + input.durationMin * 60_000);
+
+  if (existing) {
+    await prisma.appointmentService.deleteMany({
+      where: { appointmentId: existing.id },
+    });
+    await prisma.appointment.update({
+      where: { id: existing.id },
+      data: {
+        customerId: input.customerId,
+        staffId: input.staffId,
+        startsAt: input.startsAt,
+        endsAt,
+        status: input.status,
+      },
+    });
+    await prisma.appointmentService.create({
+      data: {
+        appointmentId: existing.id,
+        serviceId: input.serviceId,
+        durationMin: input.durationMin,
+        priceCents: input.priceCents,
+      },
+    });
+    return existing;
+  }
+
+  return prisma.appointment.create({
+    data: {
+      customerId: input.customerId,
+      staffId: input.staffId,
+      startsAt: input.startsAt,
+      endsAt,
+      status: input.status,
+      notes: input.marker,
+      services: {
+        create: {
+          serviceId: input.serviceId,
+          durationMin: input.durationMin,
+          priceCents: input.priceCents,
+        },
+      },
+    },
+  });
+}
+
+async function seedCatalogAndStaff(customerId: string) {
+  const hair = await prisma.serviceCategory.upsert({
+    where: { slug: "hair" },
+    update: { name: "Hair", sortOrder: 1 },
+    create: { slug: "hair", name: "Hair", sortOrder: 1 },
+  });
+
+  const nails = await prisma.serviceCategory.upsert({
+    where: { slug: "nails" },
+    update: { name: "Nails", sortOrder: 2 },
+    create: { slug: "nails", name: "Nails", sortOrder: 2 },
+  });
+
+  const cut = await upsertService({
+    categoryId: hair.id,
+    name: "Haircut",
+    description: "Wash, cut, and blow-dry",
+    durationMin: 45,
+    priceCents: 35000,
+  });
+
+  const color = await upsertService({
+    categoryId: hair.id,
+    name: "Hair colour",
+    description: "Full colour with finish",
+    durationMin: 90,
+    priceCents: 180000,
+  });
+
+  const gel = await upsertService({
+    categoryId: nails.id,
+    name: "Gel manicure",
+    description: "Shape, gel polish, and care",
+    durationMin: 60,
+    priceCents: 45000,
+  });
+
+  await upsertService({
+    categoryId: hair.id,
+    name: "Deep conditioning",
+    description: "Inactive demo service for testing",
+    durationMin: 30,
+    priceCents: 25000,
+    active: false,
+  });
+
+  const maya = await findOrCreateStaff(
+    "Maya Petrova",
+    "Senior stylist — cuts and colour",
+    true,
+  );
+  const lena = await findOrCreateStaff(
+    "Lena Dimitrova",
+    "Nail technician — also offers haircuts",
+    true,
+  );
+  await findOrCreateStaff(
+    "Alex Rivera",
+    "Inactive stylist — demo only",
+    false,
+  );
+
+  await prisma.staffService.createMany({
+    data: [
+      { staffId: maya.id, serviceId: cut.id },
+      { staffId: maya.id, serviceId: color.id },
+      { staffId: lena.id, serviceId: gel.id },
+      { staffId: lena.id, serviceId: cut.id },
+    ],
+    skipDuplicates: true,
+  });
+
+  for (const staff of [maya, lena]) {
+    for (const weekday of WEEKDAYS) {
+      await upsertStaffSchedule(staff.id, weekday, "09:00", "17:00");
+    }
+  }
+
+  await replaceWeekdaySchedule(maya.id, "WED", [
+    { startTime: "09:00", endTime: "12:00" },
+    { startTime: "13:00", endTime: "17:00" },
+  ]);
+
+  await upsertStaffSchedule(lena.id, "SAT", "10:00", "14:00");
+
+  const nextMonday = nextWeekday(1);
+  await upsertTimeOff(
+    maya.id,
+    "seed:lunch-block",
+    atLocalTime(nextMonday, 12, 0),
+    atLocalTime(nextMonday, 13, 0),
+  );
+
+  const vacationStart = atLocalTime(nextWeekday(2), 0, 0);
+  const vacationEnd = atLocalTime(nextWeekday(4), 23, 59);
+  await upsertTimeOff(lena.id, "seed:vacation", vacationStart, vacationEnd);
+
+  const upcomingTuesday = nextWeekday(2);
+  await upsertSeedAppointment({
+    marker: "seed:upcoming-confirmed",
+    customerId,
+    staffId: maya.id,
+    serviceId: cut.id,
+    startsAt: atLocalTime(upcomingTuesday, 10, 0),
+    durationMin: cut.durationMin,
+    priceCents: cut.priceCents,
+    status: AppointmentStatus.CONFIRMED,
+  });
+
+  const pastMonday = new Date(nextMonday);
+  pastMonday.setDate(pastMonday.getDate() - 7);
+  await upsertSeedAppointment({
+    marker: "seed:past-completed",
+    customerId,
+    staffId: lena.id,
+    serviceId: gel.id,
+    startsAt: atLocalTime(pastMonday, 11, 0),
+    durationMin: gel.durationMin,
+    priceCents: gel.priceCents,
+    status: AppointmentStatus.COMPLETED,
+  });
+
+  console.log(
+    "Seeded catalog, staff, schedules, time off, inactive demos, and appointments",
+  );
+}
+
+async function main() {
+  await seedDemoUser();
+  const customer = await seedDemoCustomer();
+  await seedCatalogAndStaff(customer.id);
+}
+
+main()
+  .catch((error) => {
+    console.error(error);
+    process.exitCode = 1;
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });

@@ -1,47 +1,82 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app). It uses TypeScript, Tailwind CSS, the App Router, and Prisma with PostgreSQL.
+# BeautyBook
 
-## Getting Started
+Salon booking app: Next.js App Router, TypeScript, Tailwind, Prisma 7 + PostgreSQL (Supabase), Better Auth (email/password). Pay at salon — no payment table.
 
-First, run the development server:
+## Stack roles
+
+| Piece | Tool | Notes |
+|-------|------|--------|
+| Database host | **Supabase Postgres** | Storage only — do not use Supabase Auth for login |
+| Schema & migrations | **Prisma CLI** | `prisma/schema.prisma` + `prisma/migrations/` |
+| Login | **Better Auth** | `/api/auth/*`; passwords on `Account.password` |
+| Overlap protection | **Postgres exclusion constraint** | `Appointment_staff_no_overlap` (raw SQL migration) |
+
+Do **not** run `supabase db push` for app tables — Prisma owns the schema.
+
+## Setup
+
+1. Copy `.env.example` → `.env`.
+2. Set **`DATABASE_URL`** to the Supabase **session pooler** URI (port **5432**, host `*.pooler.supabase.com`). This project uses the `beautybook_prisma.[PROJECT-REF]` user — it works on the pooler, not on the direct `db.*.supabase.co` host.
+
+   From [Supabase → beautybook → Database](https://supabase.com/dashboard/project/jjkmelcuwefymvsmxxkd/settings/database), use **Connection pooling → Session mode → URI** (not Transaction mode on port 6543, not Direct unless you switch to `postgres.[REF]`).
+3. Set `BETTER_AUTH_SECRET` (long random string) and `BETTER_AUTH_URL` (`http://localhost:3000` in dev).
+4. Install and generate client:
+
+```bash
+npm install
+npx prisma generate
+npx prisma migrate deploy
+npm run prisma:seed
+```
+
+## Demo accounts
+
+| Role | Email | Password |
+|------|-------|----------|
+| Admin | `demo@beautybook.local` | `Demo1234!` |
+| Customer | `customer@beautybook.local` | `Demo1234!` |
+
+## Development
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000). Sign in at `/login`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Verify & E2E
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+# Hosted Supabase: verify scripts mutate DB — set in .env first:
+# VERIFY_ALLOW_REMOTE=1
+npm run verify        # format, seed counts, slots, booking (incl. parallel race)
+npm run test:e2e      # Playwright (starts dev server when CI=1)
+```
 
-## Database (Prisma + PostgreSQL)
+## Key routes
 
-1. Copy `.env.example` to `.env` and set `DATABASE_URL`.
-2. Add models in `prisma/schema.prisma`.
-3. Run `npm run prisma:migrate` to create and apply migrations.
-4. Import the shared client from `lib/prisma.ts`.
+- `/dashboard/book` — customer booking (pay at salon copy)
+- `/dashboard/appointments` — my appointments
+- `/dashboard/admin/*` — catalog, staff, schedules (admin only)
+
+## Auth (Better Auth)
 
 ```ts
 import { prisma } from "@/lib/prisma";
+import { signIn, signOut, useSession } from "@/lib/auth-client";
 ```
 
-## Learn More
+Server gates: `requireUser()`, `requireAdmin()` in `lib/`.
 
-To learn more about Next.js, take a look at the following resources:
+## Migrations on Supabase
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- Use **`npx prisma migrate deploy`** on the hosted database (not `migrate dev` — no shadow DB on Supabase).
+- With the **pooler** URL, most migrations apply normally. If deploy fails with `must be owner of table` (DDL on pooler), run that migration’s SQL in the Supabase SQL editor, then `npx prisma migrate resolve --applied <name>`.
+- Optional: a **direct** `postgres.[REF]` URI on `db.*.supabase.co` avoids pooler DDL limits; this repo defaults to the pooler for simplicity.
+- **`20260830034500_appointment_staff_no_overlap`**: enables `btree_gist` and adds an exclusion constraint. On deploy it **deletes the newer row** in each overlapping non-cancelled pair (one-time cleanup). Re-applying on a DB with overlaps has the same effect — review before deploy on production data.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Learn more
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- [Next.js docs](https://nextjs.org/docs)
+- [Prisma docs](https://www.prisma.io/docs)
+- [Better Auth](https://www.better-auth.com/docs)

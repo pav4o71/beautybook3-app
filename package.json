@@ -9,12 +9,23 @@
     "lint": "eslint",
     "postinstall": "prisma generate",
     "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate dev",
-    "prisma:studio": "prisma studio"
+    "prisma:migrate": "prisma migrate deploy",
+    "prisma:migrate:dev": "prisma migrate dev",
+    "prisma:studio": "prisma studio",
+    "prisma:seed": "prisma db seed",
+    "verify": "tsx scripts/verify/run-all.ts",
+    "verify:format": "tsx scripts/verify/format.ts",
+    "verify:seed": "tsx scripts/verify/seed-counts.ts",
+    "verify:slots": "tsx scripts/verify/slots.ts",
+    "verify:booking": "tsx scripts/verify/booking.ts",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui"
   },
   "dependencies": {
+    "@better-auth/prisma-adapter": "^1.7.2",
     "@prisma/adapter-pg": "^7.10.0",
     "@prisma/client": "^7.10.0",
+    "better-auth": "^1.7.2",
     "dotenv": "^17.4.2",
     "next": "16.3.3",
     "pg": "^8.23.0",
@@ -22,6 +33,7 @@
     "react-dom": "19.2.8"
   },
   "devDependencies": {
+    "@playwright/test": "^1.55.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/pg": "^8.23.1",
@@ -31,6 +43,7 @@
     "eslint-config-next": "16.3.3",
     "prisma": "^7.10.0",
     "tailwindcss": "^4",
+    "tsx": "^4.23.12",
     "typescript": "^5"
   }
 }

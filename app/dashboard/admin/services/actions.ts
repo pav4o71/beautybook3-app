@@ -1,0 +1,125 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { actionError, type ActionFormState } from "@/lib/action-form-state";
+import {
+  parseBooleanCheckbox,
+  parsePesoToCentavos,
+  parseOptionalString,
+  parsePositiveInt,
+  parseRequiredString,
+} from "@/lib/catalog";
+import { requireAdmin } from "@/lib/require-admin";
+import { prisma } from "@/lib/prisma";
+
+function revalidateServicePaths() {
+  revalidatePath("/dashboard/admin/services");
+  revalidatePath("/dashboard/services");
+  revalidatePath("/dashboard/staff");
+  revalidatePath("/dashboard/book");
+}
+
+export async function createService(
+  _prevState: ActionFormState,
+  formData: FormData,
+): Promise<ActionFormState> {
+  await requireAdmin();
+
+  try {
+    const categoryId = parseRequiredString(formData.get("categoryId"), "Category");
+    const name = parseRequiredString(formData.get("name"), "Name");
+    const description = parseOptionalString(formData.get("description"));
+    const durationMin = parsePositiveInt(formData.get("durationMin"), "Duration");
+    const priceCents = parsePesoToCentavos(formData.get("pricePhp"), "Price");
+    const active = parseBooleanCheckbox(formData.get("active"));
+
+    await prisma.service.create({
+      data: {
+        categoryId,
+        name,
+        description,
+        durationMin,
+        priceCents,
+        active,
+      },
+    });
+  } catch (error) {
+    return actionError(error);
+  }
+
+  revalidateServicePaths();
+  redirect("/dashboard/admin/services");
+}
+
+export async function updateService(
+  _prevState: ActionFormState,
+  formData: FormData,
+): Promise<ActionFormState> {
+  await requireAdmin();
+
+  try {
+    const id = String(formData.get("id") ?? "");
+    if (!id) {
+      throw new Error("Service id is required.");
+    }
+
+    const categoryId = parseRequiredString(formData.get("categoryId"), "Category");
+    const name = parseRequiredString(formData.get("name"), "Name");
+    const description = parseOptionalString(formData.get("description"));
+    const durationMin = parsePositiveInt(formData.get("durationMin"), "Duration");
+    const priceCents = parsePesoToCentavos(formData.get("pricePhp"), "Price");
+    const active = parseBooleanCheckbox(formData.get("active"));
+
+    await prisma.service.update({
+      where: { id },
+      data: {
+        categoryId,
+        name,
+        description,
+        durationMin,
+        priceCents,
+        active,
+      },
+    });
+  } catch (error) {
+    return actionError(error);
+  }
+
+  revalidateServicePaths();
+  redirect("/dashboard/admin/services");
+}
+
+export async function deactivateService(formData: FormData): Promise<void> {
+  await requireAdmin();
+
+  const id = String(formData.get("id") ?? "");
+  if (!id) {
+    redirect("/dashboard/admin/services");
+  }
+
+  await prisma.service.update({
+    where: { id },
+    data: { active: false },
+  });
+
+  revalidateServicePaths();
+  redirect("/dashboard/admin/services");
+}
+
+export async function activateService(formData: FormData): Promise<void> {
+  await requireAdmin();
+
+  const id = String(formData.get("id") ?? "");
+  if (!id) {
+    redirect("/dashboard/admin/services");
+  }
+
+  await prisma.service.update({
+    where: { id },
+    data: { active: true },
+  });
+
+  revalidateServicePaths();
+  redirect("/dashboard/admin/services");
+}

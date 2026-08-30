@@ -1,0 +1,49 @@
+---
+description: BeautyBook core stack — TypeScript, React, Tailwind, Prisma patterns
+alwaysApply: true
+---
+
+# BeautyBook Project Conventions
+
+## TypeScript
+
+- Keep `strict: true`; no `any` unless unavoidable — prefer explicit types and Prisma-generated types from `@/app/generated/prisma`.
+- Use `@/` path aliases for imports.
+- Server actions that back `<form action={...}>` must return `void` or `Promise<void>`; use `ActionFormState` + `useActionState` (via `ActionForm`) when returning validation errors to the client. Shared types live in `lib/action-form-state.ts`.
+
+## React / Next.js
+
+- Functional components only — no class components.
+- Default to **Server Components**; add `"use client"` only for hooks, browser APIs, or client interactivity.
+- Mutations: **server actions** in colocated `actions.ts` files, not ad-hoc REST routes (except Better Auth `/api/auth/*` and future webhooks).
+- Auth gates: `requireUser()` for signed-in pages, `requireAdmin()` for `/dashboard/admin/*`.
+- After mutations: `revalidatePath()` for affected routes, then `redirect()` on success.
+
+## Styling (Tailwind only)
+
+- Use Tailwind utility classes — no CSS modules, styled-components, or inline `style={}`.
+- Global tokens live in `app/globals.css` (`@import "tailwindcss"`); keep the app on the light theme (`color-scheme: light`).
+- Reuse shared classes from `lib/ui.ts` (`controlClass`, `primaryButtonClass`, `errorAlertClass`, etc.) for forms and buttons.
+- Text on inputs/selects: always set explicit light-theme colors (`text-zinc-900`, `bg-white`).
+
+## Prisma / database
+
+- **Single entry point:** import `prisma` from `@/lib/prisma` — never instantiate `PrismaClient` elsewhere.
+- Business logic that queries the DB belongs in `lib/` (e.g. `lib/booking.ts`, `lib/schedule.ts`, `lib/catalog.ts`), not scattered in components.
+- Use generated enums from `@/app/generated/prisma/enums` (`Role`, `AppointmentStatus`, `Weekday`).
+- Pin Prisma 7.x; avoid Prisma 8 RC. No schema change without a migration.
+- **`postinstall`** runs `prisma generate`; `/app/generated/prisma` is gitignored.
+- **Supabase Postgres** (storage only — not Supabase Auth): default **`DATABASE_URL`** is the **session pooler** URI (`*.pooler.supabase.com:5432`, user `beautybook_prisma.[REF]`). Use `npx prisma migrate deploy` on hosted DB (not `migrate dev`). Raw SQL migrations (e.g. exclusion constraints) may need Supabase SQL editor + `migrate resolve` if pooler DDL fails.
+- `priceCents` is integer centavos (PHP display via `formatPrice` in `lib/format.ts`).
+- Soft-deactivate with `active: false`; do not hard-delete rows referenced by appointments.
+
+## Money & locale
+
+- Display prices with `formatPrice()` — currency is **PHP** (`en-PH`).
+- Parse admin price inputs with `parsePesoToCentavos()` from `lib/catalog.ts`.
+
+## Testing
+
+- Verify scripts: `npm run verify` (mutates DB — set `VERIFY_ALLOW_REMOTE=1` when `DATABASE_URL` is hosted Supabase).
+- E2E: `npm run test:e2e` (Playwright)
+- Demo accounts: `lib/demo-account.ts` (`demo@beautybook.local`, `customer@beautybook.local`)
