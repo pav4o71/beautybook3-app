@@ -60,8 +60,13 @@ test.describe("booking as customer", () => {
     const completed = page.locator("article").filter({
       has: page.getByText("Completed", { exact: true }),
     });
-    await expect(completed.getByText(/Paid at salon/i)).toBeVisible();
-    await expect(completed.getByText(/^Pay at salon:/i)).toHaveCount(0);
+    await expect(completed.first().getByText(/Paid at salon/i)).toBeVisible();
+    await expect(completed.first().getByText(/^Pay at salon:/i)).toHaveCount(0);
+
+    const noShow = page.locator("article").filter({
+      has: page.getByText("No show", { exact: true }),
+    });
+    await expect(noShow.first().getByText(/contact the salon to rebook/i)).toBeVisible();
   });
 
   test("customer books a slot", async ({ page }) => {

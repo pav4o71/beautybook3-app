@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { prisma } from "@/lib/prisma";
+import { getStaffForEdit, listActiveServicesForPicker } from "@/lib/catalog";
 import { requireAdmin } from "@/lib/require-admin";
 import {
   checkboxClass,
@@ -22,15 +22,8 @@ export default async function EditStaffPage({
   const { id } = await params;
 
   const [person, services] = await Promise.all([
-    prisma.staff.findUnique({
-      where: { id },
-      include: { services: true },
-    }),
-    prisma.service.findMany({
-      where: { active: true },
-      include: { category: true },
-      orderBy: [{ category: { sortOrder: "asc" } }, { name: "asc" }],
-    }),
+    getStaffForEdit(id),
+    listActiveServicesForPicker(),
   ]);
 
   if (!person) {

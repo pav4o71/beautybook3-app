@@ -1,5 +1,12 @@
 import type { Weekday } from "@/app/generated/prisma/enums";
 import { prisma } from "@/lib/prisma";
+import {
+  salonDayBounds,
+  salonDaysAgo,
+  salonTimeOnDay,
+  salonWallToUtc,
+  salonWeekdayFromDate,
+} from "@/lib/timezone";
 
 const WEEKDAY_ORDER: Weekday[] = [
   "MON",
@@ -32,25 +39,12 @@ export function overlaps(startA: Date, endA: Date, startB: Date, endB: Date) {
   return startA < endB && endA > startB;
 }
 
-const JS_DAY_TO_WEEKDAY: Weekday[] = [
-  "SUN",
-  "MON",
-  "TUE",
-  "WED",
-  "THU",
-  "FRI",
-  "SAT",
-];
-
 export function weekdayFromDate(date: Date): Weekday {
-  return JS_DAY_TO_WEEKDAY[date.getDay()];
+  return salonWeekdayFromDate(date);
 }
 
-function atTimeOnDay(day: Date, time: string) {
-  const [hours, minutes] = time.split(":").map(Number);
-  const next = new Date(day);
-  next.setHours(hours, minutes, 0, 0);
-  return next;
+function atTimeOnDay(dayStart: Date, time: string) {
+  return salonTimeOnDay(dayStart, time);
 }
 
 /** Matches the 30-minute grid used by getAvailableSlots. */
@@ -67,15 +61,14 @@ export function slotFitsStaffSchedule(
   startsAt: Date,
   durationMin: number,
 ) {
-  const day = new Date(startsAt);
-  day.setHours(0, 0, 0, 0);
+  const dayStart = salonDayBounds(startsAt).start;
   const weekday = weekdayFromDate(startsAt);
   const endsAt = new Date(startsAt.getTime() + durationMin * 60_000);
   const daySchedules = schedules.filter((row) => row.weekday === weekday);
 
   return daySchedules.some((schedule) => {
-    const windowStart = atTimeOnDay(day, schedule.startTime);
-    const windowEnd = atTimeOnDay(day, schedule.endTime);
+    const windowStart = atTimeOnDay(dayStart, schedule.startTime);
+    const windowEnd = atTimeOnDay(dayStart, schedule.endTime);
     return startsAt >= windowStart && endsAt <= windowEnd;
   });
 }
@@ -158,8 +151,7 @@ export async function saveStaffWeekday(
 
 export async function listStaffTimeOff(staffId: string) {
   const now = new Date();
-  const recentCutoff = new Date(now);
-  recentCutoff.setDate(recentCutoff.getDate() - 7);
+  const recentCutoff = salonDaysAgo(7, now);
 
   return prisma.timeOff.findMany({
     where: {
@@ -176,10 +168,25 @@ export function parseLocalDateTime(dateValue: string, timeValue: string) {
   if (!date || !time) {
     throw new Error("Date and time are required.");
   }
-  const parsed = new Date(`${date}T${time}:00`);
+
+  const dateMatch = date.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const timeMatch = time.match(/^(\d{2}):(\d{2})$/);
+  if (!dateMatch || !timeMatch) {
+    throw new Error("Invalid date or time.");
+  }
+
+  const parsed = salonWallToUtc(
+    Number(dateMatch[1]),
+    Number(dateMatch[2]),
+    Number(dateMatch[3]),
+    Number(timeMatch[1]),
+    Number(timeMatch[2]),
+  );
+
   if (Number.isNaN(parsed.getTime())) {
     throw new Error("Invalid date or time.");
   }
+
   return parsed;
 }
 

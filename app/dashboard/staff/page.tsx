@@ -1,18 +1,10 @@
-import { prisma } from "@/lib/prisma";
+import { listActiveStaff } from "@/lib/catalog";
 import { requireUser } from "@/lib/require-user";
 
 export default async function StaffPage() {
   await requireUser();
 
-  const staff = await prisma.staff.findMany({
-    where: { active: true },
-    orderBy: { name: "asc" },
-    include: {
-      services: {
-        include: { service: true },
-      },
-    },
-  });
+  const staff = await listActiveStaff();
 
   return (
     <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-10">

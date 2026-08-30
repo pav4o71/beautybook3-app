@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { formatPrice } from "@/lib/format";
-import { prisma } from "@/lib/prisma";
+import { listAdminCatalog } from "@/lib/catalog";
 import { requireAdmin } from "@/lib/require-admin";
 import {
   checkboxClass,
@@ -18,14 +18,7 @@ import { activateService, createService, deactivateService } from "./actions";
 export default async function AdminServicesPage() {
   await requireAdmin();
 
-  const categories = await prisma.serviceCategory.findMany({
-    orderBy: { sortOrder: "asc" },
-    include: {
-      services: {
-        orderBy: { name: "asc" },
-      },
-    },
-  });
+  const categories = await listAdminCatalog();
 
   const hasCategories = categories.length > 0;
 

@@ -1,19 +1,11 @@
 import { formatPrice } from "@/lib/format";
-import { prisma } from "@/lib/prisma";
+import { listCustomerCatalog } from "@/lib/catalog";
 import { requireUser } from "@/lib/require-user";
 
 export default async function ServicesPage() {
   await requireUser();
 
-  const categories = await prisma.serviceCategory.findMany({
-    orderBy: { sortOrder: "asc" },
-    include: {
-      services: {
-        where: { active: true },
-        orderBy: { name: "asc" },
-      },
-    },
-  });
+  const categories = await listCustomerCatalog();
 
   return (
     <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-10">

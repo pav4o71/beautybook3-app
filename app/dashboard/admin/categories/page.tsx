@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { prisma } from "@/lib/prisma";
+import { listAdminCategories } from "@/lib/catalog";
 import { requireAdmin } from "@/lib/require-admin";
 import {
   controlClass,
@@ -16,10 +16,7 @@ import { createCategory, deleteCategory } from "./actions";
 export default async function AdminCategoriesPage() {
   await requireAdmin();
 
-  const categories = await prisma.serviceCategory.findMany({
-    orderBy: { sortOrder: "asc" },
-    include: { _count: { select: { services: true } } },
-  });
+  const categories = await listAdminCategories();
 
   return (
     <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-10">

@@ -49,14 +49,15 @@ Open [http://localhost:3000](http://localhost:3000). Sign in at `/login`.
 ```bash
 # Hosted Supabase: verify scripts mutate DB — set in .env first:
 # VERIFY_ALLOW_REMOTE=1
-npm run verify        # format, seed counts, slots, booking (incl. parallel race)
-npm run test:e2e      # Playwright (starts dev server when CI=1)
+npm run verify        # format, seed counts, slots, booking, appointments
+npm run test:e2e      # Playwright (seeds DB first; starts dev server when CI=1)
 ```
 
 ## Key routes
 
 - `/dashboard/book` — customer booking (pay at salon copy)
 - `/dashboard/appointments` — my appointments
+- `/dashboard/admin/appointments` — today's board (complete / no-show / cancel)
 - `/dashboard/admin/*` — catalog, staff, schedules (admin only)
 
 ## Auth (Better Auth)

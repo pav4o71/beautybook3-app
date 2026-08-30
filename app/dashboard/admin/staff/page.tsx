@@ -1,5 +1,8 @@
 import Link from "next/link";
-import { prisma } from "@/lib/prisma";
+import {
+  listActiveServicesForPicker,
+  listAdminStaffBoard,
+} from "@/lib/catalog";
 import { requireAdmin } from "@/lib/require-admin";
 import { summarizeStaffSchedule } from "@/lib/schedule";
 import {
@@ -19,18 +22,8 @@ export default async function AdminStaffPage() {
   await requireAdmin();
 
   const [staff, services] = await Promise.all([
-    prisma.staff.findMany({
-      include: {
-        services: { include: { service: true } },
-        schedules: true,
-      },
-      orderBy: { name: "asc" },
-    }),
-    prisma.service.findMany({
-      where: { active: true },
-      include: { category: true },
-      orderBy: [{ category: { sortOrder: "asc" } }, { name: "asc" }],
-    }),
+    listAdminStaffBoard(),
+    listActiveServicesForPicker(),
   ]);
 
   return (

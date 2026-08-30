@@ -4,7 +4,13 @@ import path from "node:path";
 import { assertSafeVerifyTarget } from "./assert-safe-target";
 
 const root = path.resolve(import.meta.dirname, "../..");
-const scripts = ["format.ts", "seed-counts.ts", "slots.ts", "booking.ts"];
+const scripts = [
+  "format.ts",
+  "seed-counts.ts",
+  "slots.ts",
+  "booking.ts",
+  "appointments.ts",
+];
 
 assertSafeVerifyTarget();
 

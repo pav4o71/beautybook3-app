@@ -1,5 +1,5 @@
 import { getAvailableSlots } from "@/lib/booking";
-import { prisma } from "@/lib/prisma";
+import { listBookingServices, listBookingStaff } from "@/lib/catalog";
 import { requireUser } from "@/lib/require-user";
 import { BookingForm } from "./booking-form";
 
@@ -11,17 +11,10 @@ export default async function BookPage({
   await requireUser();
   const params = await searchParams;
 
-  const services = await prisma.service.findMany({
-    where: { active: true },
-    include: { category: true, staff: true },
-    orderBy: [{ category: { sortOrder: "asc" } }, { name: "asc" }],
-  });
-
-  const staff = await prisma.staff.findMany({
-    where: { active: true },
-    include: { services: true },
-    orderBy: { name: "asc" },
-  });
+  const [services, staff] = await Promise.all([
+    listBookingServices(),
+    listBookingStaff(),
+  ]);
 
   const serviceId =
     params.serviceId && services.some((service) => service.id === params.serviceId)
