@@ -24,6 +24,10 @@ test.describe("search marketplace", () => {
       "src",
       /\/images\/salons\/beautybook-demo\.jpg$/,
     );
+    await expect(page.getByTestId(`business-cover-${DEMO_ORG_SLUG}`)).toHaveAttribute(
+      "alt",
+      "BeautyBook Demo Salon cover",
+    );
     await expect(page.getByText("₱350.00").first()).toBeVisible();
     await expect(page.getByText("Haircut").first()).toBeVisible();
 

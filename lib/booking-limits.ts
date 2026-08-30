@@ -15,6 +15,18 @@ export function staffOffersAllServices(
   return selectedServiceIds.every((id) => offered.has(id));
 }
 
+export function locationHasCapableStaff(
+  locationId: string,
+  staff: readonly { locationId: string; serviceIds: readonly string[] }[],
+  selectedServiceIds: readonly string[],
+) {
+  return staff.some(
+    (person) =>
+      person.locationId === locationId &&
+      staffOffersAllServices(person.serviceIds, selectedServiceIds),
+  );
+}
+
 export function firstLocationWithCapableStaff(
   locations: readonly { id: string }[],
   staff: readonly { locationId: string; serviceIds: readonly string[] }[],
@@ -23,16 +35,8 @@ export function firstLocationWithCapableStaff(
   if (selectedServiceIds.length === 0) {
     return undefined;
   }
-  for (const location of locations) {
-    const capable = staff.some(
-      (person) =>
-        person.locationId === location.id &&
-        staffOffersAllServices(person.serviceIds, selectedServiceIds),
-    );
-    if (capable) {
-      return location.id;
-    }
-  }
-  return undefined;
+  return locations.find((location) =>
+    locationHasCapableStaff(location.id, staff, selectedServiceIds),
+  )?.id;
 }
 

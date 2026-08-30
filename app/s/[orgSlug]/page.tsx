@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { LocationHeading } from "@/components/booking/location-heading";
 import { getSalonStorefront } from "@/lib/salon";
 import { weekdayLabel } from "@/lib/schedule";
 import { secondaryButtonClass } from "@/lib/ui";
@@ -42,7 +43,7 @@ export default async function SalonLandingPage({
         // eslint-disable-next-line @next/next/no-img-element -- mixed local paths and owner-pasted http(s) URLs
         <img
           src={salon.coverImageUrl}
-          alt=""
+          alt={`${salon.name} cover`}
           width={800}
           height={400}
           className="h-48 w-full rounded-lg object-cover"
@@ -67,17 +68,11 @@ export default async function SalonLandingPage({
                 key={location.id}
                 className="rounded-lg border border-zinc-200 bg-white p-3 text-sm text-zinc-700"
               >
-                <p className="font-medium text-zinc-900">
-                  {location.name}
-                  {location.isDefault ? (
-                    <span className="ml-2 text-xs font-normal text-zinc-500">(default)</span>
-                  ) : null}
-                  {location.area ? (
-                    <span className="ml-2 rounded bg-zinc-100 px-2 py-0.5 text-xs font-normal text-zinc-700">
-                      {location.area}
-                    </span>
-                  ) : null}
-                </p>
+                <LocationHeading
+                  name={location.name}
+                  isDefault={location.isDefault}
+                  area={location.area}
+                />
                 {location.address ? (
                   <p className="mt-1 text-zinc-600">{location.address}</p>
                 ) : null}

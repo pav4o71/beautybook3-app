@@ -1,3 +1,4 @@
+import { SiteHeader } from "@/components/site-header";
 import { isManilaArea } from "@/lib/areas";
 import {
   listMarketplaceCategoryFilters,
@@ -58,7 +59,9 @@ export default async function Home({
     : undefined;
 
   return (
-    <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-10">
+    <>
+      <SiteHeader />
+      <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-10">
       <div className="space-y-1">
         <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">Search</h1>
         <p className="text-sm text-zinc-600">
@@ -112,5 +115,6 @@ export default async function Home({
         </section>
       )}
     </main>
+    </>
   );
 }

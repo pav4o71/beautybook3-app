@@ -42,8 +42,8 @@ export function AvailabilityResults({
                 {result.staff.name} · {result.location.name}
               </p>
               <p className="mt-1 text-sm text-zinc-900">
-                {formatDay(result.startsAt)} · {formatTime(result.startsAt)}
-                <span className="ml-2">{formatPrice(result.priceCents)}</span>
+                {formatDay(result.startsAt)} · {formatTime(result.startsAt)} ·{" "}
+                {formatPrice(result.priceCents)}
               </p>
               <div className="mt-4">
                 <Link

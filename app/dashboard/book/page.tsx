@@ -27,7 +27,7 @@ export default async function BookPage({
 
   const [services, staff] = await Promise.all([
     listBookingServices(organizationId),
-    listBookingStaff(organizationId, locationId),
+    listBookingStaff(organizationId),
   ]);
 
   const selectedIds = resolveSelectedServiceIds(
@@ -35,7 +35,8 @@ export default async function BookPage({
     services.map((service) => service.id),
   );
 
-  const staffForServices = staff.filter((person) =>
+  const staffAtLocation = staff.filter((person) => person.locationId === locationId);
+  const staffForServices = staffAtLocation.filter((person) =>
     staffOffersAllServices(
       person.services.map((row) => row.serviceId),
       selectedIds,
@@ -91,6 +92,7 @@ export default async function BookPage({
             staff={staff.map((person) => ({
               id: person.id,
               name: person.name,
+              locationId: person.locationId,
               serviceIds: person.services.map((row) => row.serviceId),
             }))}
             initialServiceIds={selectedIds}

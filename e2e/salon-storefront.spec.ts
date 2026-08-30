@@ -9,6 +9,7 @@ test.describe("salon storefront", () => {
     await expect(page.getByRole("heading", { name: "BeautyBook Demo Salon" })).toBeVisible();
     await expect(page.getByText("Haircut").first()).toBeVisible();
     await expect(page.getByText("Makati salon for cuts").first()).toBeVisible();
+    await expect(page.getByText(/E2E Branch/)).toHaveCount(0);
 
     await page.getByTestId("service-checkbox-Haircut").check();
     await page.getByTestId("service-checkbox-Gel manicure").check();
@@ -22,6 +23,7 @@ test.describe("salon storefront", () => {
     await expect(page.getByRole("button", { name: /Haircut/i })).toBeVisible();
     await expect(page.getByRole("button", { name: /Gel manicure/i })).toBeVisible();
     await expect(page.getByRole("button", { name: /Lena Dimitrova/i })).toBeVisible();
+    await expect(page.getByRole("button", { name: /BGC branch/i })).toBeDisabled();
 
     const slot = page.getByTestId("book-slot").first();
     await expect(slot).toBeVisible({ timeout: 15_000 });

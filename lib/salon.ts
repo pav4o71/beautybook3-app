@@ -98,7 +98,7 @@ export async function getSalonStorefront(slug: string): Promise<SalonStorefront 
     where: { slug },
     include: {
       locations: {
-        where: { active: true },
+        where: { active: true, staff: { some: { active: true } } },
         orderBy: [{ isDefault: "desc" }, { name: "asc" }],
       },
       categories: {

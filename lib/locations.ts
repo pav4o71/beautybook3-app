@@ -1,6 +1,12 @@
 import type { Prisma } from "@/app/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 
+/** Public catalog/booking: only branches that can actually take appointments. */
+export const publicLocationWhere = {
+  active: true,
+  staff: { some: { active: true } },
+} as const;
+
 export async function listLocations(organizationId: string) {
   return prisma.location.findMany({
     where: { organizationId },

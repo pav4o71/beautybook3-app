@@ -7,6 +7,7 @@ import {
   MAX_BOOKING_SERVICES,
   MAX_COMBINED_DURATION_MIN,
   NO_STAFF_FOR_COMBINATION,
+  locationHasCapableStaff,
   staffOffersAllServices,
 } from "@/lib/booking-limits";
 import { formatDay, formatPrice, formatTime } from "@/lib/format";
@@ -29,6 +30,7 @@ type ServiceOption = {
 type StaffOption = {
   id: string;
   name: string;
+  locationId: string;
   serviceIds: string[];
 };
 
@@ -73,8 +75,13 @@ export function BookingForm({
   const [pending, startTransition] = useTransition();
 
   const availableStaff = useMemo(
-    () => staff.filter((person) => staffOffersAllServices(person.serviceIds, selectedIds)),
-    [selectedIds, staff],
+    () =>
+      staff.filter(
+        (person) =>
+          person.locationId === locationId &&
+          staffOffersAllServices(person.serviceIds, selectedIds),
+      ),
+    [locationId, selectedIds, staff],
   );
 
   const selectedServices = services.filter((service) => selectedIds.includes(service.id));
@@ -134,10 +141,12 @@ export function BookingForm({
       return;
     }
 
-    const nextStaff = nextStaffStillValid(next, staffId)
-      ? staffId
-      : (staff.find((person) => staffOffersAllServices(person.serviceIds, next))?.id ??
-        "");
+    const staffPool = staff.filter((person) => person.locationId === locationId);
+    const nextStaff =
+      staffPool.find((person) => person.id === staffId && staffOffersAllServices(person.serviceIds, next))
+        ?.id ??
+      staffPool.find((person) => staffOffersAllServices(person.serviceIds, next))?.id ??
+      "";
 
     setSelectedIds(next);
     setStaffId(nextStaff);
@@ -145,9 +154,11 @@ export function BookingForm({
     updateQuery(locationId, next, nextStaff);
   }
 
-  function nextStaffStillValid(nextServiceIds: string[], currentStaffId: string) {
-    const person = staff.find((row) => row.id === currentStaffId);
-    return person ? staffOffersAllServices(person.serviceIds, nextServiceIds) : false;
+  function locationCanServe(nextLocationId: string, nextServiceIds: string[]) {
+    if (nextServiceIds.length === 0) {
+      return true;
+    }
+    return locationHasCapableStaff(nextLocationId, staff, nextServiceIds);
   }
 
   function selectStaff(nextStaffId: string) {
@@ -169,14 +180,28 @@ export function BookingForm({
             <div className="grid gap-2 sm:grid-cols-2">
               {locations.map((location) => {
                 const selected = location.id === locationId;
+                const capable = locationCanServe(location.id, selectedIds);
                 return (
                   <button
                     key={location.id}
                     type="button"
+                    disabled={!capable && location.id !== locationId}
+                    title={
+                      capable ? undefined : NO_STAFF_FOR_COMBINATION
+                    }
                     onClick={() => selectLocation(location.id)}
-                    className={selected ? cardButtonSelectedClass : cardButtonClass}
+                    className={
+                      selected
+                        ? cardButtonSelectedClass
+                        : `${cardButtonClass} disabled:cursor-not-allowed disabled:opacity-50`
+                    }
                   >
                     <span className="block font-medium">{location.name}</span>
+                    {capable ? null : (
+                      <span className="mt-1 block text-xs text-zinc-500">
+                        No staff for this combination
+                      </span>
+                    )}
                   </button>
                 );
               })}
@@ -263,7 +288,11 @@ export function BookingForm({
             <section key={group.day}>
               <h2 className="text-sm font-medium text-zinc-900">{group.day}</h2>
               <div className="mt-2 flex flex-wrap gap-2">
-                {group.slots.map((iso) => (
+                {group.slots.map((iso) => {
+                  const selectedSlot =
+                    Boolean(initialStartsAt) &&
+                    new Date(iso).getTime() === new Date(initialStartsAt).getTime();
+                  return (
                   <form
                     key={iso}
                     action={(formData) => {
@@ -286,6 +315,7 @@ export function BookingForm({
                     <button
                       type="submit"
                       data-testid="book-slot"
+                      data-slot-selected={selectedSlot ? "true" : undefined}
                       disabled={
                         pending ||
                         !locationId ||
@@ -295,7 +325,7 @@ export function BookingForm({
                         overDurationCap
                       }
                       className={
-                        iso === initialStartsAt
+                        selectedSlot
                           ? `${slotButtonClass} border-zinc-900 bg-zinc-900 text-white hover:bg-zinc-800`
                           : slotButtonClass
                       }
@@ -303,7 +333,8 @@ export function BookingForm({
                       {formatTime(new Date(iso))}
                     </button>
                   </form>
-                ))}
+                  );
+                })}
               </div>
             </section>
           ))

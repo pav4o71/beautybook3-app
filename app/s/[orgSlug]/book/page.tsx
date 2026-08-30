@@ -44,7 +44,7 @@ export default async function PublicBookPage({
 
   const [services, staff] = await Promise.all([
     listBookingServices(organization.id),
-    listBookingStaff(organization.id, locationId),
+    listBookingStaff(organization.id),
   ]);
 
   const selectedIds = resolveSelectedServiceIds(
@@ -52,7 +52,8 @@ export default async function PublicBookPage({
     services.map((service) => service.id),
   );
 
-  const staffForServices = staff.filter((person) =>
+  const staffAtLocation = staff.filter((person) => person.locationId === locationId);
+  const staffForServices = staffAtLocation.filter((person) =>
     staffOffersAllServices(
       person.services.map((row) => row.serviceId),
       selectedIds,
@@ -108,12 +109,6 @@ export default async function PublicBookPage({
           </p>
           <h1 className="text-2xl font-semibold tracking-tight">Book online</h1>
         </div>
-        <Link
-          href="/login"
-          className="text-sm text-zinc-600 hover:text-zinc-900"
-        >
-          Sign in
-        </Link>
       </div>
 
       {firstQueryValue(query.booked) === "1" ? (
@@ -149,13 +144,16 @@ export default async function PublicBookPage({
           staff={staff.map((person) => ({
             id: person.id,
             name: person.name,
+            locationId: person.locationId,
             serviceIds: person.services.map((row) => row.serviceId),
           }))}
           initialServiceIds={selectedIds}
           initialStaffId={staffId}
           initialStartsAt={
             requestedStartsAtRaw &&
-            slots.some((slot) => slot.toISOString() === requestedStartsAtRaw)
+            slots.some(
+              (slot) => slot.getTime() === new Date(requestedStartsAtRaw).getTime(),
+            )
               ? requestedStartsAtRaw
               : ""
           }
