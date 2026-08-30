@@ -29,6 +29,8 @@ export default async function SalonLandingPage({
         <img
           src={organization.coverImageUrl}
           alt=""
+          width={800}
+          height={400}
           className="h-48 w-full rounded-lg object-cover"
         />
       ) : null}

@@ -72,6 +72,7 @@ export default async function Home({
         services={serviceChips}
         activeSlug={activeCategory?.slug}
         activeService={serviceName}
+        serviceId={serviceId}
         area={area}
         date={date ? salonIsoDate(date) : undefined}
         time={time}

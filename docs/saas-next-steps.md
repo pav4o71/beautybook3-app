@@ -84,7 +84,14 @@ E2E: **27** Playwright tests (`e2e/search.spec.ts`, `e2e/search-availability.spe
 
 **Spec:** [`docs/superpowers/specs/2026-08-30-homepage-salon-listings-design.md`](./superpowers/specs/2026-08-30-homepage-salon-listings-design.md)
 
-`/` is discovery: category chips → service chips → salon cards with `Organization.coverImageUrl`. `/search` and `/marketplace` redirect to `/`. Admin settings accept a cover URL or a disk upload under `public/uploads/orgs/` (not Supabase Storage).
+`/` is discovery: category chips → service chips → salon cards with `Organization.coverImageUrl`. `/search` and `/marketplace` redirect to `/`. Admin settings accept a cover URL or a disk upload under `public/uploads/orgs/` (not Supabase Storage). Disk uploads need a persistent host disk.
+
+## Next steps
+
+1. Apply `20260830172000_add_organization_cover_image` on hosted Supabase (`npx prisma migrate deploy`).
+2. Open/merge PR for homepage salon listings (`feat/homepage-salon-listings`).
+3. Object storage for covers (Cloudflare R2 / S3) when deploying without a persistent disk.
+4. Deferred from earlier phases: Stripe/billing, org invites, `middleware` → `proxy`, geo/maps, ratings.
 
 ## Local dev quick start
 

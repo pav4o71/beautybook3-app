@@ -38,6 +38,7 @@ function serviceKey(name: string) {
 function searchHref(input: {
   category?: string;
   service?: string;
+  serviceId?: string;
   area?: string;
   date?: string;
   time?: string;
@@ -45,6 +46,7 @@ function searchHref(input: {
   const params = new URLSearchParams();
   if (input.category) params.set("category", input.category);
   if (input.service) params.set("service", input.service);
+  if (input.serviceId) params.set("serviceId", input.serviceId);
   if (input.area) params.set("area", input.area);
   if (input.date) params.set("date", input.date);
   if (input.time) params.set("time", input.time);
@@ -63,6 +65,7 @@ export function SearchFilters({
   services,
   activeSlug,
   activeService,
+  serviceId,
   area,
   date,
   time,
@@ -72,13 +75,21 @@ export function SearchFilters({
   services: { name: string }[];
   activeSlug?: string;
   activeService?: string;
+  serviceId?: string;
   area?: string;
   date?: string;
   time?: string;
   minDate: string;
 }) {
   const router = useRouter();
-  const current = { category: activeSlug, service: activeService, area, date, time };
+  const current = {
+    category: activeSlug,
+    service: activeService,
+    serviceId,
+    area,
+    date,
+    time,
+  };
 
   return (
     <div className="space-y-4">

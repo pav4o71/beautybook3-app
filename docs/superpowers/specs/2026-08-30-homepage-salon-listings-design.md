@@ -30,10 +30,11 @@ No image columns on Location or Service. `Staff.photoUrl` stays unused.
 
 ## Images
 
-- Seeded paths: `/images/salons/{slug}.svg` (committed)  
-- Owner paste URL **or** upload JPEG/PNG/WebP (max 2MB)  
+- Seeded paths: `/images/salons/{slug}.jpg` (committed photos)  
+- Owner paste URL **or** upload JPEG/PNG/WebP (max 2MB; Server Action `bodySizeLimit` 3mb)  
 - Uploads written to `public/uploads/orgs/{organizationId}/cover.{ext}`  
-- Not Supabase Storage  
+- Disk uploads need a persistent filesystem (local Docker / a VPS). They will not survive serverless deploys.  
+- Not Supabase Storage 
 
 ## Filters
 

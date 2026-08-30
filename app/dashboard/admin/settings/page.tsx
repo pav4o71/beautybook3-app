@@ -107,7 +107,7 @@ export default async function BusinessSettingsPage({
           <input
             name="coverImageUrl"
             defaultValue={organization.coverImageUrl ?? ""}
-            placeholder="/images/salons/your-salon.svg"
+            placeholder="/images/salons/your-salon.jpg"
             className={controlClass}
           />
         </label>

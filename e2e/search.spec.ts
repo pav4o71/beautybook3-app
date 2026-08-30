@@ -20,9 +20,17 @@ test.describe("search marketplace", () => {
     await expect(page.getByTestId(`business-${DEMO_ORG_SLUG}`)).toBeVisible();
     await expect(page.getByTestId(`business-${LUXE_ORG_SLUG}`)).toBeVisible();
     await expect(page.getByTestId(`business-${GLOW_ORG_SLUG}`)).toHaveCount(0);
-    await expect(page.getByTestId(`business-cover-${DEMO_ORG_SLUG}`)).toBeVisible();
+    await expect(page.getByTestId(`business-cover-${DEMO_ORG_SLUG}`)).toHaveAttribute(
+      "src",
+      /\/images\/salons\/beautybook-demo\.jpg$/,
+    );
     await expect(page.getByText("₱350.00").first()).toBeVisible();
     await expect(page.getByText("Haircut").first()).toBeVisible();
+
+    await page.getByTestId("service-chip-blowout").click();
+    await page.waitForURL("/?category=hair&service=Blowout");
+    await expect(page.getByTestId(`business-${LUXE_ORG_SLUG}`)).toBeVisible();
+    await expect(page.getByTestId(`business-${DEMO_ORG_SLUG}`)).toHaveCount(0);
   });
 
   test("area filter keeps only branches in that Manila area", async ({ page }) => {

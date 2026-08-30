@@ -42,7 +42,10 @@ export async function updateOrganizationSettings(
     if (uploaded instanceof File && uploaded.size > 0) {
       coverImageUrl = await saveOrganizationCover(organizationId, uploaded);
     } else {
-      coverImageUrl = parseCoverImageUrl(String(formData.get("coverImageUrl") ?? ""));
+      coverImageUrl = parseCoverImageUrl(
+        String(formData.get("coverImageUrl") ?? ""),
+        organizationId,
+      );
     }
   } catch (error) {
     if (error instanceof CoverImageError) {

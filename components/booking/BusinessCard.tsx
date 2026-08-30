@@ -16,11 +16,14 @@ export function BusinessCard({ listing }: { listing: MarketplaceListing }) {
         <img
           src={listing.coverImageUrl}
           alt=""
+          width={800}
+          height={400}
+          loading="lazy"
           className="h-40 w-full object-cover"
           data-testid={`business-cover-${listing.slug}`}
         />
       ) : (
-        <div className="h-40 bg-zinc-100" data-testid={`business-cover-${listing.slug}`} />
+        <div className="h-40 bg-zinc-100" />
       )}
       <div className="flex flex-1 flex-col p-4">
         <h2 className="font-medium text-zinc-900">{listing.name}</h2>
