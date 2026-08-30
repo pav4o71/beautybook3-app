@@ -30,6 +30,8 @@ export async function updateOrganizationSettings(
     name: formData.get("name"),
     timezone: formData.get("timezone"),
     published: formData.get("published") === "on",
+    description: String(formData.get("description") ?? ""),
+    phone: String(formData.get("phone") ?? ""),
   });
 
   if (!parsed.success) {
@@ -61,6 +63,8 @@ export async function updateOrganizationSettings(
         name: parsed.data.name,
         timezone: parsed.data.timezone,
         published: parsed.data.published,
+        description: parsed.data.description,
+        phone: parsed.data.phone,
         coverImageUrl,
       },
     });

@@ -80,18 +80,27 @@ E2E: **27** Playwright tests (`e2e/search.spec.ts`, `e2e/search-availability.spe
 
 **Gates:** `npm run build`, `npm run verify`, `npm run test:e2e`
 
-## Homepage salon listings (in progress)
+## Homepage salon listings (complete)
 
 **Spec:** [`docs/superpowers/specs/2026-08-30-homepage-salon-listings-design.md`](./superpowers/specs/2026-08-30-homepage-salon-listings-design.md)
 
 `/` is discovery: category chips → service chips → salon cards with `Organization.coverImageUrl`. `/search` and `/marketplace` redirect to `/`. Admin settings accept a cover URL or a disk upload under `public/uploads/orgs/` (not Supabase Storage). Disk uploads need a persistent host disk.
 
+## Phase 7 — Salon storefront and multi-service booking — **in progress**
+
+**Spec:** [`docs/superpowers/specs/2026-08-30-salon-storefront-design.md`](./superpowers/specs/2026-08-30-salon-storefront-design.md)
+
+`/s/{slug}` is the catalog: cover, about, phone, locations, hours from staff schedules, and a multi-select service cart. Continue books **one combined slot** (staff must offer every selected service). Caps: 6 services, 240 minutes. Pay-at-salon stays.
+
+Homepage **View salon** and **Book now** both open the salon page. Availability **Book** still deep-links to `/s/{slug}/book?serviceId=`.
+
+**Schema:** `Organization.description` / `phone`, `Location.phone`, `AppointmentService` unique on `(appointmentId, serviceId)`. Live file is `prisma/schema.prisma` — do not switch the app to `prisma/schema-saas.prisma`.
+
 ## Next steps
 
-1. Apply `20260830172000_add_organization_cover_image` on hosted Supabase (`npx prisma migrate deploy`).
-2. Open/merge PR for homepage salon listings (`feat/homepage-salon-listings`).
-3. Object storage for covers (Cloudflare R2 / S3) when deploying without a persistent disk.
-4. Deferred from earlier phases: Stripe/billing, org invites, `middleware` → `proxy`, geo/maps, ratings.
+1. Apply `20260830183000_salon_profile_and_appointment_service_unique` on hosted Supabase (`npx prisma migrate deploy`).
+2. Object storage for covers (Cloudflare R2 / S3) when deploying without a persistent disk.
+3. Deferred from earlier phases: Stripe/billing, org invites, `middleware` → `proxy`, geo/maps, ratings.
 
 ## Local dev quick start
 

@@ -70,6 +70,14 @@ export default async function AdminLocationsPage() {
             </select>
           </label>
           <label className={labelClass}>
+            <span className={labelTextClass}>Phone</span>
+            <input
+              name="phone"
+              className={controlClass}
+              placeholder="Optional branch phone"
+            />
+          </label>
+          <label className={labelClass}>
             <span className={labelTextClass}>Timezone</span>
             <select name="timezone" defaultValue="Asia/Manila" className={controlClass}>
               <option value="Asia/Manila">Asia/Manila (Philippines)</option>

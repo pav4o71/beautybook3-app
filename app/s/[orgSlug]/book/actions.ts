@@ -10,6 +10,7 @@ import { getSession } from "@/lib/session";
 import { getPublishedOrganizationBySlug } from "@/lib/tenant";
 import {
   formatZodError,
+  parseServiceIdsFromForm,
   publicBookSlotSchema,
 } from "@/lib/validations/booking";
 
@@ -24,7 +25,7 @@ export async function bookPublicSlot(
 
   const parsed = publicBookSlotSchema.safeParse({
     locationId: formData.get("locationId"),
-    serviceId: formData.get("serviceId"),
+    serviceIds: parseServiceIdsFromForm(formData),
     staffId: formData.get("staffId"),
     startsAt: formData.get("startsAt"),
   });
@@ -52,7 +53,7 @@ export async function bookPublicSlot(
       organizationId: organization.id,
       locationId: location.id,
       customerId: session?.user?.id ?? null,
-      serviceId: parsed.data.serviceId,
+      serviceIds: parsed.data.serviceIds,
       staffId: parsed.data.staffId,
       startsAt: parsed.data.startsAt,
     });

@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getAvailableSlots, getAvailableSlotsForDay } from "@/lib/booking";
+import { MAX_COMBINED_DURATION_MIN, staffOffersAllServices } from "@/lib/booking-limits";
 import { listBookingServices, listBookingStaff } from "@/lib/catalog";
 import { getPublishedOrganizationBySlug } from "@/lib/tenant";
+import { resolveSelectedServiceIds, firstQueryValue } from "@/lib/validations/booking";
 import { successAlertClass } from "@/lib/ui";
 import { BookingForm } from "@/app/dashboard/book/booking-form";
 import { bookPublicSlot } from "./actions";
@@ -13,11 +15,12 @@ export default async function PublicBookPage({
 }: {
   params: Promise<{ orgSlug: string }>;
   searchParams: Promise<{
-    serviceId?: string;
-    staffId?: string;
-    locationId?: string;
-    startsAt?: string;
-    booked?: string;
+    serviceId?: string | string[];
+    serviceIds?: string | string[];
+    staffId?: string | string[];
+    locationId?: string | string[];
+    startsAt?: string | string[];
+    booked?: string | string[];
   }>;
 }) {
   const { orgSlug } = await params;
@@ -32,47 +35,58 @@ export default async function PublicBookPage({
     notFound();
   }
 
+  const requestedLocationId = firstQueryValue(query.locationId);
   const locationId =
-    query.locationId &&
-    organization.locations.some((location) => location.id === query.locationId)
-      ? query.locationId
+    requestedLocationId &&
+    organization.locations.some((location) => location.id === requestedLocationId)
+      ? requestedLocationId
       : organization.locations[0].id;
 
   const [services, staff] = await Promise.all([
     listBookingServices(organization.id),
-    listBookingStaff(organization.id, locationId),
+    listBookingStaff(organization.id),
   ]);
 
-  const serviceId =
-    query.serviceId && services.some((service) => service.id === query.serviceId)
-      ? query.serviceId
-      : (services[0]?.id ?? "");
-
-  const staffForService = staff.filter((person) =>
-    person.services.some((row) => row.serviceId === serviceId),
+  const selectedIds = resolveSelectedServiceIds(
+    query,
+    services.map((service) => service.id),
   );
-  const staffId =
-    query.staffId && staffForService.some((person) => person.id === query.staffId)
-      ? query.staffId
-      : (staffForService[0]?.id ?? "");
 
-  const selectedService = services.find((service) => service.id === serviceId);
-  const requestedStartsAt = query.startsAt ? new Date(query.startsAt) : null;
+  const staffAtLocation = staff.filter((person) => person.locationId === locationId);
+  const staffForServices = staffAtLocation.filter((person) =>
+    staffOffersAllServices(
+      person.services.map((row) => row.serviceId),
+      selectedIds,
+    ),
+  );
+  const requestedStaffId = firstQueryValue(query.staffId);
+  const staffId =
+    requestedStaffId && staffForServices.some((person) => person.id === requestedStaffId)
+      ? requestedStaffId
+      : (staffForServices[0]?.id ?? "");
+
+  const selectedServices = services.filter((service) => selectedIds.includes(service.id));
+  const durationMin = selectedServices.reduce(
+    (sum, service) => sum + service.durationMin,
+    0,
+  );
+  const requestedStartsAtRaw = firstQueryValue(query.startsAt);
+  const requestedStartsAt = requestedStartsAtRaw ? new Date(requestedStartsAtRaw) : null;
   const hasRequestedStartsAt =
     requestedStartsAt != null && !Number.isNaN(requestedStartsAt.getTime());
 
   let slots: Date[] = [];
-  if (staffId && selectedService) {
+  if (staffId && selectedServices.length > 0 && durationMin <= MAX_COMBINED_DURATION_MIN) {
     slots = await getAvailableSlots({
       organizationId: organization.id,
       staffId,
-      durationMin: selectedService.durationMin,
+      durationMin,
     });
     if (hasRequestedStartsAt) {
       const daySlots = await getAvailableSlotsForDay({
         organizationId: organization.id,
         staffId,
-        durationMin: selectedService.durationMin,
+        durationMin,
         date: requestedStartsAt,
       });
       const seen = new Set(slots.map((slot) => slot.getTime()));
@@ -95,29 +109,24 @@ export default async function PublicBookPage({
           </p>
           <h1 className="text-2xl font-semibold tracking-tight">Book online</h1>
         </div>
-        <Link
-          href="/login"
-          className="text-sm text-zinc-600 hover:text-zinc-900"
-        >
-          Sign in
-        </Link>
       </div>
 
-      {query.booked === "1" ? (
+      {firstQueryValue(query.booked) === "1" ? (
         <p className={`mb-4 ${successAlertClass}`}>
           Booked! Pay at the salon when you arrive.
         </p>
       ) : null}
 
       <p className="mb-6 text-sm text-zinc-600">
-        Choose a location, service, and staff member, then pick a time. Pay at the salon when you arrive.
+        Choose a location and one or more services, then pick staff and a time. Pay at the
+        salon when you arrive.
       </p>
 
       {services.length === 0 ? (
         <p className="text-sm text-zinc-600">Nothing to book yet.</p>
       ) : (
         <BookingForm
-          key={`${locationId}-${serviceId}-${staffId}`}
+          key={`${locationId}-${selectedIds.join(",")}-${staffId}`}
           bookPath={`/s/${orgSlug}/book`}
           action={bookAction}
           locations={organization.locations.map((location) => ({
@@ -135,13 +144,17 @@ export default async function PublicBookPage({
           staff={staff.map((person) => ({
             id: person.id,
             name: person.name,
+            locationId: person.locationId,
             serviceIds: person.services.map((row) => row.serviceId),
           }))}
-          initialServiceId={serviceId}
+          initialServiceIds={selectedIds}
           initialStaffId={staffId}
           initialStartsAt={
-            query.startsAt && slots.some((slot) => slot.toISOString() === query.startsAt)
-              ? query.startsAt
+            requestedStartsAtRaw &&
+            slots.some(
+              (slot) => slot.getTime() === new Date(requestedStartsAtRaw).getTime(),
+            )
+              ? requestedStartsAtRaw
               : ""
           }
           slots={slots.map((slot) => slot.toISOString())}

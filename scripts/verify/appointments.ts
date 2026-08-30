@@ -79,7 +79,7 @@ async function main() {
     locationId: tenant.locationId,
     customerId: customer.id,
     staffId: maya.id,
-    serviceId: cut.id,
+    serviceIds: [cut.id],
     startsAt: bookSlot,
   });
 
@@ -96,7 +96,7 @@ async function main() {
     locationId: tenant.locationId,
     customerId: customer.id,
     staffId: maya.id,
-    serviceId: cut.id,
+    serviceIds: [cut.id],
     startsAt: noShowSlot,
   });
 
@@ -112,7 +112,7 @@ async function main() {
     locationId: tenant.locationId,
     customerId: customer.id,
     staffId: maya.id,
-    serviceId: cut.id,
+    serviceIds: [cut.id],
     startsAt: cancelledSlot,
   });
 

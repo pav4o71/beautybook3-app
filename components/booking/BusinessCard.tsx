@@ -1,10 +1,20 @@
 import Link from "next/link";
+import { LocationHeading } from "@/components/booking/location-heading";
 import { formatPrice } from "@/lib/format";
 import type { MarketplaceListing } from "@/lib/marketplace";
 import { primaryButtonClass, secondaryButtonClass } from "@/lib/ui";
 
-export function BusinessCard({ listing }: { listing: MarketplaceListing }) {
+export function BusinessCard({
+  listing,
+  serviceName,
+}: {
+  listing: MarketplaceListing;
+  serviceName?: string;
+}) {
   const { locations, featuredService, serviceCount } = listing;
+  const salonHref = serviceName
+    ? `/s/${listing.slug}?service=${encodeURIComponent(serviceName)}`
+    : `/s/${listing.slug}`;
 
   return (
     <article
@@ -15,7 +25,7 @@ export function BusinessCard({ listing }: { listing: MarketplaceListing }) {
         // eslint-disable-next-line @next/next/no-img-element -- mixed local paths and owner-pasted http(s) URLs
         <img
           src={listing.coverImageUrl}
-          alt=""
+          alt={`${listing.name} cover`}
           width={800}
           height={400}
           loading="lazy"
@@ -51,17 +61,13 @@ export function BusinessCard({ listing }: { listing: MarketplaceListing }) {
           <ul className="mt-2 flex-1 space-y-1">
             {locations.map((location) => (
               <li key={location.id} className="text-sm text-zinc-600">
-                <span className="font-medium text-zinc-800">{location.name}</span>
-                {location.isDefault ? (
-                  <span className="ml-1 text-xs text-zinc-500">(default)</span>
-                ) : null}
+                <LocationHeading
+                  name={location.name}
+                  isDefault={location.isDefault}
+                  area={location.area}
+                />
                 {location.address ? (
                   <span className="block text-zinc-500">{location.address}</span>
-                ) : null}
-                {location.area ? (
-                  <span className="mt-0.5 inline-block rounded bg-zinc-100 px-2 py-0.5 text-xs text-zinc-700">
-                    {location.area}
-                  </span>
                 ) : null}
               </li>
             ))}
@@ -69,11 +75,11 @@ export function BusinessCard({ listing }: { listing: MarketplaceListing }) {
         )}
 
         <div className="mt-4 flex flex-wrap gap-2">
-          <Link href={`/s/${listing.slug}`} className={secondaryButtonClass}>
+          <Link href={salonHref} className={secondaryButtonClass}>
             View salon
           </Link>
           <Link
-            href={`/s/${listing.slug}/book`}
+            href={salonHref}
             className={primaryButtonClass}
             data-testid={`book-now-${listing.slug}`}
           >

@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { SiteHeader } from "@/components/site-header";
 import { getPublishedOrganizationBySlug } from "@/lib/tenant";
 
 export default async function SalonLayout({
@@ -15,5 +16,10 @@ export default async function SalonLayout({
     notFound();
   }
 
-  return children;
+  return (
+    <>
+      <SiteHeader />
+      {children}
+    </>
+  );
 }

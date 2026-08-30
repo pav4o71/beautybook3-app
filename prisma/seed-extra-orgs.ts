@@ -50,12 +50,19 @@ async function ensureUser(
   });
 }
 
-async function ensureOrg(slug: string, name: string, published: boolean) {
+async function ensureOrg(
+  slug: string,
+  name: string,
+  published: boolean,
+  profile?: { description?: string; phone?: string },
+) {
   const coverImageUrl = salonCoverPath(slug);
+  const description = profile?.description ?? null;
+  const phone = profile?.phone ?? null;
   return prisma.organization.upsert({
     where: { slug },
-    update: { name, published, coverImageUrl },
-    create: { name, slug, published, coverImageUrl },
+    update: { name, published, coverImageUrl, description, phone },
+    create: { name, slug, published, coverImageUrl, description, phone },
   });
 }
 
@@ -65,6 +72,7 @@ async function ensureLocation(
     name: string;
     address?: string;
     area?: string;
+    phone?: string;
     isDefault?: boolean;
   },
 ) {
@@ -78,6 +86,7 @@ async function ensureLocation(
       data: {
         address: input.address ?? null,
         area: input.area ?? null,
+        phone: input.phone ?? existing.phone,
         isDefault: input.isDefault ?? existing.isDefault,
         active: true,
       },
@@ -97,6 +106,7 @@ async function ensureLocation(
       name: input.name,
       address: input.address ?? null,
       area: input.area ?? null,
+      phone: input.phone ?? null,
       isDefault: input.isDefault ?? false,
       active: true,
     },
@@ -233,6 +243,7 @@ export async function seedDemoSecondLocation() {
     name: "BGC branch",
     address: "Bonifacio Global City, Taguig",
     area: "BGC (Taguig)",
+    phone: "+63 2 8888 0102",
     isDefault: false,
   });
 
@@ -263,17 +274,22 @@ export async function seedDemoSecondLocation() {
 }
 
 export async function seedGlowNailsStudio() {
-  const org = await ensureOrg(GLOW_ORG_SLUG, "Glow Nail Studio", true);
+  const org = await ensureOrg(GLOW_ORG_SLUG, "Glow Nail Studio", true, {
+    description: "Gel and classic nails in Makati and Quezon City. Walk in or book a combined slot online.",
+    phone: "+63 2 8888 0200",
+  });
   const makati = await ensureLocation(org.id, {
     name: "Makati Studio",
     address: "Poblacion, Makati",
     area: "Makati",
+    phone: "+63 2 8888 0201",
     isDefault: true,
   });
   const qc = await ensureLocation(org.id, {
     name: "QC Studio",
     address: "Katipunan, Quezon City",
     area: "Quezon City",
+    phone: "+63 2 8888 0202",
   });
 
   const owner = await ensureUser(GLOW_OWNER, Role.ADMIN);
@@ -321,11 +337,15 @@ export async function seedGlowNailsStudio() {
 }
 
 export async function seedLuxeHairLounge() {
-  const org = await ensureOrg(LUXE_ORG_SLUG, "Luxe Hair Lounge", true);
+  const org = await ensureOrg(LUXE_ORG_SLUG, "Luxe Hair Lounge", true, {
+    description: "Precision cuts and blowouts in Ortigas. Book one or more services in a single slot.",
+    phone: "+63 2 8888 0300",
+  });
   const ortigas = await ensureLocation(org.id, {
     name: "Ortigas branch",
     address: "Ortigas Center, Pasig",
     area: "Ortigas",
+    phone: "+63 2 8888 0301",
     isDefault: true,
   });
 

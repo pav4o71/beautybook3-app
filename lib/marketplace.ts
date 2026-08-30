@@ -1,4 +1,5 @@
 import { getAvailableSlotsForDay } from "@/lib/booking";
+import { publicLocationWhere } from "@/lib/locations";
 import { prisma } from "@/lib/prisma";
 import { parseSalonTime, salonMinutesOfDay } from "@/lib/timezone";
 
@@ -117,7 +118,7 @@ export async function listMarketplaceOrganizations(input: {
     include: {
       locations: {
         where: {
-          active: true,
+          ...publicLocationWhere,
           ...(area ? { area } : {}),
         },
         orderBy: [{ isDefault: "desc" }, { name: "asc" }],

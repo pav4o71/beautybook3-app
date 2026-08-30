@@ -1,3 +1,7 @@
+// NOT LIVE. This file is a stale Tenant-based sketch and is not used by the app.
+// The live booking schema is prisma/schema.prisma (Organization, Location, AppointmentService).
+// Do not point prisma.config.ts or Prisma Client at this file.
+//
 // This is your Prisma schema file for the SaaS multi-tenant version
 // Learn more: https://pris.ly/d/prisma-schema
 

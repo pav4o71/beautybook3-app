@@ -34,7 +34,7 @@ test.describe("admin appointments board", () => {
       page.getByRole("main").locator("nav").getByText("Appointments", { exact: true }),
     ).toBeVisible();
 
-    const row = appointmentRow(page, /Gel manicure/i);
+    const row = appointmentRow(page, /Gel manicure/i).filter({ hasText: "Lena Dimitrova" });
     await expect(row).toBeVisible();
     await expect(row.getByText("Confirmed", { exact: true })).toBeVisible();
 

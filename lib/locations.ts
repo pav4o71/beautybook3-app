@@ -1,6 +1,12 @@
 import type { Prisma } from "@/app/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 
+/** Public catalog/booking: only branches that can actually take appointments. */
+export const publicLocationWhere = {
+  active: true,
+  staff: { some: { active: true } },
+} as const;
+
 export async function listLocations(organizationId: string) {
   return prisma.location.findMany({
     where: { organizationId },
@@ -52,6 +58,7 @@ export async function createLocation(
     name: string;
     address?: string | null;
     area?: string | null;
+    phone?: string | null;
     timezone: string;
     isDefault?: boolean;
   },
@@ -70,6 +77,7 @@ export async function createLocation(
         name: input.name,
         address: input.address ?? null,
         area: input.area ?? null,
+        phone: input.phone ?? null,
         timezone: input.timezone,
         isDefault: shouldBeDefault,
         active: true,
@@ -85,6 +93,7 @@ export async function updateLocation(
     name: string;
     address?: string | null;
     area?: string | null;
+    phone?: string | null;
     timezone: string;
     active: boolean;
     isDefault: boolean;
@@ -131,6 +140,7 @@ export async function updateLocation(
         name: input.name,
         address: input.address ?? null,
         area: input.area ?? null,
+        phone: input.phone ?? null,
         timezone: input.timezone,
         active: input.active,
         isDefault: input.isDefault,

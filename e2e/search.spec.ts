@@ -24,6 +24,10 @@ test.describe("search marketplace", () => {
       "src",
       /\/images\/salons\/beautybook-demo\.jpg$/,
     );
+    await expect(page.getByTestId(`business-cover-${DEMO_ORG_SLUG}`)).toHaveAttribute(
+      "alt",
+      "BeautyBook Demo Salon cover",
+    );
     await expect(page.getByText("₱350.00").first()).toBeVisible();
     await expect(page.getByText("Haircut").first()).toBeVisible();
 
@@ -65,8 +69,9 @@ test.describe("search marketplace", () => {
     await expect(page.getByTestId(`business-${GLOW_ORG_SLUG}`)).toBeVisible();
 
     await page.getByTestId(`book-now-${DEMO_ORG_SLUG}`).click();
-    await page.waitForURL(new RegExp(`/s/${DEMO_ORG_SLUG}/book`));
-    await expect(page.getByRole("heading", { name: "Book online" })).toBeVisible();
+    await page.waitForURL(new RegExp(`/s/${DEMO_ORG_SLUG}(?:\\?|$)`));
+    await expect(page.getByRole("heading", { name: "BeautyBook Demo Salon" })).toBeVisible();
+    await expect(page.getByText("Haircut").first()).toBeVisible();
 
     await page.goto("/?category=nails");
     await page

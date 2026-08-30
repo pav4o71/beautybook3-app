@@ -27,6 +27,7 @@ test.describe("booking as admin", () => {
     test.setTimeout(60_000);
     await page.goto("/dashboard/book");
 
+    await page.getByRole("button", { name: /Haircut/i }).click();
     await page.getByRole("button", { name: /Gel manicure/i }).click();
     await page.getByRole("button", { name: /Lena Dimitrova/i }).click();
     await page.waitForLoadState("networkidle");

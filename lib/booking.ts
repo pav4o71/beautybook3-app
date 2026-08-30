@@ -1,6 +1,10 @@
 import { AppointmentStatus } from "@/app/generated/prisma/enums";
 import { prisma } from "@/lib/prisma";
 import {
+  MAX_BOOKING_SERVICES,
+  MAX_COMBINED_DURATION_MIN,
+} from "@/lib/booking-limits";
+import {
   addSalonDays,
   salonDayBounds,
   salonTimeOnDay,
@@ -118,6 +122,8 @@ export async function getAvailableSlotsForDay(input: {
   });
 }
 
+export { staffOffersAllServices } from "@/lib/booking-limits";
+
 function isAppointmentOverlapError(error: unknown) {
   if (error instanceof Error) {
     return (
@@ -134,7 +140,7 @@ export async function createAppointment(input: {
   locationId: string;
   customerId: string | null;
   staffId: string;
-  serviceId: string;
+  serviceIds: string[];
   startsAt: Date;
 }) {
   const startsAt = input.startsAt;
@@ -145,17 +151,29 @@ export async function createAppointment(input: {
     throw new Error("That time is not available.");
   }
 
-  const [staffService, service, staff, schedules] = await Promise.all([
-    prisma.staffService.findUnique({
+  const uniqueIds = [...new Set(input.serviceIds.filter((id) => id.length > 0))];
+  if (uniqueIds.length === 0) {
+    throw new Error("Choose at least one service.");
+  }
+  if (uniqueIds.length !== input.serviceIds.filter((id) => id.length > 0).length) {
+    throw new Error("Each service can only be added once.");
+  }
+  if (uniqueIds.length > MAX_BOOKING_SERVICES) {
+    throw new Error(`You can book at most ${MAX_BOOKING_SERVICES} services.`);
+  }
+
+  const [services, staffLinks, staff, schedules] = await Promise.all([
+    prisma.service.findMany({
       where: {
-        staffId_serviceId: {
-          staffId: input.staffId,
-          serviceId: input.serviceId,
-        },
+        id: { in: uniqueIds },
+        organizationId: input.organizationId,
       },
     }),
-    prisma.service.findFirst({
-      where: { id: input.serviceId, organizationId: input.organizationId },
+    prisma.staffService.findMany({
+      where: {
+        staffId: input.staffId,
+        serviceId: { in: uniqueIds },
+      },
     }),
     prisma.staff.findFirst({
       where: { id: input.staffId, organizationId: input.organizationId },
@@ -167,20 +185,34 @@ export async function createAppointment(input: {
   if (!staff?.active) {
     throw new Error("That staff member is not available.");
   }
-  if (!staffService || !service?.active) {
-    throw new Error("That staff member does not offer this service.");
-  }
   if (staff.locationId !== input.locationId) {
     throw new Error("That staff member is not available at this location.");
   }
+  if (services.length !== uniqueIds.length || services.some((service) => !service.active)) {
+    throw new Error("One or more services are not available.");
+  }
+
+  const offeredIds = new Set(staffLinks.map((row) => row.serviceId));
+  if (!uniqueIds.every((id) => offeredIds.has(id))) {
+    throw new Error("That staff member does not offer every selected service.");
+  }
+
+  const durationMin = services.reduce((sum, service) => sum + service.durationMin, 0);
+  if (durationMin > MAX_COMBINED_DURATION_MIN) {
+    throw new Error(
+      `Combined duration cannot exceed ${MAX_COMBINED_DURATION_MIN} minutes.`,
+    );
+  }
+
   if (!slotOnBookingGrid(startsAt)) {
     throw new Error("That time is not available.");
   }
-  if (!slotFitsStaffSchedule(schedules, startsAt, service.durationMin)) {
+  if (!slotFitsStaffSchedule(schedules, startsAt, durationMin)) {
     throw new Error("That time is not available.");
   }
 
-  const endsAt = new Date(startsAt.getTime() + service.durationMin * 60_000);
+  const endsAt = new Date(startsAt.getTime() + durationMin * 60_000);
+  const servicesById = new Map(services.map((service) => [service.id, service]));
 
   try {
     return await prisma.$transaction(async (tx) => {
@@ -222,11 +254,17 @@ export async function createAppointment(input: {
           endsAt,
           status: AppointmentStatus.CONFIRMED,
           services: {
-            create: {
-              serviceId: service.id,
-              durationMin: service.durationMin,
-              priceCents: service.priceCents,
-            },
+            create: uniqueIds.map((serviceId) => {
+              const service = servicesById.get(serviceId);
+              if (!service) {
+                throw new Error("One or more services are not available.");
+              }
+              return {
+                serviceId: service.id,
+                durationMin: service.durationMin,
+                priceCents: service.priceCents,
+              };
+            }),
           },
         },
       });

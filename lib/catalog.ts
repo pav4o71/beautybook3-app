@@ -47,6 +47,7 @@ export async function listBookingStaff(organizationId: string, locationId?: stri
     where: {
       organizationId,
       active: true,
+      location: { active: true },
       ...(locationId ? { locationId } : {}),
     },
     include: { services: true },

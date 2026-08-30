@@ -46,5 +46,6 @@ test.describe("search availability", () => {
     await expect(page).toHaveURL(/staffId=/);
     await expect(page).toHaveURL(/startsAt=/);
     await expect(page.getByTestId("book-slot").first()).toBeVisible();
+    await expect(page.locator('[data-testid="book-slot"][data-slot-selected="true"]')).toBeVisible();
   });
 });

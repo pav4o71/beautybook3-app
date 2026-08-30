@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { DEMO_ORG_SLUG } from "@/lib/demo-constants";
+import { publicLocationWhere } from "@/lib/locations";
 
 export { DEMO_ORG_SLUG };
 
@@ -14,7 +15,7 @@ export async function getOrganizationBySlug(slug: string) {
     where: { slug },
     include: {
       locations: {
-        where: { active: true },
+        where: publicLocationWhere,
         orderBy: [{ isDefault: "desc" }, { name: "asc" }],
       },
     },
@@ -41,7 +42,7 @@ export async function listPublishedOrganizations() {
     orderBy: { name: "asc" },
     include: {
       locations: {
-        where: { active: true },
+        where: publicLocationWhere,
         orderBy: [{ isDefault: "desc" }, { name: "asc" }],
       },
     },

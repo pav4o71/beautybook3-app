@@ -35,6 +35,15 @@ test.describe("locations admin", () => {
     await expect(row).toBeVisible();
     await expect(row.getByText(branchAddress)).toBeVisible();
     await expect(row.getByText("Quezon City")).toBeVisible();
+
+    await row.getByRole("link", { name: "Edit" }).click();
+    await page.waitForURL(/\/dashboard\/admin\/locations\/.+/);
+    await page.locator('input[name="active"]').uncheck();
+    await page.getByRole("button", { name: "Save changes" }).click();
+    await page.waitForURL("/dashboard/admin/locations");
+    await expect(page.locator("li").filter({ hasText: branchName })).toContainText(
+      "Inactive",
+    );
   });
 
   test("admin can reassign staff to another location", async ({ page }) => {
@@ -52,7 +61,7 @@ test.describe("locations admin", () => {
     await page.getByRole("button", { name: "BGC branch" }).click();
     await page.waitForURL(/locationId=/);
     await page.getByRole("button", { name: "Haircut" }).click();
-    await expect(page.getByText("Jordan Reyes")).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Jordan Reyes" })).toHaveCount(0);
 
     await page.goto("/dashboard/admin/staff");
     const jordanRowAfterBook = page.locator("li").filter({ hasText: "Jordan Reyes" });
