@@ -51,7 +51,9 @@ test.describe("locations admin", () => {
     await page.getByRole("button", { name: "Haircut" }).click();
     await expect(page.getByText("Jordan Reyes")).toHaveCount(0);
 
-    await jordanRow.getByRole("link", { name: "Edit" }).click();
+    await page.goto("/dashboard/admin/staff");
+    const jordanRowAfterBook = page.locator("li").filter({ hasText: "Jordan Reyes" });
+    await jordanRowAfterBook.getByRole("link", { name: "Edit" }).click();
     await page.locator('select[name="locationId"]').selectOption({ label: "BGC branch" });
     await page.getByRole("button", { name: "Save changes" }).click();
     await page.waitForURL("/dashboard/admin/staff");
