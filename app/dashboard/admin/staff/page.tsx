@@ -43,7 +43,7 @@ export default async function AdminStaffPage() {
 
       <section className="mt-8 rounded-lg border border-zinc-200 bg-white p-4">
         <h2 className="font-medium text-zinc-900">Add staff member</h2>
-        <ActionForm action={createStaff} className="mt-4 space-y-4">
+        <ActionForm action={createStaff} encType="multipart/form-data" className="mt-4 space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
             <label className={labelClass}>
               <span className={labelTextClass}>Name</span>
@@ -62,6 +62,23 @@ export default async function AdminStaffPage() {
           <label className={labelClass}>
             <span className={labelTextClass}>Bio</span>
             <textarea name="bio" rows={2} className={controlClass} />
+          </label>
+          <label className={labelClass}>
+            <span className={labelTextClass}>Photo URL</span>
+            <input
+              name="photoUrl"
+              placeholder="/images/staff/your-photo.jpg"
+              className={controlClass}
+            />
+          </label>
+          <label className={labelClass}>
+            <span className={labelTextClass}>Or upload a photo (JPEG, PNG, or WebP, max 2MB)</span>
+            <input
+              type="file"
+              name="photo"
+              accept="image/jpeg,image/png,image/webp"
+              className={controlClass}
+            />
           </label>
           <fieldset className="space-y-2">
             <legend className="text-sm font-medium text-zinc-900">Services</legend>
@@ -94,8 +111,17 @@ export default async function AdminStaffPage() {
             key={person.id}
             className="flex flex-wrap items-center justify-between gap-4 p-4"
           >
-            <div>
-              <p className="font-medium text-zinc-900">
+            <div className="flex gap-3">
+              {person.photoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element -- mixed local paths and owner-pasted http(s) URLs
+                <img
+                  src={person.photoUrl}
+                  alt=""
+                  className="h-12 w-12 shrink-0 rounded-full object-cover"
+                />
+              ) : null}
+              <div>
+                <p className="font-medium text-zinc-900">
                 {person.name}
                 {!person.active ? (
                   <span className="ml-2 rounded bg-zinc-100 px-2 py-0.5 text-xs font-normal text-zinc-600">
@@ -112,6 +138,7 @@ export default async function AdminStaffPage() {
               <p className="mt-1 text-sm text-zinc-700">
                 Hours: {summarizeStaffSchedule(person.schedules)}
               </p>
+              </div>
             </div>
             <div className="flex flex-wrap gap-2">
               <Link

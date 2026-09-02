@@ -136,10 +136,20 @@ export default async function SalonLandingPage({
                   </p>
                 ) : null}
                 <ul
-                  className={`list-inside list-disc text-sm text-zinc-700 ${salon.locations.length > 1 ? "mt-1" : ""}`}
+                  className={`space-y-2 text-sm text-zinc-700 ${salon.locations.length > 1 ? "mt-1" : ""}`}
                 >
                   {staff.map((person) => (
-                    <li key={person.id}>{person.name}</li>
+                    <li key={person.id} className="flex items-center gap-3">
+                      {person.photoUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element -- mixed local paths and owner-pasted http(s) URLs
+                        <img
+                          src={person.photoUrl}
+                          alt=""
+                          className="h-10 w-10 shrink-0 rounded-full object-cover"
+                        />
+                      ) : null}
+                      <span>{person.name}</span>
+                    </li>
                   ))}
                 </ul>
               </div>

@@ -8,6 +8,11 @@ import {
   parseOptionalString,
   parseRequiredString,
 } from "@/lib/catalog";
+import {
+  CoverImageError,
+  parseStaffPhotoUrl,
+  saveStaffPhoto,
+} from "@/lib/org-cover";
 import { prisma } from "@/lib/prisma";
 import { getLocationById } from "@/lib/locations";
 import { requireActiveOrgAdmin } from "@/lib/require-org";
@@ -16,13 +21,15 @@ import {
   updateStaffSchema,
 } from "@/lib/validations/staff";
 
-function revalidateStaffPaths() {
+function revalidateStaffPaths(slug: string) {
   revalidatePath("/dashboard/admin/staff");
   revalidatePath("/dashboard/staff");
   revalidatePath("/dashboard/book");
   revalidatePath("/");
   revalidatePath("/marketplace");
   revalidatePath("/search");
+  revalidatePath(`/s/${slug}`);
+  revalidatePath(`/s/${slug}/book`);
 }
 
 function parseServiceIds(formData: FormData) {
@@ -30,6 +37,18 @@ function parseServiceIds(formData: FormData) {
     .getAll("serviceIds")
     .map((value) => String(value))
     .filter(Boolean);
+}
+
+async function resolveStaffPhotoUrl(
+  organizationId: string,
+  staffId: string,
+  formData: FormData,
+): Promise<string | null> {
+  const uploaded = formData.get("photo");
+  if (uploaded instanceof File && uploaded.size > 0) {
+    return saveStaffPhoto(organizationId, staffId, uploaded);
+  }
+  return parseStaffPhotoUrl(String(formData.get("photoUrl") ?? ""), organizationId);
 }
 
 async function syncStaffServices(
@@ -64,7 +83,7 @@ export async function createStaff(
   _prevState: ActionFormState,
   formData: FormData,
 ): Promise<ActionFormState> {
-  const { organizationId, locationId } = await requireActiveOrgAdmin();
+  const { organizationId, locationId, organization } = await requireActiveOrgAdmin();
 
   try {
     const name = parseRequiredString(formData.get("name"), "Name");
@@ -72,16 +91,32 @@ export async function createStaff(
     const active = parseBooleanCheckbox(formData.get("active"));
     const serviceIds = parseServiceIds(formData);
 
+    // Bookable catalog row only — do not set Staff.userId (login stays separate).
     const staff = await prisma.staff.create({
       data: { organizationId, locationId, name, bio, active },
     });
+
+    try {
+      const photoUrl = await resolveStaffPhotoUrl(organizationId, staff.id, formData);
+      if (photoUrl) {
+        await prisma.staff.update({
+          where: { id: staff.id },
+          data: { photoUrl },
+        });
+      }
+    } catch (error) {
+      if (error instanceof CoverImageError) {
+        return { error: error.message };
+      }
+      throw error;
+    }
 
     await syncStaffServices(organizationId, staff.id, serviceIds);
   } catch (error) {
     return actionError(error);
   }
 
-  revalidateStaffPaths();
+  revalidateStaffPaths(organization.slug);
   redirect("/dashboard/admin/staff");
 }
 
@@ -89,7 +124,7 @@ export async function updateStaff(
   _prevState: ActionFormState,
   formData: FormData,
 ): Promise<ActionFormState> {
-  const { organizationId } = await requireActiveOrgAdmin();
+  const { organizationId, organization } = await requireActiveOrgAdmin();
 
   try {
     const parsed = updateStaffSchema.safeParse({
@@ -118,9 +153,19 @@ export async function updateStaff(
       throw new Error("Selected location is not available.");
     }
 
+    let photoUrl: string | null;
+    try {
+      photoUrl = await resolveStaffPhotoUrl(organizationId, id, formData);
+    } catch (error) {
+      if (error instanceof CoverImageError) {
+        return { error: error.message };
+      }
+      throw error;
+    }
+
     await prisma.staff.update({
       where: { id },
-      data: { name, bio, active, locationId },
+      data: { name, bio, active, locationId, photoUrl },
     });
 
     await syncStaffServices(organizationId, id, serviceIds);
@@ -128,12 +173,12 @@ export async function updateStaff(
     return actionError(error);
   }
 
-  revalidateStaffPaths();
+  revalidateStaffPaths(organization.slug);
   redirect("/dashboard/admin/staff");
 }
 
 export async function deactivateStaff(formData: FormData): Promise<void> {
-  const { organizationId } = await requireActiveOrgAdmin();
+  const { organizationId, organization } = await requireActiveOrgAdmin();
 
   const id = String(formData.get("id") ?? "");
   if (!id) {
@@ -145,12 +190,12 @@ export async function deactivateStaff(formData: FormData): Promise<void> {
     data: { active: false },
   });
 
-  revalidateStaffPaths();
+  revalidateStaffPaths(organization.slug);
   redirect("/dashboard/admin/staff");
 }
 
 export async function activateStaff(formData: FormData): Promise<void> {
-  const { organizationId } = await requireActiveOrgAdmin();
+  const { organizationId, organization } = await requireActiveOrgAdmin();
 
   const id = String(formData.get("id") ?? "");
   if (!id) {
@@ -162,6 +207,6 @@ export async function activateStaff(formData: FormData): Promise<void> {
     data: { active: true },
   });
 
-  revalidateStaffPaths();
+  revalidateStaffPaths(organization.slug);
   redirect("/dashboard/admin/staff");
 }

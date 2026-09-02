@@ -55,6 +55,7 @@ export default async function EditStaffPage({
 
       <ActionForm
         action={updateStaff}
+        encType="multipart/form-data"
         className="mt-8 max-w-lg space-y-4 rounded-lg border border-zinc-200 bg-white p-4"
       >
         <input type="hidden" name="id" value={person.id} />
@@ -73,6 +74,32 @@ export default async function EditStaffPage({
             name="bio"
             rows={3}
             defaultValue={person.bio ?? ""}
+            className={controlClass}
+          />
+        </label>
+        {person.photoUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element -- mixed local paths and owner-pasted http(s) URLs
+          <img
+            src={person.photoUrl}
+            alt=""
+            className="h-20 w-20 rounded-full object-cover"
+          />
+        ) : null}
+        <label className={labelClass}>
+          <span className={labelTextClass}>Photo URL</span>
+          <input
+            name="photoUrl"
+            defaultValue={person.photoUrl ?? ""}
+            placeholder="/images/staff/your-photo.jpg"
+            className={controlClass}
+          />
+        </label>
+        <label className={labelClass}>
+          <span className={labelTextClass}>Or upload a photo (JPEG, PNG, or WebP, max 2MB)</span>
+          <input
+            type="file"
+            name="photo"
+            accept="image/jpeg,image/png,image/webp"
             className={controlClass}
           />
         </label>

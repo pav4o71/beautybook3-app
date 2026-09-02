@@ -30,8 +30,20 @@ export default async function StaffPage() {
         <ul className="grid gap-4 sm:grid-cols-2">
           {staff.map((person) => (
             <li key={person.id} className="rounded-xl border border-zinc-200 bg-white p-4">
-              <h2 className="font-medium text-zinc-900">{person.name}</h2>
-              {person.bio ? <p className="mt-1 text-sm text-zinc-600">{person.bio}</p> : null}
+              <div className="flex items-start gap-3">
+                {person.photoUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- mixed local paths and owner-pasted http(s) URLs
+                  <img
+                    src={person.photoUrl}
+                    alt=""
+                    className="h-12 w-12 shrink-0 rounded-full object-cover"
+                  />
+                ) : null}
+                <div>
+                  <h2 className="font-medium text-zinc-900">{person.name}</h2>
+                  {person.bio ? <p className="mt-1 text-sm text-zinc-600">{person.bio}</p> : null}
+                </div>
+              </div>
               <p className="mt-3 text-xs font-medium uppercase tracking-wide text-zinc-500">
                 Services
               </p>
