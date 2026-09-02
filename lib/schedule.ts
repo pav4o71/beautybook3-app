@@ -84,12 +84,15 @@ export function slotBlockedByTimeOff(
 }
 
 export async function getStaffTimeOffInRange(
+  organizationId: string,
   staffId: string,
   rangeStart: Date,
   rangeEnd: Date,
+  db: Pick<typeof prisma, "timeOff"> = prisma,
 ) {
-  return prisma.timeOff.findMany({
+  return db.timeOff.findMany({
     where: {
+      organizationId,
       staffId,
       startsAt: { lt: rangeEnd },
       endsAt: { gt: rangeStart },

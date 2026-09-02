@@ -11,6 +11,7 @@ import {
 } from "@/lib/timezone";
 import {
   getStaffSchedules,
+  getStaffTimeOffInRange,
   overlaps,
   slotBlockedByTimeOff,
   slotFitsStaffSchedule,
@@ -43,15 +44,12 @@ async function collectAvailableSlots(input: SlotQuery) {
       },
       select: { startsAt: true, endsAt: true },
     }),
-    prisma.timeOff.findMany({
-      where: {
-        organizationId: input.organizationId,
-        staffId: input.staffId,
-        startsAt: { lt: input.rangeEnd },
-        endsAt: { gt: input.rangeStart },
-      },
-      select: { startsAt: true, endsAt: true },
-    }),
+    getStaffTimeOffInRange(
+      input.organizationId,
+      input.staffId,
+      input.rangeStart,
+      input.rangeEnd,
+    ),
   ]);
 
   const slots: Date[] = [];
@@ -230,15 +228,13 @@ export async function createAppointment(input: {
         throw new Error("That time is no longer available.");
       }
 
-      const timeOff = await tx.timeOff.findMany({
-        where: {
-          organizationId: input.organizationId,
-          staffId: input.staffId,
-          startsAt: { lt: endsAt },
-          endsAt: { gt: startsAt },
-        },
-        select: { startsAt: true, endsAt: true },
-      });
+      const timeOff = await getStaffTimeOffInRange(
+        input.organizationId,
+        input.staffId,
+        startsAt,
+        endsAt,
+        tx,
+      );
 
       if (slotBlockedByTimeOff(startsAt, endsAt, timeOff)) {
         throw new Error("That time is not available.");
