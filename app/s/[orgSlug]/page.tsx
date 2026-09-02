@@ -1,9 +1,16 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { EmptyState } from "@/components/empty-state";
 import { LocationHeading } from "@/components/booking/location-heading";
 import { getSalonStorefront } from "@/lib/salon";
 import { weekdayLabel } from "@/lib/schedule";
-import { secondaryButtonClass } from "@/lib/ui";
+import {
+  pageMainClass,
+  pageTitleClass,
+  sectionTitleClass,
+  secondaryButtonClass,
+  surfaceClass,
+} from "@/lib/ui";
 import { ServicePicker } from "./service-picker";
 
 export default async function SalonLandingPage({
@@ -29,45 +36,59 @@ export default async function SalonLandingPage({
         .map((service) => service.id)
     : [];
 
-  return (
-    <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-10">
-      <div className="space-y-1">
-        <p className="text-sm font-medium uppercase tracking-wide text-zinc-500">Salon</p>
-        <h1 className="text-3xl font-semibold tracking-tight text-zinc-900">
-          {salon.name}
-        </h1>
-        {salon.phone ? <p className="text-sm text-zinc-600">{salon.phone}</p> : null}
-      </div>
+  const staffByLocation = salon.locations
+    .map((location) => ({
+      location,
+      staff: salon.staff.filter((person) => person.locationId === location.id),
+    }))
+    .filter((group) => group.staff.length > 0);
 
+  return (
+    <main className={pageMainClass}>
       {salon.coverImageUrl ? (
         // eslint-disable-next-line @next/next/no-img-element -- mixed local paths and owner-pasted http(s) URLs
         <img
           src={salon.coverImageUrl}
           alt={`${salon.name} cover`}
-          width={800}
-          height={400}
-          className="h-48 w-full rounded-lg object-cover"
+          width={1200}
+          height={480}
+          className="h-52 w-full rounded-xl object-cover sm:h-72"
         />
-      ) : null}
-
-      {salon.description ? (
-        <p className="whitespace-pre-line text-zinc-700">{salon.description}</p>
       ) : (
-        <p className="text-zinc-700">
-          Book services online. Your slot is held when you book; pay at the salon when you
-          arrive.
-        </p>
+        <div className="flex h-40 items-end rounded-xl bg-zinc-100 px-4 py-3 sm:h-48">
+          <span className="text-sm font-medium text-zinc-500">{salon.name}</span>
+        </div>
       )}
 
+      <div className="space-y-2">
+        <Link href="/" className={secondaryButtonClass}>
+          Back to search
+        </Link>
+        <p className="text-sm font-medium uppercase tracking-wide text-zinc-500">Salon</p>
+        <h1 className={pageTitleClass}>{salon.name}</h1>
+        {salon.phone ? (
+          <p className="text-sm text-zinc-600">
+            <a href={`tel:${salon.phone.replace(/\s+/g, "")}`} className="hover:text-zinc-900">
+              {salon.phone}
+            </a>
+          </p>
+        ) : null}
+        {salon.description ? (
+          <p className="max-w-2xl whitespace-pre-line text-zinc-700">{salon.description}</p>
+        ) : (
+          <p className="max-w-2xl text-zinc-700">
+            Book services online. Your slot is held when you book; pay at the salon when you
+            arrive.
+          </p>
+        )}
+      </div>
+
       {salon.locations.length > 0 ? (
-        <section className="space-y-2">
-          <h2 className="text-sm font-medium text-zinc-900">Locations</h2>
-          <ul className="space-y-2">
+        <section className="space-y-3">
+          <h2 className={sectionTitleClass}>Locations</h2>
+          <ul className="grid gap-3 sm:grid-cols-2">
             {salon.locations.map((location) => (
-              <li
-                key={location.id}
-                className="rounded-lg border border-zinc-200 bg-white p-3 text-sm text-zinc-700"
-              >
+              <li key={location.id} className={`${surfaceClass} p-4 text-sm text-zinc-700`}>
                 <LocationHeading
                   name={location.name}
                   isDefault={location.isDefault}
@@ -77,10 +98,17 @@ export default async function SalonLandingPage({
                   <p className="mt-1 text-zinc-600">{location.address}</p>
                 ) : null}
                 {location.phone ? (
-                  <p className="mt-1 text-zinc-600">{location.phone}</p>
+                  <p className="mt-1 text-zinc-600">
+                    <a
+                      href={`tel:${location.phone.replace(/\s+/g, "")}`}
+                      className="hover:text-zinc-900"
+                    >
+                      {location.phone}
+                    </a>
+                  </p>
                 ) : null}
                 {location.hours.length > 0 ? (
-                  <ul className="mt-2 space-y-0.5 text-xs text-zinc-600">
+                  <ul className="mt-3 grid grid-cols-1 gap-x-4 gap-y-0.5 text-xs text-zinc-600 sm:grid-cols-2">
                     {location.hours.map((window) => (
                       <li key={window.weekday}>
                         {weekdayLabel(window.weekday)} {window.startTime}–{window.endTime}
@@ -88,7 +116,7 @@ export default async function SalonLandingPage({
                     ))}
                   </ul>
                 ) : (
-                  <p className="mt-2 text-xs text-zinc-500">Hours not posted yet.</p>
+                  <p className="mt-3 text-xs text-zinc-500">Hours not posted yet.</p>
                 )}
               </li>
             ))}
@@ -96,23 +124,62 @@ export default async function SalonLandingPage({
         </section>
       ) : null}
 
+      {staffByLocation.length > 0 ? (
+        <section className="space-y-3">
+          <h2 className={sectionTitleClass}>Team at this salon</h2>
+          <div className="space-y-4">
+            {staffByLocation.map(({ location, staff }) => (
+              <div key={location.id}>
+                {salon.locations.length > 1 ? (
+                  <p className="text-sm font-medium text-zinc-700">
+                    {location.area ?? location.name}
+                  </p>
+                ) : null}
+                <ul
+                  className={`list-inside list-disc text-sm text-zinc-700 ${salon.locations.length > 1 ? "mt-1" : ""}`}
+                >
+                  {staff.map((person) => (
+                    <li key={person.id}>{person.name}</li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
       {salon.categories.length === 0 ? (
-        <p className="text-sm text-zinc-600">No bookable services yet.</p>
+        <EmptyState
+          title="No bookable services yet"
+          description="This salon has not published a catalog."
+        >
+          <Link href="/" className={secondaryButtonClass}>
+            Back to search
+          </Link>
+        </EmptyState>
       ) : (
-        <ServicePicker
-          orgSlug={orgSlug}
-          categories={salon.categories}
-          locations={salon.locations.map((location) => ({ id: location.id }))}
-          staff={salon.staff}
-          initialServiceIds={initialServiceIds}
-        />
+        <section className="space-y-3">
+          <div>
+            <h2 className={sectionTitleClass}>Services</h2>
+            <p className="text-sm text-zinc-600">Choose services to continue</p>
+          </div>
+          <ServicePicker
+            orgSlug={orgSlug}
+            categories={salon.categories}
+            locations={salon.locations.map((location) => ({ id: location.id }))}
+            staff={salon.staff}
+            initialServiceIds={initialServiceIds}
+          />
+        </section>
       )}
 
-      <div>
-        <Link href="/" className={secondaryButtonClass}>
-          Back to search
-        </Link>
-      </div>
+      {salon.categories.length > 0 ? (
+        <div>
+          <Link href="/" className={secondaryButtonClass}>
+            Back to search
+          </Link>
+        </div>
+      ) : null}
     </main>
   );
 }

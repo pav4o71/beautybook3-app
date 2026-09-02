@@ -21,6 +21,21 @@ function nextManilaWeekdayIso() {
 }
 
 test.describe("search availability", () => {
+  test("preferred time label and helper explain the ±30 minute window", async ({
+    page,
+  }) => {
+    const date = nextManilaWeekdayIso();
+    await page.goto(`/?category=hair&date=${date}`);
+
+    await expect(page.getByText("Preferred time", { exact: true })).toBeVisible();
+    const timeFilter = page.getByTestId("time-filter");
+    await expect(timeFilter).toBeEnabled();
+    await expect(timeFilter).toHaveAttribute("aria-describedby", "time-filter-help");
+    await expect(page.locator("#time-filter-help")).toHaveText(
+      "Shows slots within 30 minutes of this time.",
+    );
+  });
+
   test("date filter shows real slots and books with prefilled params", async ({
     page,
   }) => {

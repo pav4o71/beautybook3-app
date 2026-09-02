@@ -71,6 +71,16 @@ async function main() {
     "Haircut chip must feature the Haircut offering",
   );
 
+  const haircutLower = await listMarketplaceOrganizations({
+    categorySlug: "hair",
+    serviceName: "haircut",
+  });
+  assert(
+    haircutLower.length === haircutSalons.length &&
+      haircutLower.every((row) => row.featuredService?.name === "Haircut"),
+    "Lowercase serviceName must match Haircut case-insensitively",
+  );
+
   const unpublished = await prisma.organization.count({
     where: {
       published: false,

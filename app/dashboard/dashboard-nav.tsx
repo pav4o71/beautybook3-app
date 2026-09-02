@@ -2,17 +2,11 @@ import Link from "next/link";
 import { resolveActiveOrganization, listUserMemberships } from "@/lib/org-context";
 import { isOrgAdminRole } from "@/lib/org-roles";
 import { requireUser } from "@/lib/require-user";
+import { brandLinkClass, pageShellClass } from "@/lib/ui";
+import { DashboardNavLinks } from "./dashboard-nav-links";
 import { OrgSwitcher } from "./org-switcher";
 import { LocationSwitcher } from "./location-switcher";
 import { SignOutButton } from "./sign-out-button";
-
-const links = [
-  { href: "/dashboard", label: "Home" },
-  { href: "/dashboard/services", label: "Services" },
-  { href: "/dashboard/staff", label: "Staff" },
-  { href: "/dashboard/book", label: "Book" },
-  { href: "/dashboard/appointments", label: "Appointments" },
-];
 
 export async function DashboardNav() {
   const session = await requireUser();
@@ -23,53 +17,36 @@ export async function DashboardNav() {
   const isOrgAdmin =
     isLegacyAdmin || (active ? isOrgAdminRole(active.membership.role) : false);
 
+  const showContextRow =
+    memberships.length > 0 || Boolean(active && active.locations.length > 0);
+
   return (
     <header className="border-b border-zinc-200 bg-white">
-      <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-3">
-        <div className="flex flex-wrap items-center gap-3">
-          <Link
-            href="/dashboard"
-            className="text-sm font-semibold tracking-tight text-zinc-900"
-          >
+      <div className={`${pageShellClass} py-3`}>
+        <div className="flex items-center justify-between gap-3">
+          <Link href="/dashboard" className={`shrink-0 ${brandLinkClass}`}>
             BeautyBook
           </Link>
-          <OrgSwitcher
-            memberships={memberships}
-            activeOrgId={active?.organization.id ?? ""}
-          />
-          {active && active.locations.length > 0 ? (
-            <LocationSwitcher
-              locations={active.locations.map((location) => ({
-                id: location.id,
-                name: location.name,
-              }))}
-              activeLocationId={active.location?.id ?? active.locations[0].id}
-            />
-          ) : null}
-        </div>
-        <nav className="flex flex-wrap items-center gap-3 text-sm">
-          {links.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className="text-zinc-600 hover:text-zinc-900"
-            >
-              {link.label}
-            </Link>
-          ))}
-          <Link href="/" className="text-zinc-600 hover:text-zinc-900">
-            Search
-          </Link>
-          {isOrgAdmin ? (
-            <Link
-              href="/dashboard/admin"
-              className="font-medium text-zinc-900 hover:text-zinc-700"
-            >
-              Admin
-            </Link>
-          ) : null}
           <SignOutButton />
-        </nav>
+        </div>
+        {showContextRow ? (
+          <div className="mt-3 flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+            <OrgSwitcher
+              memberships={memberships}
+              activeOrgId={active?.organization.id ?? ""}
+            />
+            {active && active.locations.length > 0 ? (
+              <LocationSwitcher
+                locations={active.locations.map((location) => ({
+                  id: location.id,
+                  name: location.name,
+                }))}
+                activeLocationId={active.location?.id ?? active.locations[0].id}
+              />
+            ) : null}
+          </div>
+        ) : null}
+        <DashboardNavLinks isOrgAdmin={isOrgAdmin} />
       </div>
     </header>
   );

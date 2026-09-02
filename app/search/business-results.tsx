@@ -1,5 +1,8 @@
+import { EmptyState } from "@/components/empty-state";
 import { BusinessCard } from "@/components/booking/BusinessCard";
 import type { MarketplaceListing } from "@/lib/marketplace";
+import { secondaryButtonClass } from "@/lib/ui";
+import Link from "next/link";
 
 export function BusinessResults({
   listings,
@@ -10,9 +13,16 @@ export function BusinessResults({
 }) {
   if (listings.length === 0) {
     return (
-      <p className="text-sm text-zinc-600">
-        No salons match these filters. Try another category, service, or area.
-      </p>
+      <div className="py-4 sm:py-6">
+        <EmptyState
+          title="No salons match these filters"
+          description="Try another category, service, or area."
+        >
+          <Link href="/" className={secondaryButtonClass}>
+            Clear filters
+          </Link>
+        </EmptyState>
+      </div>
     );
   }
 
