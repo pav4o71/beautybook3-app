@@ -1,5 +1,6 @@
 import "dotenv/config";
 import { getAvailableSlots } from "../../lib/booking";
+import { assertSafeVerifyTarget } from "./assert-safe-target";
 import { prisma } from "../../lib/prisma";
 import { getDemoTenantContext } from "../../lib/tenant";
 
@@ -10,6 +11,7 @@ function assert(condition: boolean, message: string) {
 }
 
 async function main() {
+  assertSafeVerifyTarget();
   const tenant = await getDemoTenantContext();
   const cut = await prisma.service.findFirstOrThrow({
     where: { organizationId: tenant.organizationId, name: "Haircut" },

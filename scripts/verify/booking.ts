@@ -1,5 +1,6 @@
 import "dotenv/config";
 import { createAppointment, getAvailableSlots } from "../../lib/booking";
+import { assertSafeVerifyTarget } from "./assert-safe-target";
 import {
   MAX_BOOKING_SERVICES,
   MAX_COMBINED_DURATION_MIN,
@@ -36,6 +37,7 @@ async function expectRejects(
 }
 
 async function main() {
+  assertSafeVerifyTarget();
   const fromArray = parseServiceIdsFromQuery({ serviceIds: ["cut,color", "gel"] });
   assert(
     fromArray.join(",") === "cut,color,gel",
