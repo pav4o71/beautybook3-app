@@ -32,10 +32,10 @@ export async function requireActiveOrgAdmin() {
     redirect("/onboarding");
   }
 
-  const isLegacyAdmin = session.user.role === "ADMIN";
-  const isOrgAdmin = isOrgAdminRole(active.membership.role);
-
-  if (!isLegacyAdmin && !isOrgAdmin) {
+  // OrgRole is the only org-admin gate. User.role ADMIN is leftover from the
+  // single-salon MVP and must not open /dashboard/admin. Demo still works via
+  // seed OWNER membership. There is no platform-superadmin path.
+  if (!isOrgAdminRole(active.membership.role)) {
     redirect("/dashboard");
   }
 
