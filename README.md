@@ -46,9 +46,10 @@ Open [http://localhost:3000](http://localhost:3000). Sign in at `/login`.
 
 ### Verify & E2E
 
+Verify, seed, and Playwright global setup **refuse any database that is not local Docker Postgres** (`localhost` or `127.0.0.1`, port **5433**, database `beautybook`). There is no `VERIFY_ALLOW_REMOTE` bypass.
+
 ```bash
-# Hosted Supabase: verify scripts mutate DB — set in .env first:
-# VERIFY_ALLOW_REMOTE=1
+# DATABASE_URL must be the local Docker URL (host port 5433)
 npm run verify        # format, seed counts, slots, booking, appointments
 npm run test:e2e      # Playwright (seeds DB first; starts dev server when CI=1)
 ```
