@@ -4,7 +4,13 @@ import { EmptyState } from "@/components/empty-state";
 import { LocationHeading } from "@/components/booking/location-heading";
 import { getSalonStorefront } from "@/lib/salon";
 import { weekdayLabel } from "@/lib/schedule";
-import { pageMainClass, secondaryButtonClass } from "@/lib/ui";
+import {
+  pageMainClass,
+  pageTitleClass,
+  sectionTitleClass,
+  secondaryButtonClass,
+  surfaceClass,
+} from "@/lib/ui";
 import { ServicePicker } from "./service-picker";
 
 export default async function SalonLandingPage({
@@ -30,6 +36,13 @@ export default async function SalonLandingPage({
         .map((service) => service.id)
     : [];
 
+  const staffByLocation = salon.locations
+    .map((location) => ({
+      location,
+      staff: salon.staff.filter((person) => person.locationId === location.id),
+    }))
+    .filter((group) => group.staff.length > 0);
+
   return (
     <main className={pageMainClass}>
       {salon.coverImageUrl ? (
@@ -48,8 +61,11 @@ export default async function SalonLandingPage({
       )}
 
       <div className="space-y-2">
+        <Link href="/" className={secondaryButtonClass}>
+          Back to search
+        </Link>
         <p className="text-sm font-medium uppercase tracking-wide text-zinc-500">Salon</p>
-        <h1 className="text-3xl font-semibold tracking-tight text-zinc-900">{salon.name}</h1>
+        <h1 className={pageTitleClass}>{salon.name}</h1>
         {salon.phone ? (
           <p className="text-sm text-zinc-600">
             <a href={`tel:${salon.phone.replace(/\s+/g, "")}`} className="hover:text-zinc-900">
@@ -69,13 +85,10 @@ export default async function SalonLandingPage({
 
       {salon.locations.length > 0 ? (
         <section className="space-y-3">
-          <h2 className="text-lg font-semibold tracking-tight text-zinc-900">Locations</h2>
+          <h2 className={sectionTitleClass}>Locations</h2>
           <ul className="grid gap-3 sm:grid-cols-2">
             {salon.locations.map((location) => (
-              <li
-                key={location.id}
-                className="rounded-xl border border-zinc-200 bg-white p-4 text-sm text-zinc-700"
-              >
+              <li key={location.id} className={`${surfaceClass} p-4 text-sm text-zinc-700`}>
                 <LocationHeading
                   name={location.name}
                   isDefault={location.isDefault}
@@ -111,6 +124,30 @@ export default async function SalonLandingPage({
         </section>
       ) : null}
 
+      {staffByLocation.length > 0 ? (
+        <section className="space-y-3">
+          <h2 className={sectionTitleClass}>Team at this salon</h2>
+          <div className="space-y-4">
+            {staffByLocation.map(({ location, staff }) => (
+              <div key={location.id}>
+                {salon.locations.length > 1 ? (
+                  <p className="text-sm font-medium text-zinc-700">
+                    {location.area ?? location.name}
+                  </p>
+                ) : null}
+                <ul
+                  className={`list-inside list-disc text-sm text-zinc-700 ${salon.locations.length > 1 ? "mt-1" : ""}`}
+                >
+                  {staff.map((person) => (
+                    <li key={person.id}>{person.name}</li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
       {salon.categories.length === 0 ? (
         <EmptyState
           title="No bookable services yet"
@@ -121,13 +158,19 @@ export default async function SalonLandingPage({
           </Link>
         </EmptyState>
       ) : (
-        <ServicePicker
-          orgSlug={orgSlug}
-          categories={salon.categories}
-          locations={salon.locations.map((location) => ({ id: location.id }))}
-          staff={salon.staff}
-          initialServiceIds={initialServiceIds}
-        />
+        <section className="space-y-3">
+          <div>
+            <h2 className={sectionTitleClass}>Services</h2>
+            <p className="text-sm text-zinc-600">Choose services to continue</p>
+          </div>
+          <ServicePicker
+            orgSlug={orgSlug}
+            categories={salon.categories}
+            locations={salon.locations.map((location) => ({ id: location.id }))}
+            staff={salon.staff}
+            initialServiceIds={initialServiceIds}
+          />
+        </section>
       )}
 
       {salon.categories.length > 0 ? (

@@ -13,6 +13,8 @@ const TIME_OPTIONS = [
   "10:30",
   "11:00",
   "11:30",
+  "12:00",
+  "12:30",
   "13:00",
   "13:30",
   "14:00",
@@ -85,58 +87,79 @@ export function SearchFilters({
     time,
   };
 
+  const chipRowClass =
+    "flex flex-nowrap gap-2 overflow-x-auto scroll-px-3 scroll-py-1 pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden";
+
   return (
     <div className="space-y-4">
-      <nav
-        aria-label="Filter by category"
-        className="-mx-4 flex flex-nowrap gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0"
-      >
-        <Link
-          href={searchHref({ ...current, category: undefined, service: undefined })}
-          className={!activeSlug ? chipActiveClass : chipClass}
-          data-testid="category-all"
-        >
-          All services
-        </Link>
-        {categories.map((category) => (
-          <Link
-            key={category.slug}
-            href={searchHref({
-              ...current,
-              category: category.slug,
-              service: undefined,
-            })}
-            className={activeSlug === category.slug ? chipActiveClass : chipClass}
-            data-testid={`category-${category.slug}`}
-          >
-            {category.name}
-            <span className="ml-1 text-xs opacity-80">({category.salonCount})</span>
-          </Link>
-        ))}
-      </nav>
-      {services.length > 0 ? (
-        <nav
-          aria-label="Filter by service"
-          className="-mx-4 flex flex-nowrap gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0"
-        >
-          {services.map((service) => {
-            const active = activeService === service.name;
-            return (
+      <div className="space-y-2 rounded-lg border border-zinc-200 bg-zinc-50/50 p-3 sm:p-4">
+        <div className="relative">
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-y-0 left-0 z-10 w-6 bg-linear-to-r from-zinc-50 to-transparent sm:hidden"
+          />
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-y-0 right-0 z-10 w-6 bg-linear-to-l from-zinc-50 to-transparent sm:hidden"
+          />
+          <nav aria-label="Filter by category" className={chipRowClass}>
+            <Link
+              href={searchHref({ ...current, category: undefined, service: undefined })}
+              className={!activeSlug ? chipActiveClass : chipClass}
+              data-testid="category-all"
+            >
+              All services
+            </Link>
+            {categories.map((category) => (
               <Link
-                key={service.name}
+                key={category.slug}
                 href={searchHref({
                   ...current,
-                  service: active ? undefined : service.name,
+                  category: category.slug,
+                  service: undefined,
                 })}
-                className={active ? chipActiveClass : chipClass}
-                data-testid={`service-chip-${serviceKey(service.name)}`}
+                className={activeSlug === category.slug ? chipActiveClass : chipClass}
+                data-testid={`category-${category.slug}`}
               >
-                {service.name}
+                {category.name}
+                <span className="ml-1 text-xs opacity-80">({category.salonCount})</span>
               </Link>
-            );
-          })}
-        </nav>
-      ) : null}
+            ))}
+          </nav>
+        </div>
+        {services.length > 0 ? (
+          <div className="relative border-t border-zinc-200/80 pt-2">
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-y-0 left-0 z-10 w-6 bg-linear-to-r from-zinc-50 to-transparent sm:hidden"
+            />
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-y-0 right-0 z-10 w-6 bg-linear-to-l from-zinc-50 to-transparent sm:hidden"
+            />
+            <nav aria-label="Filter by service" className={chipRowClass}>
+              {services.map((service) => {
+                const active =
+                  activeService != null &&
+                  activeService.toLowerCase() === service.name.toLowerCase();
+                return (
+                  <Link
+                    key={service.name}
+                    href={searchHref({
+                      ...current,
+                      service: active ? undefined : service.name,
+                    })}
+                    className={active ? chipActiveClass : chipClass}
+                    data-testid={`service-chip-${serviceKey(service.name)}`}
+                  >
+                    {service.name}
+                  </Link>
+                );
+              })}
+            </nav>
+          </div>
+        ) : null}
+      </div>
       <div className="grid gap-4 sm:grid-cols-3">
         <AreaFilter
           selectedArea={area ?? ""}
@@ -164,10 +187,11 @@ export function SearchFilters({
           />
         </label>
         <label className={labelClass}>
-          <span className={labelTextClass}>Time</span>
+          <span className={labelTextClass}>Preferred time</span>
           <select
             value={time ?? ""}
             disabled={!date}
+            aria-describedby="time-filter-help"
             onChange={(event) => {
               router.push(searchHref({ ...current, time: event.target.value || undefined }));
             }}
@@ -181,6 +205,11 @@ export function SearchFilters({
               </option>
             ))}
           </select>
+          <p id="time-filter-help" className="text-xs text-zinc-500">
+            {date
+              ? "Shows slots within 30 minutes of this time."
+              : "Choose a date first to filter by time."}
+          </p>
         </label>
       </div>
     </div>

@@ -13,14 +13,16 @@ export function BusinessResults({
 }) {
   if (listings.length === 0) {
     return (
-      <EmptyState
-        title="No salons match these filters"
-        description="Try another category, service, or area."
-      >
-        <Link href="/" className={secondaryButtonClass}>
-          Clear filters
-        </Link>
-      </EmptyState>
+      <div className="py-4 sm:py-6">
+        <EmptyState
+          title="No salons match these filters"
+          description="Try another category, service, or area."
+        >
+          <Link href="/" className={secondaryButtonClass}>
+            Clear filters
+          </Link>
+        </EmptyState>
+      </div>
     );
   }
 

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { EmptyState } from "@/components/empty-state";
 import { formatDay, formatPrice, formatTime } from "@/lib/format";
 import type { MarketplaceAvailabilityResult } from "@/lib/marketplace";
-import { primaryButtonClass, secondaryButtonClass } from "@/lib/ui";
+import { primaryButtonClass, secondaryButtonClass, surfaceInteractiveClass } from "@/lib/ui";
 
 export function AvailabilityResults({
   results,
@@ -11,14 +11,16 @@ export function AvailabilityResults({
 }) {
   if (results.length === 0) {
     return (
-      <EmptyState
-        title="No staff availability matches these filters"
-        description="Try another day or time, or browse salons without a date."
-      >
-        <Link href="/" className={secondaryButtonClass}>
-          Browse salons
-        </Link>
-      </EmptyState>
+      <div className="py-4 sm:py-6">
+        <EmptyState
+          title="No staff availability matches these filters"
+          description="Try another day or time, or browse salons without a date."
+        >
+          <Link href="/" className={secondaryButtonClass}>
+            Browse salons
+          </Link>
+        </EmptyState>
+      </div>
     );
   }
 
@@ -36,7 +38,7 @@ export function AvailabilityResults({
         return (
           <li key={key}>
             <article
-              className="flex h-full flex-col rounded-xl border border-zinc-200 bg-white p-4 transition hover:border-zinc-300 hover:shadow-sm"
+              className={`${surfaceInteractiveClass} flex h-full flex-col p-4`}
               data-testid="availability-result"
             >
               <h2 className="text-lg font-semibold tracking-tight text-zinc-900">

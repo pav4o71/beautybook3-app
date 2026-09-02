@@ -1,5 +1,6 @@
 import { SiteHeader } from "@/components/site-header";
 import { isManilaArea } from "@/lib/areas";
+import { formatDay } from "@/lib/format";
 import {
   listMarketplaceCategoryFilters,
   listMarketplaceOrganizations,
@@ -9,6 +10,7 @@ import {
 } from "@/lib/marketplace";
 import { parseSalonIsoDate, parseSalonTime, salonIsoDate } from "@/lib/timezone";
 import { pageLeadClass, pageMainClass, pageTitleClass, sectionTitleClass } from "@/lib/ui";
+import { firstQueryValue } from "@/lib/validations/booking";
 import { AvailabilityResults } from "./search/availability-results";
 import { BusinessResults } from "./search/business-results";
 import { SearchFilters } from "./search/search-filters";
@@ -19,21 +21,24 @@ export default async function Home({
   searchParams,
 }: {
   searchParams: Promise<{
-    category?: string;
-    service?: string;
-    area?: string;
-    date?: string;
-    time?: string;
-    serviceId?: string;
+    category?: string | string[];
+    service?: string | string[];
+    area?: string | string[];
+    date?: string | string[];
+    time?: string | string[];
+    serviceId?: string | string[];
   }>;
 }) {
   const query = await searchParams;
-  const categorySlug = query.category?.trim() || undefined;
-  const serviceName = query.service?.trim() || undefined;
-  const area = query.area && isManilaArea(query.area) ? query.area : undefined;
-  const date = query.date ? parseSalonIsoDate(query.date) : null;
-  const time = query.time && parseSalonTime(query.time) != null ? query.time : undefined;
-  const serviceId = query.serviceId?.trim() || undefined;
+  const categorySlug = firstQueryValue(query.category)?.trim() || undefined;
+  const serviceName = firstQueryValue(query.service)?.trim() || undefined;
+  const areaRaw = firstQueryValue(query.area)?.trim();
+  const area = areaRaw && isManilaArea(areaRaw) ? areaRaw : undefined;
+  const dateRaw = firstQueryValue(query.date)?.trim();
+  const date = dateRaw ? parseSalonIsoDate(dateRaw) : null;
+  const timeRaw = firstQueryValue(query.time)?.trim();
+  const time = timeRaw && parseSalonTime(timeRaw) != null ? timeRaw : undefined;
+  const serviceId = firstQueryValue(query.serviceId)?.trim() || undefined;
   const minDate = salonIsoDate();
 
   const [categories, services, listings, availability] = await Promise.all([
@@ -58,6 +63,7 @@ export default async function Home({
   const activeCategory = categorySlug
     ? categories.find((category) => category.slug === categorySlug)
     : undefined;
+  const hasActiveFilters = Boolean(activeCategory || serviceName || area || date);
 
   return (
     <>
@@ -71,48 +77,82 @@ export default async function Home({
           </p>
         </div>
 
-        <SearchFilters
-          categories={categories}
-          services={serviceChips}
-          activeSlug={activeCategory?.slug}
-          activeService={serviceName}
-          serviceId={serviceId}
-          area={area}
-          date={date ? salonIsoDate(date) : undefined}
-          time={time}
-          minDate={minDate}
-        />
+        <section aria-labelledby="discovery-filters" className="space-y-3">
+          <h2 id="discovery-filters" className="sr-only">
+            Search filters
+          </h2>
+          <SearchFilters
+            categories={categories}
+            services={serviceChips}
+            activeSlug={activeCategory?.slug}
+            activeService={serviceName}
+            serviceId={serviceId}
+            area={area}
+            date={date ? salonIsoDate(date) : undefined}
+            time={time}
+            minDate={minDate}
+          />
+        </section>
 
-        {activeCategory ? (
-          <p className="text-sm text-zinc-600">
-            Showing <span className="font-medium text-zinc-900">{activeCategory.name}</span>{" "}
-            {date ? "availability" : "salons"}
-            {serviceName ? (
-              <>
-                {" "}
-                for <span className="font-medium text-zinc-900">{serviceName}</span>
-              </>
-            ) : null}
-            {area ? (
-              <>
-                {" "}
-                in <span className="font-medium text-zinc-900">{area}</span>
-              </>
-            ) : null}
-          </p>
-        ) : null}
+        <section aria-labelledby="discovery-results" className="space-y-3">
+          {hasActiveFilters ? (
+            <p className="text-sm text-zinc-600">
+              Showing{" "}
+              {activeCategory ? (
+                <>
+                  <span className="font-medium text-zinc-900">{activeCategory.name}</span>{" "}
+                </>
+              ) : null}
+              {date ? "availability" : "salons"}
+              {serviceName ? (
+                <>
+                  {" "}
+                  for <span className="font-medium text-zinc-900">{serviceName}</span>
+                </>
+              ) : null}
+              {area ? (
+                <>
+                  {" "}
+                  in <span className="font-medium text-zinc-900">{area}</span>
+                </>
+              ) : null}
+              {date ? (
+                <>
+                  {" "}
+                  on <span className="font-medium text-zinc-900">{formatDay(date)}</span>
+                </>
+              ) : null}
+              {date && time ? (
+                <>
+                  {" "}
+                  around <span className="font-medium text-zinc-900">{time}</span>
+                </>
+              ) : null}
+            </p>
+          ) : null}
 
-        {date ? (
-          <section className="space-y-3">
-            <h2 className={sectionTitleClass}>Available times</h2>
-            <AvailabilityResults results={availability} />
-          </section>
-        ) : (
-          <section className="space-y-3">
-            <h2 className={sectionTitleClass}>Salons</h2>
-            <BusinessResults listings={listings} serviceName={serviceName} />
-          </section>
-        )}
+          {date ? (
+            <p className="text-sm text-zinc-600">
+              Showing open times matching your filters.
+            </p>
+          ) : null}
+
+          {date ? (
+            <>
+              <h2 id="discovery-results" className={sectionTitleClass}>
+                Available times
+              </h2>
+              <AvailabilityResults results={availability} />
+            </>
+          ) : (
+            <>
+              <h2 id="discovery-results" className={sectionTitleClass}>
+                Salons
+              </h2>
+              <BusinessResults listings={listings} serviceName={serviceName} />
+            </>
+          )}
+        </section>
       </main>
     </>
   );

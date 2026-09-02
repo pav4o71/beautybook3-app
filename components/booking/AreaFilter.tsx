@@ -17,6 +17,7 @@ export function AreaFilter({ selectedArea, onAreaChange }: AreaFilterProps) {
         onChange={(event) => onAreaChange(event.target.value)}
         className={controlClass}
         data-testid="area-filter"
+        aria-describedby="area-filter-help"
       >
         <option value="">All areas</option>
         {MANILA_AREAS.map((area) => (
@@ -25,6 +26,9 @@ export function AreaFilter({ selectedArea, onAreaChange }: AreaFilterProps) {
           </option>
         ))}
       </select>
+      <p id="area-filter-help" className="text-xs text-zinc-500">
+        Optional — narrow results by Manila area.
+      </p>
     </label>
   );
 }
