@@ -41,6 +41,11 @@ enum Weekday {
   SUN
 }
 
+enum ListingTier {
+  STANDARD
+  PREMIUM
+}
+
 model User {
   id                  String               @id
   name                String
@@ -124,6 +129,17 @@ model Organization {
   description   String?
   /// Public contact number for the business.
   phone         String?
+  listingTier   ListingTier @default(STANDARD)
+  tagline       String?
+  logoUrl       String?
+  accentColor   String?
+  instagramUrl  String?
+  facebookUrl   String?
+  websiteUrl    String?
+  galleryUrls   Json     @default("[]")
+  highlights    String[] @default([])
+  featuredServiceId String?
+  featuredService   Service? @relation("FeaturedService", fields: [featuredServiceId], references: [id], onDelete: SetNull)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -135,6 +151,8 @@ model Organization {
   schedules    StaffSchedule[]
   timeOff      TimeOff[]
   appointments Appointment[]
+
+  @@index([listingTier, published])
 }
 
 model OrganizationMember {
@@ -232,6 +250,7 @@ model Service {
   organization Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   staff        StaffService[]
   appointments AppointmentService[]
+  featuredByOrganizations Organization[] @relation("FeaturedService")
 
   @@index([organizationId, active])
   @@index([categoryId, active])

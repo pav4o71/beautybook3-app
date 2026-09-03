@@ -1,5 +1,6 @@
 import type { Weekday } from "@/app/generated/prisma/enums";
 import { publicLocationWhere } from "@/lib/locations";
+import { mapOrganizationListingProfile, type PublicListingProfile } from "@/lib/listing";
 import { prisma } from "@/lib/prisma";
 import { orderedWeekdays } from "@/lib/schedule";
 
@@ -42,7 +43,7 @@ export type SalonStorefrontStaff = {
   serviceIds: string[];
 };
 
-export type SalonStorefront = {
+export type SalonStorefront = PublicListingProfile & {
   id: string;
   name: string;
   slug: string;
@@ -98,6 +99,10 @@ export async function getSalonStorefront(slug: string): Promise<SalonStorefront 
   const organization = await prisma.organization.findUnique({
     where: { slug },
     include: {
+      featuredService: {
+        where: { active: true },
+        include: { category: true },
+      },
       locations: {
         where: publicLocationWhere,
         orderBy: [{ isDefault: "desc" }, { name: "asc" }],
@@ -143,6 +148,17 @@ export async function getSalonStorefront(slug: string): Promise<SalonStorefront 
     activeStaffIds.has(row.staffId),
   );
 
+  const fallbackFeatured = organization.categories
+    .flatMap((category) =>
+      category.services.map((service) => ({
+        ...service,
+        category: { name: category.name },
+      })),
+    )
+    .sort((left, right) => left.priceCents - right.priceCents)[0] ?? null;
+
+  const listing = mapOrganizationListingProfile(organization, fallbackFeatured);
+
   return {
     id: organization.id,
     name: organization.name,
@@ -150,6 +166,7 @@ export async function getSalonStorefront(slug: string): Promise<SalonStorefront 
     description: organization.description,
     phone: organization.phone,
     coverImageUrl: organization.coverImageUrl,
+    ...listing,
     locations: organization.locations.map((location) => ({
       id: location.id,
       name: location.name,

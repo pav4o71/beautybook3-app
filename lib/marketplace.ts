@@ -1,5 +1,10 @@
 import { getAvailableSlotsForDay } from "@/lib/booking";
 import { publicLocationWhere } from "@/lib/locations";
+import {
+  cardHighlights,
+  mapOrganizationListingProfile,
+  type PublicListingProfile,
+} from "@/lib/listing";
 import { prisma } from "@/lib/prisma";
 import { parseSalonTime, salonMinutesOfDay } from "@/lib/timezone";
 
@@ -9,11 +14,12 @@ export type MarketplaceCategoryFilter = {
   salonCount: number;
 };
 
-export type MarketplaceListing = {
+export type MarketplaceListing = PublicListingProfile & {
   id: string;
   name: string;
   slug: string;
   coverImageUrl: string | null;
+  cardHighlights: string[];
   locations: {
     id: string;
     name: string;
@@ -22,12 +28,6 @@ export type MarketplaceListing = {
     isDefault: boolean;
   }[];
   serviceCount: number;
-  featuredService: {
-    id: string;
-    name: string;
-    priceCents: number;
-    categoryName: string;
-  } | null;
 };
 
 export type MarketplaceServiceResult = {
@@ -123,6 +123,10 @@ export async function listMarketplaceOrganizations(input: {
         },
         orderBy: [{ isDefault: "desc" }, { name: "asc" }],
       },
+      featuredService: {
+        where: { active: true },
+        include: { category: true },
+      },
       services: {
         where: staffedService,
         include: { category: true },
@@ -139,22 +143,19 @@ export async function listMarketplaceOrganizations(input: {
 
   return orgs
     .filter((org) => org.locations.length > 0)
-    .map((org) => ({
-      id: org.id,
-      name: org.name,
-      slug: org.slug,
-      coverImageUrl: org.coverImageUrl,
-      locations: org.locations,
-      serviceCount: org._count.services,
-      featuredService: org.services[0]
-        ? {
-            id: org.services[0].id,
-            name: org.services[0].name,
-            priceCents: org.services[0].priceCents,
-            categoryName: org.services[0].category.name,
-          }
-        : null,
-    }));
+    .map((org) => {
+      const listing = mapOrganizationListingProfile(org, org.services[0] ?? null);
+      return {
+        id: org.id,
+        name: org.name,
+        slug: org.slug,
+        coverImageUrl: org.coverImageUrl,
+        locations: org.locations,
+        serviceCount: org._count.services,
+        cardHighlights: cardHighlights(listing.highlights, listing.listingTier),
+        ...listing,
+      };
+    });
 }
 
 export function listMarketplaceServiceChips(

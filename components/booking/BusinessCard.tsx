@@ -1,8 +1,14 @@
 import Link from "next/link";
 import { LocationHeading } from "@/components/booking/location-heading";
 import { formatPrice } from "@/lib/format";
+import { accentBorderStyle, isPremiumListing } from "@/lib/listing";
 import type { MarketplaceListing } from "@/lib/marketplace";
-import { focusRingClass, primaryButtonClass, surfaceInteractiveClass } from "@/lib/ui";
+import {
+  chipClass,
+  focusRingClass,
+  primaryButtonClass,
+  surfaceInteractiveClass,
+} from "@/lib/ui";
 
 export function BusinessCard({
   listing,
@@ -11,7 +17,8 @@ export function BusinessCard({
   listing: MarketplaceListing;
   serviceName?: string;
 }) {
-  const { locations, featuredService } = listing;
+  const { locations, featuredService, cardHighlights } = listing;
+  const premium = isPremiumListing(listing.listingTier);
   const salonHref = serviceName
     ? `/s/${listing.slug}?service=${encodeURIComponent(serviceName)}`
     : `/s/${listing.slug}`;
@@ -22,10 +29,16 @@ export function BusinessCard({
 
   return (
     <article
-      className={`${surfaceInteractiveClass} flex h-full flex-col overflow-hidden`}
+      className={`${surfaceInteractiveClass} relative flex h-full flex-col overflow-hidden ${premium ? "border-2" : ""}`}
+      style={accentBorderStyle(listing.accentColor, listing.listingTier)}
       data-testid={`business-${listing.slug}`}
     >
-      <Link href={salonHref} className={`block shrink-0 ${focusRingClass}`}>
+      {premium ? (
+        <span className="absolute right-3 top-3 z-10 rounded-full bg-zinc-900 px-2.5 py-0.5 text-xs font-medium text-white">
+          Premium
+        </span>
+      ) : null}
+      <Link href={salonHref} className={`relative block shrink-0 ${focusRingClass}`}>
         {listing.coverImageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element -- mixed local paths and owner-pasted http(s) URLs
           <img
@@ -42,6 +55,17 @@ export function BusinessCard({
             <span className="text-sm font-medium text-zinc-500">{listing.name}</span>
           </div>
         )}
+        {listing.logoUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element -- mixed local paths and owner-pasted http(s) URLs
+          <img
+            src={listing.logoUrl}
+            alt={`${listing.name} logo`}
+            width={56}
+            height={56}
+            className="absolute bottom-3 left-3 size-14 rounded-full border-2 border-white bg-white object-cover shadow-sm"
+            data-testid={`business-logo-${listing.slug}`}
+          />
+        ) : null}
       </Link>
       <div className="flex flex-1 flex-col p-4">
         <Link href={salonHref} className={`inline-block rounded-sm ${focusRingClass}`}>
@@ -49,6 +73,10 @@ export function BusinessCard({
             {listing.name}
           </h2>
         </Link>
+
+        {listing.tagline ? (
+          <p className="mt-0.5 text-sm text-zinc-600">{listing.tagline}</p>
+        ) : null}
 
         {featuredService ? (
           <p className="mt-1 text-sm text-zinc-600">
@@ -62,6 +90,24 @@ export function BusinessCard({
         ) : (
           <p className="mt-1 text-sm text-zinc-500">No bookable services yet</p>
         )}
+
+        {cardHighlights.length > 0 ? (
+          premium ? (
+            <ul className="mt-2 flex flex-wrap gap-1.5">
+              {cardHighlights.map((highlight) => (
+                <li key={highlight} className={chipClass}>
+                  {highlight}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <ul className="mt-2 list-inside list-disc text-sm text-zinc-600">
+              {cardHighlights.map((highlight) => (
+                <li key={highlight}>{highlight}</li>
+              ))}
+            </ul>
+          )
+        ) : null}
 
         {locations.length === 0 ? (
           <p className="mt-2 text-sm text-zinc-500">No active locations</p>

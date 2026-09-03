@@ -54,16 +54,78 @@ async function ensureOrg(
   slug: string,
   name: string,
   published: boolean,
-  profile?: { description?: string; phone?: string },
+  profile?: {
+    description?: string;
+    phone?: string;
+    listingTier?: "STANDARD" | "PREMIUM";
+    tagline?: string;
+    highlights?: string[];
+    logoUrl?: string;
+    accentColor?: string;
+    instagramUrl?: string;
+    facebookUrl?: string;
+    websiteUrl?: string;
+    galleryUrls?: string[];
+    featuredServiceName?: string;
+  },
 ) {
   const coverImageUrl = salonCoverPath(slug);
   const description = profile?.description ?? null;
   const phone = profile?.phone ?? null;
-  return prisma.organization.upsert({
+  const org = await prisma.organization.upsert({
     where: { slug },
-    update: { name, published, coverImageUrl, description, phone },
-    create: { name, slug, published, coverImageUrl, description, phone },
+    update: {
+      name,
+      published,
+      coverImageUrl,
+      description,
+      phone,
+      listingTier: profile?.listingTier ?? "STANDARD",
+      tagline: profile?.tagline ?? null,
+      highlights: profile?.highlights ?? [],
+      logoUrl: profile?.logoUrl ?? null,
+      accentColor: profile?.accentColor ?? null,
+      instagramUrl: profile?.instagramUrl ?? null,
+      facebookUrl: profile?.facebookUrl ?? null,
+      websiteUrl: profile?.websiteUrl ?? null,
+      galleryUrls: profile?.galleryUrls ?? [],
+    },
+    create: {
+      name,
+      slug,
+      published,
+      coverImageUrl,
+      description,
+      phone,
+      listingTier: profile?.listingTier ?? "STANDARD",
+      tagline: profile?.tagline ?? null,
+      highlights: profile?.highlights ?? [],
+      logoUrl: profile?.logoUrl ?? null,
+      accentColor: profile?.accentColor ?? null,
+      instagramUrl: profile?.instagramUrl ?? null,
+      facebookUrl: profile?.facebookUrl ?? null,
+      websiteUrl: profile?.websiteUrl ?? null,
+      galleryUrls: profile?.galleryUrls ?? [],
+    },
   });
+
+  if (profile?.featuredServiceName) {
+    const service = await prisma.service.findFirst({
+      where: {
+        organizationId: org.id,
+        name: profile.featuredServiceName,
+        active: true,
+      },
+    });
+    if (service) {
+      await prisma.organization.update({
+        where: { id: org.id },
+        data: { featuredServiceId: service.id },
+      });
+    }
+  }
+
+  return org;
 }
 
 async function ensureLocation(
@@ -277,6 +339,9 @@ export async function seedGlowNailsStudio() {
   const org = await ensureOrg(GLOW_ORG_SLUG, "Glow Nail Studio", true, {
     description: "Gel and classic nails in Makati and Quezon City. Walk in or book a combined slot online.",
     phone: "+63 2 8888 0200",
+    listingTier: "STANDARD",
+    tagline: "Gel nails & pedicures across Makati and QC",
+    highlights: ["Walk-ins welcome at Makati", "Same-day QC appointments"],
   });
   const makati = await ensureLocation(org.id, {
     name: "Makati Studio",
@@ -340,6 +405,18 @@ export async function seedLuxeHairLounge() {
   const org = await ensureOrg(LUXE_ORG_SLUG, "Luxe Hair Lounge", true, {
     description: "Precision cuts and blowouts in Ortigas. Book one or more services in a single slot.",
     phone: "+63 2 8888 0300",
+    listingTier: "PREMIUM",
+    tagline: "Precision cuts and luxury blowouts in Ortigas",
+    highlights: ["Senior stylists on every visit", "Premium product lines", "Same-day booking"],
+    logoUrl: `/images/salons/${LUXE_ORG_SLUG}.jpg`,
+    accentColor: "#9333EA",
+    instagramUrl: "https://instagram.com/luxehairlounge",
+    facebookUrl: "https://facebook.com/luxehairlounge",
+    websiteUrl: "https://luxehairlounge.example.com",
+    galleryUrls: [
+      `/images/salons/${LUXE_ORG_SLUG}.jpg`,
+      `/images/salons/beautybook-demo.jpg`,
+    ],
   });
   const ortigas = await ensureLocation(org.id, {
     name: "Ortigas branch",
@@ -385,6 +462,11 @@ export async function seedLuxeHairLounge() {
     "Senior stylist — cuts and blowouts",
     [cut.id, blowout.id],
   );
+
+  await prisma.organization.update({
+    where: { id: org.id },
+    data: { featuredServiceId: cut.id },
+  });
 }
 
 export async function seedMarketplaceSalons() {

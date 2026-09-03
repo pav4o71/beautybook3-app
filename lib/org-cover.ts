@@ -32,21 +32,21 @@ function detectType(bytes: Uint8Array) {
   return TYPES.find((type) => matchesMagic(bytes, type.magic)) ?? null;
 }
 
-export function parseCoverImageUrl(raw: string, organizationId?: string): string | null {
+export function parseOrgImageUrl(raw: string, organizationId?: string): string | null {
   const value = raw.trim();
   if (!value) return null;
   if (value.includes("..")) {
-    throw new CoverImageError("Cover image path is invalid.");
+    throw new CoverImageError("Image path is invalid.");
   }
   if (value.startsWith("/") && !value.startsWith("//")) {
     if (!/^\/[a-zA-Z0-9._\-/]+$/.test(value)) {
-      throw new CoverImageError("Cover image path is invalid.");
+      throw new CoverImageError("Image path is invalid.");
     }
     const allowedPrefix =
       value.startsWith("/images/") ||
       (organizationId != null && value.startsWith(`/uploads/orgs/${organizationId}/`));
     if (!allowedPrefix) {
-      throw new CoverImageError("Cover image path is invalid.");
+      throw new CoverImageError("Image path is invalid.");
     }
     return value;
   }
@@ -54,40 +54,74 @@ export function parseCoverImageUrl(raw: string, organizationId?: string): string
   try {
     url = new URL(value);
   } catch {
-    throw new CoverImageError("Cover image must be a path or http(s) URL.");
+    throw new CoverImageError("Image must be a path or http(s) URL.");
   }
   if (url.protocol !== "http:" && url.protocol !== "https:") {
-    throw new CoverImageError("Cover image must be a path or http(s) URL.");
+    throw new CoverImageError("Image must be a path or http(s) URL.");
   }
   return url.toString();
+}
+
+/** @deprecated Use parseOrgImageUrl */
+export function parseCoverImageUrl(raw: string, organizationId?: string): string | null {
+  return parseOrgImageUrl(raw, organizationId);
+}
+
+async function saveOrganizationImage(
+  organizationId: string,
+  file: File,
+  prefix: "cover" | "logo" | "gallery",
+): Promise<string> {
+  if (file.size === 0) {
+    throw new CoverImageError("Choose an image file to upload.");
+  }
+  if (file.size > MAX_BYTES) {
+    throw new CoverImageError("Image must be 2MB or smaller.");
+  }
+
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  const type = detectType(bytes);
+  if (!type) {
+    throw new CoverImageError("Image must be JPEG, PNG, or WebP.");
+  }
+
+  const dir = path.join(process.cwd(), "public", "uploads", "orgs", organizationId);
+  await mkdir(dir, { recursive: true });
+
+  if (prefix === "cover" || prefix === "logo") {
+    const existing = await readdir(dir);
+    await Promise.all(
+      existing
+        .filter((name) => name.startsWith(`${prefix}.`))
+        .map((name) => unlink(path.join(dir, name))),
+    );
+    const filename = `${prefix}.${type.ext}`;
+    await writeFile(path.join(dir, filename), bytes);
+    return `/uploads/orgs/${organizationId}/${filename}`;
+  }
+
+  const filename = `gallery-${Date.now()}.${type.ext}`;
+  await writeFile(path.join(dir, filename), bytes);
+  return `/uploads/orgs/${organizationId}/${filename}`;
 }
 
 export async function saveOrganizationCover(
   organizationId: string,
   file: File,
 ): Promise<string> {
-  if (file.size === 0) {
-    throw new CoverImageError("Choose an image file to upload.");
-  }
-  if (file.size > MAX_BYTES) {
-    throw new CoverImageError("Cover image must be 2MB or smaller.");
-  }
+  return saveOrganizationImage(organizationId, file, "cover");
+}
 
-  const bytes = new Uint8Array(await file.arrayBuffer());
-  const type = detectType(bytes);
-  if (!type) {
-    throw new CoverImageError("Cover image must be JPEG, PNG, or WebP.");
-  }
+export async function saveOrganizationLogo(
+  organizationId: string,
+  file: File,
+): Promise<string> {
+  return saveOrganizationImage(organizationId, file, "logo");
+}
 
-  const dir = path.join(process.cwd(), "public", "uploads", "orgs", organizationId);
-  await mkdir(dir, { recursive: true });
-  const existing = await readdir(dir);
-  await Promise.all(
-    existing
-      .filter((name) => name.startsWith("cover."))
-      .map((name) => unlink(path.join(dir, name))),
-  );
-  const filename = `cover.${type.ext}`;
-  await writeFile(path.join(dir, filename), bytes);
-  return `/uploads/orgs/${organizationId}/${filename}`;
+export async function saveOrganizationGalleryImage(
+  organizationId: string,
+  file: File,
+): Promise<string> {
+  return saveOrganizationImage(organizationId, file, "gallery");
 }
