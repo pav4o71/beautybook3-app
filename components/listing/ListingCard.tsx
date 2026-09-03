@@ -49,7 +49,6 @@ export function ListingCard({
     : `/s/${listing.slug}`;
 
   const Wrapper = preview ? "div" : "article";
-  const linkProps = preview ? {} : { href: salonHref };
 
   return (
     <Wrapper
