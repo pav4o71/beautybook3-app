@@ -1,5 +1,10 @@
 import { getAvailableSlotsForDay } from "@/lib/booking";
 import { publicLocationWhere } from "@/lib/locations";
+import {
+  cardHighlights,
+  mapOrganizationListingProfile,
+  type PublicListingProfile,
+} from "@/lib/listing";
 import { prisma } from "@/lib/prisma";
 import { parseSalonTime, salonMinutesOfDay } from "@/lib/timezone";
 
@@ -9,25 +14,22 @@ export type MarketplaceCategoryFilter = {
   salonCount: number;
 };
 
-export type MarketplaceListing = {
+export type MarketplaceListing = PublicListingProfile & {
   id: string;
   name: string;
   slug: string;
   coverImageUrl: string | null;
+  photoCount: number;
+  cardHighlights: string[];
   locations: {
     id: string;
     name: string;
     address: string | null;
     area: string | null;
+    city: string | null;
     isDefault: boolean;
   }[];
   serviceCount: number;
-  featuredService: {
-    id: string;
-    name: string;
-    priceCents: number;
-    categoryName: string;
-  } | null;
 };
 
 export type MarketplaceServiceResult = {
@@ -94,7 +96,7 @@ export async function listMarketplaceOrganizations(input: {
   const serviceName = input.serviceName?.trim() || undefined;
   const staffedService = {
     active: true,
-    ...(serviceName ? { name: serviceName } : {}),
+    ...(serviceName ? { name: { equals: serviceName, mode: "insensitive" as const } } : {}),
     ...(categorySlug ? { category: { slug: categorySlug } } : {}),
     staff: {
       some: {
@@ -114,14 +116,19 @@ export async function listMarketplaceOrganizations(input: {
       published: true,
       services: { some: staffedService },
     },
-    orderBy: { name: "asc" },
+    orderBy: [{ listingTier: "desc" }, { name: "asc" }],
     include: {
+      photos: { select: { id: true }, orderBy: { sortOrder: "asc" } },
       locations: {
         where: {
           ...publicLocationWhere,
           ...(area ? { area } : {}),
         },
         orderBy: [{ isDefault: "desc" }, { name: "asc" }],
+      },
+      featuredService: {
+        where: { active: true },
+        include: { category: true },
       },
       services: {
         where: staffedService,
@@ -139,22 +146,23 @@ export async function listMarketplaceOrganizations(input: {
 
   return orgs
     .filter((org) => org.locations.length > 0)
-    .map((org) => ({
-      id: org.id,
-      name: org.name,
-      slug: org.slug,
-      coverImageUrl: org.coverImageUrl,
-      locations: org.locations,
-      serviceCount: org._count.services,
-      featuredService: org.services[0]
-        ? {
-            id: org.services[0].id,
-            name: org.services[0].name,
-            priceCents: org.services[0].priceCents,
-            categoryName: org.services[0].category.name,
-          }
-        : null,
-    }));
+    .map((org) => {
+      const listing = mapOrganizationListingProfile(org, org.services[0] ?? null);
+      return {
+        id: org.id,
+        name: org.name,
+        slug: org.slug,
+        coverImageUrl: org.coverImageUrl,
+        photoCount: org.photos.length || (org.coverImageUrl ? 1 : 0),
+        locations: org.locations.map((loc) => ({
+          ...loc,
+          city: loc.city ?? "Manila",
+        })),
+        serviceCount: org._count.services,
+        cardHighlights: cardHighlights(listing.highlights, listing.listingTier),
+        ...listing,
+      };
+    });
 }
 
 export function listMarketplaceServiceChips(
@@ -311,7 +319,7 @@ export async function searchMarketplaceAvailability(input: {
       organization: { published: true },
       staff: { some: staffInArea },
       ...(serviceId ? { id: serviceId } : {}),
-      ...(serviceName && !serviceId ? { name: serviceName } : {}),
+      ...(serviceName && !serviceId ? { name: { equals: serviceName, mode: "insensitive" as const } } : {}),
       ...(categorySlug && !serviceId ? { category: { slug: categorySlug } } : {}),
     },
     include: {

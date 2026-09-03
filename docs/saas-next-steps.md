@@ -1,6 +1,6 @@
 # SaaS Next Steps (after Phase 1 merge)
 
-Phase 1 (multi-tenant foundation) is implemented in PR #3. Phase 2 (multi-location + marketplace) is complete in PRs #4–#6. Phase 5 (hardening) is complete in PRs #7–#10.
+Phase 1 (multi-tenant foundation) is implemented in PR #3. Phase 2 (multi-location + marketplace) is complete in PRs #4–#6. Phase 5 (hardening) is complete in PRs #7–#10. Phase 7 (salon storefront + multi-service booking) is complete in PR #19.
 
 ## Completed in Phase 1
 
@@ -84,23 +84,28 @@ E2E: **27** Playwright tests (`e2e/search.spec.ts`, `e2e/search-availability.spe
 
 **Spec:** [`docs/superpowers/specs/2026-08-30-homepage-salon-listings-design.md`](./superpowers/specs/2026-08-30-homepage-salon-listings-design.md)
 
+Merged in PR #17.
+
 `/` is discovery: category chips → service chips → salon cards with `Organization.coverImageUrl`. `/search` and `/marketplace` redirect to `/`. Admin settings accept a cover URL or a disk upload under `public/uploads/orgs/` (not Supabase Storage). Disk uploads need a persistent host disk.
 
-## Phase 7 — Salon storefront and multi-service booking — **in progress**
+## Phase 7 — Salon storefront and multi-service booking — **complete**
 
 **Spec:** [`docs/superpowers/specs/2026-08-30-salon-storefront-design.md`](./superpowers/specs/2026-08-30-salon-storefront-design.md)
+
+| PR | Item | Status |
+|----|------|--------|
+| #19 | Salon storefront + multi-service booking | Merged |
 
 `/s/{slug}` is the catalog: cover, about, phone, locations, hours from staff schedules, and a multi-select service cart. Continue books **one combined slot** (staff must offer every selected service). Caps: 6 services, 240 minutes. Pay-at-salon stays.
 
 Homepage **View salon** and **Book now** both open the salon page. Availability **Book** still deep-links to `/s/{slug}/book?serviceId=`.
 
-**Schema:** `Organization.description` / `phone`, `Location.phone`, `AppointmentService` unique on `(appointmentId, serviceId)`. Live file is `prisma/schema.prisma` — do not switch the app to `prisma/schema-saas.prisma`.
+**Schema:** `Organization.description` / `phone`, `Location.phone`, `AppointmentService` unique on `(appointmentId, serviceId)`. Hosted Prisma includes `20260830183000_salon_profile_and_appointment_service_unique`. Live file is `prisma/schema.prisma` — do not switch the app to `prisma/schema-saas.prisma`.
 
 ## Next steps
 
-1. Apply `20260830183000_salon_profile_and_appointment_service_unique` on hosted Supabase (`npx prisma migrate deploy`).
-2. Object storage for covers (Cloudflare R2 / S3) when deploying without a persistent disk.
-3. Deferred from earlier phases: Stripe/billing, org invites, `middleware` → `proxy`, geo/maps, ratings.
+1. Object storage for covers (Cloudflare R2 / S3) when deploying without a persistent disk.
+2. Deferred from earlier phases: Stripe/billing, org invites, `middleware` → `proxy`, staff edit inactive location picker, leftover E2E Branch rows in admin location switcher (public filter already hides them), geo/maps, ratings.
 
 ## Local dev quick start
 

@@ -3,6 +3,9 @@ import { MAX_COMBINED_DURATION_MIN, staffOffersAllServices } from "@/lib/booking
 import { listBookingServices, listBookingStaff } from "@/lib/catalog";
 import { requireActiveOrgContext } from "@/lib/require-org";
 import { resolveSelectedServiceIds, firstQueryValue } from "@/lib/validations/booking";
+import { pageMainClass } from "@/lib/ui";
+import { EmptyState } from "@/components/empty-state";
+import { PageHeader } from "@/components/page-header";
 import { BookingForm } from "./booking-form";
 
 export default async function BookPage({
@@ -63,44 +66,42 @@ export default async function BookPage({
       : [];
 
   return (
-    <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-10">
-      <h1 className="text-2xl font-semibold tracking-tight">Book</h1>
-      <p className="mt-1 text-sm text-zinc-600">
-        Choose a location and one or more services, then pick staff and a time. Your slot is
-        held when you book; pay at the salon when you arrive.
-      </p>
-      <div className="mt-6">
-        {services.length === 0 ? (
-          <p className="text-sm text-zinc-600">
-            Nothing to book yet. Ask the salon to add services in admin.
-          </p>
-        ) : (
-          <BookingForm
-            key={`${locationId}-${selectedIds.join(",")}-${staffId}`}
-            locations={locations.map((location) => ({
-              id: location.id,
-              name: location.name,
-            }))}
-            initialLocationId={locationId}
-            services={services.map((service) => ({
-              id: service.id,
-              name: service.name,
-              durationMin: service.durationMin,
-              priceCents: service.priceCents,
-              categoryName: service.category.name,
-            }))}
-            staff={staff.map((person) => ({
-              id: person.id,
-              name: person.name,
-              locationId: person.locationId,
-              serviceIds: person.services.map((row) => row.serviceId),
-            }))}
-            initialServiceIds={selectedIds}
-            initialStaffId={staffId}
-            slots={slots.map((slot) => slot.toISOString())}
-          />
-        )}
-      </div>
+    <main className={pageMainClass}>
+      <PageHeader
+        title="Book"
+        lead="Choose a location and one or more services, then pick staff and a time. Your slot is held when you book; pay at the salon when you arrive."
+      />
+      {services.length === 0 ? (
+        <EmptyState
+          title="Nothing to book yet"
+          description="Ask the salon to add services in admin."
+        />
+      ) : (
+        <BookingForm
+          key={`${locationId}-${selectedIds.join(",")}-${staffId}`}
+          locations={locations.map((location) => ({
+            id: location.id,
+            name: location.name,
+          }))}
+          initialLocationId={locationId}
+          services={services.map((service) => ({
+            id: service.id,
+            name: service.name,
+            durationMin: service.durationMin,
+            priceCents: service.priceCents,
+            categoryName: service.category.name,
+          }))}
+          staff={staff.map((person) => ({
+            id: person.id,
+            name: person.name,
+            locationId: person.locationId,
+            serviceIds: person.services.map((row) => row.serviceId),
+          }))}
+          initialServiceIds={selectedIds}
+          initialStaffId={staffId}
+          slots={slots.map((slot) => slot.toISOString())}
+        />
+      )}
     </main>
   );
 }

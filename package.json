@@ -24,6 +24,7 @@
   },
   "dependencies": {
     "@better-auth/prisma-adapter": "^1.7.2",
+    "@hello-pangea/dnd": "^18.0.1",
     "@prisma/adapter-pg": "^7.10.0",
     "@prisma/client": "^7.10.0",
     "better-auth": "^1.7.2",

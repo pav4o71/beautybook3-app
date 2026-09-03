@@ -1,10 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { LocationHeading } from "@/components/booking/location-heading";
+import { StorefrontSections } from "@/app/s/[orgSlug]/storefront-sections";
 import { getSalonStorefront } from "@/lib/salon";
-import { weekdayLabel } from "@/lib/schedule";
-import { secondaryButtonClass } from "@/lib/ui";
-import { ServicePicker } from "./service-picker";
+import { pageMainClass, secondaryButtonClass } from "@/lib/ui";
 
 export default async function SalonLandingPage({
   params,
@@ -29,90 +27,33 @@ export default async function SalonLandingPage({
         .map((service) => service.id)
     : [];
 
+  const staffByLocation = salon.locations
+    .map((location) => ({
+      location,
+      staff: salon.staff.filter((person) => person.locationId === location.id),
+    }))
+    .filter((group) => group.staff.length > 0);
+
   return (
-    <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-10">
-      <div className="space-y-1">
-        <p className="text-sm font-medium uppercase tracking-wide text-zinc-500">Salon</p>
-        <h1 className="text-3xl font-semibold tracking-tight text-zinc-900">
-          {salon.name}
-        </h1>
-        {salon.phone ? <p className="text-sm text-zinc-600">{salon.phone}</p> : null}
-      </div>
+    <main className={pageMainClass}>
+      <Link href="/" className={secondaryButtonClass}>
+        Back to search
+      </Link>
 
-      {salon.coverImageUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element -- mixed local paths and owner-pasted http(s) URLs
-        <img
-          src={salon.coverImageUrl}
-          alt={`${salon.name} cover`}
-          width={800}
-          height={400}
-          className="h-48 w-full rounded-lg object-cover"
-        />
+      <StorefrontSections
+        salon={salon}
+        orgSlug={orgSlug}
+        initialServiceIds={initialServiceIds}
+        staffByLocation={staffByLocation}
+      />
+
+      {salon.categories.length > 0 ? (
+        <div>
+          <Link href="/" className={secondaryButtonClass}>
+            Back to search
+          </Link>
+        </div>
       ) : null}
-
-      {salon.description ? (
-        <p className="whitespace-pre-line text-zinc-700">{salon.description}</p>
-      ) : (
-        <p className="text-zinc-700">
-          Book services online. Your slot is held when you book; pay at the salon when you
-          arrive.
-        </p>
-      )}
-
-      {salon.locations.length > 0 ? (
-        <section className="space-y-2">
-          <h2 className="text-sm font-medium text-zinc-900">Locations</h2>
-          <ul className="space-y-2">
-            {salon.locations.map((location) => (
-              <li
-                key={location.id}
-                className="rounded-lg border border-zinc-200 bg-white p-3 text-sm text-zinc-700"
-              >
-                <LocationHeading
-                  name={location.name}
-                  isDefault={location.isDefault}
-                  area={location.area}
-                />
-                {location.address ? (
-                  <p className="mt-1 text-zinc-600">{location.address}</p>
-                ) : null}
-                {location.phone ? (
-                  <p className="mt-1 text-zinc-600">{location.phone}</p>
-                ) : null}
-                {location.hours.length > 0 ? (
-                  <ul className="mt-2 space-y-0.5 text-xs text-zinc-600">
-                    {location.hours.map((window) => (
-                      <li key={window.weekday}>
-                        {weekdayLabel(window.weekday)} {window.startTime}–{window.endTime}
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="mt-2 text-xs text-zinc-500">Hours not posted yet.</p>
-                )}
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
-
-      {salon.categories.length === 0 ? (
-        <p className="text-sm text-zinc-600">No bookable services yet.</p>
-      ) : (
-        <ServicePicker
-          orgSlug={orgSlug}
-          categories={salon.categories}
-          locations={salon.locations.map((location) => ({ id: location.id }))}
-          staff={salon.staff}
-          initialServiceIds={initialServiceIds}
-        />
-      )}
-
-      <div>
-        <Link href="/" className={secondaryButtonClass}>
-          Back to search
-        </Link>
-      </div>
     </main>
   );
 }

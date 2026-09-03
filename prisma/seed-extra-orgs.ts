@@ -1,3 +1,4 @@
+import type { Prisma } from "@/app/generated/prisma/client";
 import { OrgRole, Role, Weekday } from "@/app/generated/prisma/enums";
 import { auth } from "@/lib/auth";
 import {
@@ -12,6 +13,7 @@ import {
   salonCoverPath,
 } from "@/lib/demo-constants";
 import { prisma } from "@/lib/prisma";
+import { syncListingPhotosFromOrganization } from "@/lib/listing-gallery-sync";
 
 const WEEKDAYS: Weekday[] = ["MON", "TUE", "WED", "THU", "FRI"];
 
@@ -54,16 +56,104 @@ async function ensureOrg(
   slug: string,
   name: string,
   published: boolean,
-  profile?: { description?: string; phone?: string },
+  profile?: {
+    description?: string;
+    phone?: string;
+    listingTier?: "STANDARD" | "PREMIUM";
+    tagline?: string;
+    highlights?: string[];
+    logoUrl?: string;
+    accentColor?: string;
+    instagramUrl?: string;
+    facebookUrl?: string;
+    websiteUrl?: string;
+    galleryUrls?: string[];
+    featuredServiceName?: string;
+    listingTheme?: {
+      backgroundColor: string;
+      textColor: string;
+      accentColor: string;
+      fontScale: "sm" | "md" | "lg";
+    };
+    storefrontLayout?: string[];
+    listingPresets?: Prisma.InputJsonValue;
+  },
 ) {
   const coverImageUrl = salonCoverPath(slug);
   const description = profile?.description ?? null;
   const phone = profile?.phone ?? null;
-  return prisma.organization.upsert({
+  const org = await prisma.organization.upsert({
     where: { slug },
-    update: { name, published, coverImageUrl, description, phone },
-    create: { name, slug, published, coverImageUrl, description, phone },
+    update: {
+      name,
+      published,
+      coverImageUrl,
+      description,
+      phone,
+      listingTier: profile?.listingTier ?? "STANDARD",
+      tagline: profile?.tagline ?? null,
+      highlights: profile?.highlights ?? [],
+      logoUrl: profile?.logoUrl ?? null,
+      accentColor: profile?.accentColor ?? null,
+      instagramUrl: profile?.instagramUrl ?? null,
+      facebookUrl: profile?.facebookUrl ?? null,
+      websiteUrl: profile?.websiteUrl ?? null,
+      galleryUrls: profile?.galleryUrls ?? [],
+      photoLimit: profile?.listingTier === "PREMIUM" ? 6 : 1,
+      ...(profile?.listingTheme
+        ? { listingTheme: profile.listingTheme as Prisma.InputJsonValue }
+        : {}),
+      ...(profile?.storefrontLayout
+        ? { storefrontLayout: profile.storefrontLayout as Prisma.InputJsonValue }
+        : {}),
+      ...(profile?.listingPresets ? { listingPresets: profile.listingPresets } : {}),
+    },
+    create: {
+      name,
+      slug,
+      published,
+      coverImageUrl,
+      description,
+      phone,
+      listingTier: profile?.listingTier ?? "STANDARD",
+      tagline: profile?.tagline ?? null,
+      highlights: profile?.highlights ?? [],
+      logoUrl: profile?.logoUrl ?? null,
+      accentColor: profile?.accentColor ?? null,
+      instagramUrl: profile?.instagramUrl ?? null,
+      facebookUrl: profile?.facebookUrl ?? null,
+      websiteUrl: profile?.websiteUrl ?? null,
+      galleryUrls: profile?.galleryUrls ?? [],
+      photoLimit: profile?.listingTier === "PREMIUM" ? 6 : 1,
+      ...(profile?.listingTheme
+        ? { listingTheme: profile.listingTheme as Prisma.InputJsonValue }
+        : {}),
+      ...(profile?.storefrontLayout
+        ? { storefrontLayout: profile.storefrontLayout as Prisma.InputJsonValue }
+        : {}),
+      ...(profile?.listingPresets ? { listingPresets: profile.listingPresets } : {}),
+    },
   });
+
+  await syncListingPhotosFromOrganization(org.id);
+
+  if (profile?.featuredServiceName) {
+    const service = await prisma.service.findFirst({
+      where: {
+        organizationId: org.id,
+        name: profile.featuredServiceName,
+        active: true,
+      },
+    });
+    if (service) {
+      await prisma.organization.update({
+        where: { id: org.id },
+        data: { featuredServiceId: service.id },
+      });
+    }
+  }
+
+  return org;
 }
 
 async function ensureLocation(
@@ -277,6 +367,9 @@ export async function seedGlowNailsStudio() {
   const org = await ensureOrg(GLOW_ORG_SLUG, "Glow Nail Studio", true, {
     description: "Gel and classic nails in Makati and Quezon City. Walk in or book a combined slot online.",
     phone: "+63 2 8888 0200",
+    listingTier: "STANDARD",
+    tagline: "Gel nails & pedicures across Makati and QC",
+    highlights: ["Walk-ins welcome at Makati", "Same-day QC appointments"],
   });
   const makati = await ensureLocation(org.id, {
     name: "Makati Studio",
@@ -337,10 +430,66 @@ export async function seedGlowNailsStudio() {
 }
 
 export async function seedLuxeHairLounge() {
+  const warmTheme = {
+    backgroundColor: "#FFF7ED",
+    textColor: "#1C1917",
+    accentColor: "#EA580C",
+    fontScale: "lg" as const,
+  };
+  const galleryFirstLayout = [
+    "hero",
+    "gallery",
+    "about",
+    "highlights",
+    "services",
+    "locations",
+    "staff",
+    "social",
+  ];
+
   const org = await ensureOrg(LUXE_ORG_SLUG, "Luxe Hair Lounge", true, {
     description: "Precision cuts and blowouts in Ortigas. Book one or more services in a single slot.",
     phone: "+63 2 8888 0300",
+    listingTier: "PREMIUM",
+    tagline: "Precision cuts and luxury blowouts in Ortigas",
+    highlights: ["Senior stylists on every visit", "Premium product lines", "Same-day booking"],
+    logoUrl: `/images/salons/${LUXE_ORG_SLUG}.jpg`,
+    accentColor: warmTheme.accentColor,
+    instagramUrl: "https://instagram.com/luxehairlounge",
+    facebookUrl: "https://facebook.com/luxehairlounge",
+    websiteUrl: "https://luxehairlounge.example.com",
+    galleryUrls: [
+      `/images/salons/${LUXE_ORG_SLUG}.jpg`,
+      `/images/salons/beautybook-demo.jpg`,
+      `/images/salons/glow-nails-studio.jpg`,
+    ],
+    listingTheme: warmTheme,
+    storefrontLayout: galleryFirstLayout,
+    listingPresets: [
+      {
+        id: "warm-launch",
+        name: "Warm launch",
+        theme: warmTheme,
+        layout: galleryFirstLayout,
+        savedAt: new Date().toISOString(),
+      },
+    ],
   });
+
+  const photos = await prisma.listingPhoto.findMany({
+    where: { organizationId: org.id },
+    orderBy: { sortOrder: "asc" },
+  });
+  const captions = ["Salon exterior", "Signature colour work", "Relaxing waiting lounge"];
+  for (let index = 0; index < photos.length; index += 1) {
+    const photo = photos[index];
+    if (!photo) continue;
+    await prisma.listingPhoto.update({
+      where: { id: photo.id },
+      data: { caption: captions[index] ?? null },
+    });
+  }
+
   const ortigas = await ensureLocation(org.id, {
     name: "Ortigas branch",
     address: "Ortigas Center, Pasig",
@@ -385,6 +534,11 @@ export async function seedLuxeHairLounge() {
     "Senior stylist — cuts and blowouts",
     [cut.id, blowout.id],
   );
+
+  await prisma.organization.update({
+    where: { id: org.id },
+    data: { featuredServiceId: cut.id },
+  });
 }
 
 export async function seedMarketplaceSalons() {

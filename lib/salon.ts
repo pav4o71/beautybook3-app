@@ -1,5 +1,8 @@
 import type { Weekday } from "@/app/generated/prisma/enums";
 import { publicLocationWhere } from "@/lib/locations";
+import { mapOrganizationListingProfile, type PublicListingProfile } from "@/lib/listing";
+import { photosToUrls, type ListingPhotoRecord } from "@/lib/listing-gallery";
+import { parseStorefrontLayout, type StorefrontSectionId } from "@/lib/listing-layout";
 import { prisma } from "@/lib/prisma";
 import { orderedWeekdays } from "@/lib/schedule";
 
@@ -29,6 +32,7 @@ export type SalonStorefrontLocation = {
   name: string;
   address: string | null;
   area: string | null;
+  city: string | null;
   phone: string | null;
   isDefault: boolean;
   hours: SalonHoursWindow[];
@@ -42,13 +46,15 @@ export type SalonStorefrontStaff = {
   serviceIds: string[];
 };
 
-export type SalonStorefront = {
+export type SalonStorefront = PublicListingProfile & {
   id: string;
   name: string;
   slug: string;
   description: string | null;
   phone: string | null;
   coverImageUrl: string | null;
+  photos: ListingPhotoRecord[];
+  layout: StorefrontSectionId[];
   locations: SalonStorefrontLocation[];
   categories: SalonStorefrontCategory[];
   staff: SalonStorefrontStaff[];
@@ -98,6 +104,11 @@ export async function getSalonStorefront(slug: string): Promise<SalonStorefront 
   const organization = await prisma.organization.findUnique({
     where: { slug },
     include: {
+      photos: { orderBy: { sortOrder: "asc" } },
+      featuredService: {
+        where: { active: true },
+        include: { category: true },
+      },
       locations: {
         where: publicLocationWhere,
         orderBy: [{ isDefault: "desc" }, { name: "asc" }],
@@ -143,6 +154,24 @@ export async function getSalonStorefront(slug: string): Promise<SalonStorefront 
     activeStaffIds.has(row.staffId),
   );
 
+  const fallbackFeatured = organization.categories
+    .flatMap((category) =>
+      category.services.map((service) => ({
+        ...service,
+        category: { name: category.name },
+      })),
+    )
+    .sort((left, right) => left.priceCents - right.priceCents)[0] ?? null;
+
+  const listing = mapOrganizationListingProfile(organization, fallbackFeatured);
+  const photos: ListingPhotoRecord[] = organization.photos.map((p) => ({
+    id: p.id,
+    url: p.url,
+    caption: p.caption,
+    sortOrder: p.sortOrder,
+  }));
+  const galleryFromPhotos = photosToUrls(photos);
+
   return {
     id: organization.id,
     name: organization.name,
@@ -150,11 +179,16 @@ export async function getSalonStorefront(slug: string): Promise<SalonStorefront 
     description: organization.description,
     phone: organization.phone,
     coverImageUrl: organization.coverImageUrl,
+    photos,
+    layout: parseStorefrontLayout(organization.storefrontLayout),
+    ...listing,
+    galleryUrls: galleryFromPhotos.length > 0 ? galleryFromPhotos : listing.galleryUrls,
     locations: organization.locations.map((location) => ({
       id: location.id,
       name: location.name,
       address: location.address,
       area: location.area,
+      city: location.city ?? "Manila",
       phone: location.phone,
       isDefault: location.isDefault,
       hours: hoursForLocation(location.id, activeSchedules),

@@ -111,10 +111,10 @@ export function ServicePicker({
               return (
                 <li key={service.id}>
                   <label
-                    className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 ${
+                    className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3.5 transition ${
                       checked
                         ? "border-zinc-900 bg-zinc-50"
-                        : "border-zinc-200 bg-white"
+                        : "border-zinc-200 bg-white hover:border-zinc-300"
                     } ${atCap ? "cursor-not-allowed opacity-60" : ""}`}
                   >
                     <input
@@ -146,7 +146,7 @@ export function ServicePicker({
         </section>
       ))}
 
-      <div className="sticky bottom-0 z-10 -mx-4 border-t border-zinc-200 bg-white/95 px-4 py-3 backdrop-blur">
+      <div className="sticky bottom-0 z-10 -mx-4 border-t border-zinc-200 bg-white/95 px-4 py-3 shadow-[0_-8px_24px_rgba(0,0,0,0.06)] backdrop-blur">
         <div className="mx-auto flex w-full max-w-5xl flex-wrap items-center justify-between gap-3">
           <p className="text-sm text-zinc-700">
             {selected.length === 0 ? (
@@ -162,7 +162,7 @@ export function ServicePicker({
             type="button"
             onClick={continueToBook}
             disabled={continueDisabled}
-            className={primaryButtonClass}
+            className={`${primaryButtonClass} min-h-10 min-w-28`}
             data-testid="continue-booking"
           >
             Continue

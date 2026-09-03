@@ -1,20 +1,179 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
+  --background: #fffbf9;
   --foreground: #171717;
+  --bb-blush: #f8e7e2;
+  --bb-sand: #f3ebe0;
+  --bb-rose: #c45c5c;
+  --bb-ink: #1c1917;
   color-scheme: light;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-body);
+  --font-display: var(--font-display);
   --font-mono: var(--font-geist-mono);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  font-family: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+}
+
+/* —— Hero mesh (Magic UI / Aceternity–inspired atmosphere) —— */
+.bb-hero {
+  background: linear-gradient(165deg, #fff 0%, var(--bb-blush) 48%, var(--bb-sand) 100%);
+}
+
+.bb-hero-mesh {
+  background:
+    radial-gradient(ellipse 70% 55% at 12% 20%, rgb(244 180 168 / 0.55), transparent 60%),
+    radial-gradient(ellipse 55% 45% at 88% 15%, rgb(232 200 160 / 0.45), transparent 55%),
+    radial-gradient(ellipse 50% 60% at 70% 90%, rgb(250 220 210 / 0.5), transparent 50%);
+  animation: bb-mesh-drift 18s ease-in-out infinite alternate;
+}
+
+.bb-hero-shine {
+  background: linear-gradient(
+    105deg,
+    transparent 40%,
+    rgb(255 255 255 / 0.35) 50%,
+    transparent 60%
+  );
+  background-size: 200% 100%;
+  animation: bb-shine-sweep 9s ease-in-out infinite;
+}
+
+@keyframes bb-mesh-drift {
+  from {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  to {
+    transform: translate3d(-2%, 1.5%, 0) scale(1.04);
+  }
+}
+
+@keyframes bb-shine-sweep {
+  0%,
+  40% {
+    background-position: 120% 0;
+  }
+  60%,
+  100% {
+    background-position: -40% 0;
+  }
+}
+
+/* —— Area marquee —— */
+.bb-marquee {
+  position: relative;
+  overflow: hidden;
+  mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+}
+
+.bb-marquee-track {
+  display: flex;
+  width: max-content;
+  gap: 0.75rem;
+  animation: bb-marquee 42s linear infinite;
+}
+
+.bb-marquee-item {
+  flex-shrink: 0;
+  border: 1px solid rgb(214 184 176 / 0.7);
+  border-radius: 9999px;
+  background: rgb(255 255 255 / 0.7);
+  padding: 0.35rem 0.9rem;
+  font-size: 0.8125rem;
+  color: #57534e;
+  white-space: nowrap;
+}
+
+@keyframes bb-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+/* —— Scroll reveal —— */
+.bb-reveal {
+  opacity: 0;
+  transform: translateY(14px);
+  transition:
+    opacity 0.55s ease,
+    transform 0.55s ease;
+}
+
+.bb-reveal-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* —— Brand shimmer —— */
+.bb-brand-shimmer {
+  background: linear-gradient(
+    100deg,
+    var(--bb-ink) 0%,
+    var(--bb-ink) 35%,
+    var(--bb-rose) 50%,
+    var(--bb-ink) 65%,
+    var(--bb-ink) 100%
+  );
+  background-size: 220% 100%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  animation: bb-brand-shimmer 7s ease-in-out infinite;
+}
+
+@keyframes bb-brand-shimmer {
+  0%,
+  55% {
+    background-position: 100% 0;
+  }
+  75%,
+  100% {
+    background-position: 0% 0;
+  }
+}
+
+/* —— Card lift (Animata-style micro-interaction) —— */
+.bb-card-lift {
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease,
+    border-color 0.25s ease;
+}
+
+.bb-card-lift:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 28px rgb(28 25 23 / 0.08);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bb-hero-mesh,
+  .bb-hero-shine,
+  .bb-marquee-track,
+  .bb-brand-shimmer {
+    animation: none !important;
+  }
+
+  .bb-reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  .bb-card-lift,
+  .bb-card-lift:hover {
+    transform: none;
+    transition: none;
+  }
 }

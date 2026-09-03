@@ -1,10 +1,17 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist_Mono, Plus_Jakarta_Sans, Sora } from "next/font/google";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const display = Sora({
+  variable: "--font-display",
   subsets: ["latin"],
+  weight: ["500", "600", "700"],
+});
+
+const body = Plus_Jakarta_Sans({
+  variable: "--font-body",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
 });
 
 const geistMono = Geist_Mono({
@@ -14,16 +21,16 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "BeautyBook",
-  description: "Salon booking with email and password sign-in",
+  description: "Discover and book Manila salons — pay at the salon when you arrive.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full bg-white text-zinc-900 antialiased`}
+      className={`${display.variable} ${body.variable} ${geistMono.variable} h-full bg-[var(--background)] text-zinc-900 antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="flex min-h-full flex-col font-sans">{children}</body>
     </html>
   );
 }

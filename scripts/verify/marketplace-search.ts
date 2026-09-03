@@ -62,6 +62,23 @@ async function main() {
     "Published salon cards must include a cover image",
   );
 
+  const luxeListing = hairSalons.find((row) => row.slug === LUXE_ORG_SLUG);
+  assert(luxeListing?.listingTier === "PREMIUM", "Luxe must be a premium listing");
+  assert(Boolean(luxeListing?.tagline), "Luxe must include a tagline");
+  assert(
+    luxeListing?.featuredService?.name === "Haircut",
+    "Luxe featured service must be Haircut when configured",
+  );
+
+  const glowSalons = await listMarketplaceOrganizations({ categorySlug: "nails" });
+  const glowListing = glowSalons.find((row) => row.slug === GLOW_ORG_SLUG);
+  assert(glowListing?.listingTier === "STANDARD", "Glow must be a standard listing");
+  assert(Boolean(glowListing?.tagline), "Glow must include a tagline");
+  assert(
+    (glowListing?.cardHighlights.length ?? 0) >= 2,
+    "Glow must include at least two card highlights",
+  );
+
   const haircutSalons = await listMarketplaceOrganizations({
     categorySlug: "hair",
     serviceName: "Haircut",
@@ -69,6 +86,16 @@ async function main() {
   assert(
     haircutSalons.every((row) => row.featuredService?.name === "Haircut"),
     "Haircut chip must feature the Haircut offering",
+  );
+
+  const haircutLower = await listMarketplaceOrganizations({
+    categorySlug: "hair",
+    serviceName: "haircut",
+  });
+  assert(
+    haircutLower.length === haircutSalons.length &&
+      haircutLower.every((row) => row.featuredService?.name === "Haircut"),
+    "Lowercase serviceName must match Haircut case-insensitively",
   );
 
   const unpublished = await prisma.organization.count({

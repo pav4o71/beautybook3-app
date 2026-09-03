@@ -14,8 +14,8 @@ import { formatDay, formatPrice, formatTime } from "@/lib/format";
 import {
   cardButtonClass,
   cardButtonSelectedClass,
+  infoAlertClass,
   slotButtonClass,
-  successAlertClass,
 } from "@/lib/ui";
 import { bookSlot } from "./actions";
 
@@ -169,7 +169,7 @@ export function BookingForm({
 
   return (
     <div className="space-y-6">
-      <p className={successAlertClass}>
+      <p className={infoAlertClass}>
         Your slot is held when you book. Pay at the salon when you arrive.
       </p>
 
@@ -282,7 +282,9 @@ export function BookingForm({
 
       <div className="space-y-4">
         {groupedSlots.length === 0 ? (
-          <p className="text-sm text-zinc-600">No open slots in the next 7 days.</p>
+          <p className="rounded-lg border border-dashed border-zinc-300 bg-zinc-50 px-4 py-8 text-center text-sm text-zinc-600">
+            No open slots in the next 7 days.
+          </p>
         ) : (
           groupedSlots.map((group) => (
             <section key={group.day}>

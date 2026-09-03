@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { EmptyState } from "@/components/empty-state";
 import { getAvailableSlots, getAvailableSlotsForDay } from "@/lib/booking";
 import { MAX_COMBINED_DURATION_MIN, staffOffersAllServices } from "@/lib/booking-limits";
 import { listBookingServices, listBookingStaff } from "@/lib/catalog";
 import { getPublishedOrganizationBySlug } from "@/lib/tenant";
 import { resolveSelectedServiceIds, firstQueryValue } from "@/lib/validations/booking";
-import { successAlertClass } from "@/lib/ui";
+import { pageMainClass, secondaryButtonClass, successAlertClass } from "@/lib/ui";
 import { BookingForm } from "@/app/dashboard/book/booking-form";
 import { bookPublicSlot } from "./actions";
 
@@ -99,31 +100,33 @@ export default async function PublicBookPage({
   const bookAction = bookPublicSlot.bind(null, orgSlug);
 
   return (
-    <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-10">
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <p className="text-sm text-zinc-600">
-            <Link href={`/s/${orgSlug}`} className="hover:text-zinc-900">
-              {organization.name}
-            </Link>
-          </p>
-          <h1 className="text-2xl font-semibold tracking-tight">Book online</h1>
-        </div>
+    <main className={pageMainClass}>
+      <div className="space-y-1">
+        <p className="text-sm text-zinc-600">
+          <Link href={`/s/${orgSlug}`} className="hover:text-zinc-900">
+            {organization.name}
+          </Link>
+        </p>
+        <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">Book online</h1>
+        <p className="text-sm text-zinc-600">
+          Choose a location and one or more services, then pick staff and a time. Pay at the
+          salon when you arrive.
+        </p>
       </div>
 
       {firstQueryValue(query.booked) === "1" ? (
-        <p className={`mb-4 ${successAlertClass}`}>
-          Booked! Pay at the salon when you arrive.
-        </p>
+        <p className={successAlertClass}>Booked! Pay at the salon when you arrive.</p>
       ) : null}
 
-      <p className="mb-6 text-sm text-zinc-600">
-        Choose a location and one or more services, then pick staff and a time. Pay at the
-        salon when you arrive.
-      </p>
-
       {services.length === 0 ? (
-        <p className="text-sm text-zinc-600">Nothing to book yet.</p>
+        <EmptyState
+          title="Nothing to book yet"
+          description="This salon has not published bookable services."
+        >
+          <Link href={`/s/${orgSlug}`} className={secondaryButtonClass}>
+            Back to salon
+          </Link>
+        </EmptyState>
       ) : (
         <BookingForm
           key={`${locationId}-${selectedIds.join(",")}-${staffId}`}
