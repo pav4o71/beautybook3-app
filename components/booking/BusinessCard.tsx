@@ -1,8 +1,14 @@
 import Link from "next/link";
+import { AvailabilityBadge } from "@/components/marketplace/availability-badge";
+import { TrustSignalRow } from "@/components/marketplace/trust-signal-row";
 import { LocationHeading } from "@/components/booking/location-heading";
 import { formatPrice } from "@/lib/format";
 import type { MarketplaceListing } from "@/lib/marketplace";
 import { primaryButtonClass, secondaryButtonClass } from "@/lib/ui";
+
+function focusRingClass(base: string) {
+  return `${base} focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900`;
+}
 
 export function BusinessCard({
   listing,
@@ -12,13 +18,24 @@ export function BusinessCard({
   serviceName?: string;
 }) {
   const { locations, featuredService, serviceCount } = listing;
-  const salonHref = serviceName
+  const viewHref = serviceName
     ? `/s/${listing.slug}?service=${encodeURIComponent(serviceName)}`
     : `/s/${listing.slug}`;
 
+  const bookServiceId =
+    listing.nextAvailability?.kind === "slot"
+      ? listing.nextAvailability.serviceId
+      : featuredService?.id;
+  const bookHref = bookServiceId
+    ? `/s/${listing.slug}/book?serviceId=${encodeURIComponent(bookServiceId)}`
+    : `/s/${listing.slug}#services`;
+
+  const visibleLocations = locations.slice(0, 2);
+  const extraLocationCount = locations.length - visibleLocations.length;
+
   return (
     <article
-      className="flex h-full flex-col overflow-hidden rounded-lg border border-zinc-200 bg-white"
+      className="group flex h-full flex-col overflow-hidden rounded-lg border border-zinc-200 bg-white transition hover:border-zinc-300 focus-within:border-zinc-400"
       data-testid={`business-${listing.slug}`}
     >
       {listing.coverImageUrl ? (
@@ -29,37 +46,41 @@ export function BusinessCard({
           width={800}
           height={400}
           loading="lazy"
-          className="h-40 w-full object-cover"
+          className="aspect-[2/1] h-auto w-full object-cover"
           data-testid={`business-cover-${listing.slug}`}
         />
       ) : (
-        <div className="h-40 bg-zinc-100" />
+        <div className="aspect-[2/1] bg-zinc-100" aria-hidden="true" />
       )}
-      <div className="flex flex-1 flex-col p-4">
-        <h2 className="font-medium text-zinc-900">{listing.name}</h2>
+      <div className="flex flex-1 flex-col gap-2 p-4">
+        <h2 className="line-clamp-2 font-medium text-zinc-900">{listing.name}</h2>
+
+        <TrustSignalRow trust={listing.trust} />
+
+        <AvailabilityBadge value={listing.nextAvailability} />
 
         {featuredService ? (
-          <p className="mt-1 text-sm text-zinc-600">
+          <p className="text-sm text-zinc-600">
             From{" "}
             <span className="font-medium text-zinc-900">
               {formatPrice(featuredService.priceCents)}
             </span>
             {" · "}
-            {featuredService.name}
+            <span className="line-clamp-1">{featuredService.name}</span>
           </p>
         ) : (
-          <p className="mt-1 text-sm text-zinc-500">No bookable services yet</p>
+          <p className="text-sm text-zinc-500">No bookable services yet</p>
         )}
 
-        <p className="mt-1 text-xs text-zinc-500">
+        <p className="text-xs text-zinc-500">
           {serviceCount} active service{serviceCount === 1 ? "" : "s"}
         </p>
 
         {locations.length === 0 ? (
-          <p className="mt-2 text-sm text-zinc-500">No active locations</p>
+          <p className="text-sm text-zinc-500">No active locations</p>
         ) : (
-          <ul className="mt-2 flex-1 space-y-1">
-            {locations.map((location) => (
+          <ul className="mt-1 space-y-1">
+            {visibleLocations.map((location) => (
               <li key={location.id} className="text-sm text-zinc-600">
                 <LocationHeading
                   name={location.name}
@@ -67,20 +88,25 @@ export function BusinessCard({
                   area={location.area}
                 />
                 {location.address ? (
-                  <span className="block text-zinc-500">{location.address}</span>
+                  <span className="line-clamp-1 block text-zinc-500">{location.address}</span>
                 ) : null}
               </li>
             ))}
+            {extraLocationCount > 0 ? (
+              <li className="text-xs text-zinc-500">
+                +{extraLocationCount} more location{extraLocationCount === 1 ? "" : "s"}
+              </li>
+            ) : null}
           </ul>
         )}
 
-        <div className="mt-4 flex flex-wrap gap-2">
-          <Link href={salonHref} className={secondaryButtonClass}>
+        <div className="mt-auto flex flex-wrap gap-2 pt-4">
+          <Link href={viewHref} className={focusRingClass(secondaryButtonClass)}>
             View salon
           </Link>
           <Link
-            href={salonHref}
-            className={primaryButtonClass}
+            href={bookHref}
+            className={focusRingClass(primaryButtonClass)}
             data-testid={`book-now-${listing.slug}`}
           >
             Book now

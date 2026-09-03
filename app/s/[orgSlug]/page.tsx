@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { LocationHeading } from "@/components/booking/location-heading";
 import { getSalonStorefront } from "@/lib/salon";
 import { weekdayLabel } from "@/lib/schedule";
-import { secondaryButtonClass } from "@/lib/ui";
+import { primaryButtonClass, secondaryButtonClass } from "@/lib/ui";
 import { ServicePicker } from "./service-picker";
 
 export default async function SalonLandingPage({
@@ -29,14 +29,27 @@ export default async function SalonLandingPage({
         .map((service) => service.id)
     : [];
 
+  const hasServices = salon.categories.length > 0;
+
   return (
     <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-10">
-      <div className="space-y-1">
-        <p className="text-sm font-medium uppercase tracking-wide text-zinc-500">Salon</p>
-        <h1 className="text-3xl font-semibold tracking-tight text-zinc-900">
-          {salon.name}
-        </h1>
-        {salon.phone ? <p className="text-sm text-zinc-600">{salon.phone}</p> : null}
+      <div className="space-y-3">
+        <div className="space-y-1">
+          <p className="text-sm font-medium uppercase tracking-wide text-zinc-500">Salon</p>
+          <h1 className="text-3xl font-semibold tracking-tight text-zinc-900">
+            {salon.name}
+          </h1>
+          {salon.phone ? <p className="text-sm text-zinc-600">{salon.phone}</p> : null}
+        </div>
+        {hasServices ? (
+          <Link
+            href="#services"
+            className={`${primaryButtonClass} inline-flex focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900`}
+            data-testid="salon-book-cta"
+          >
+            Book now
+          </Link>
+        ) : null}
       </div>
 
       {salon.coverImageUrl ? (
@@ -46,7 +59,7 @@ export default async function SalonLandingPage({
           alt={`${salon.name} cover`}
           width={800}
           height={400}
-          className="h-48 w-full rounded-lg object-cover"
+          className="aspect-[2/1] h-auto w-full rounded-lg object-cover"
         />
       ) : null}
 
@@ -96,16 +109,18 @@ export default async function SalonLandingPage({
         </section>
       ) : null}
 
-      {salon.categories.length === 0 ? (
-        <p className="text-sm text-zinc-600">No bookable services yet.</p>
+      {hasServices ? (
+        <div id="services">
+          <ServicePicker
+            orgSlug={orgSlug}
+            categories={salon.categories}
+            locations={salon.locations.map((location) => ({ id: location.id }))}
+            staff={salon.staff}
+            initialServiceIds={initialServiceIds}
+          />
+        </div>
       ) : (
-        <ServicePicker
-          orgSlug={orgSlug}
-          categories={salon.categories}
-          locations={salon.locations.map((location) => ({ id: location.id }))}
-          staff={salon.staff}
-          initialServiceIds={initialServiceIds}
-        />
+        <p className="text-sm text-zinc-600">No bookable services yet.</p>
       )}
 
       <div>
