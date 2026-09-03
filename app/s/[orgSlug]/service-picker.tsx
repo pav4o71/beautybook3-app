@@ -146,7 +146,7 @@ export function ServicePicker({
         </section>
       ))}
 
-      <div className="sticky bottom-0 z-10 -mx-4 border-t border-zinc-200 bg-white/95 px-4 py-3 backdrop-blur">
+      <div className="sticky bottom-0 z-30 -mx-4 border-t border-zinc-200 bg-white/95 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur">
         <div className="mx-auto flex w-full max-w-5xl flex-wrap items-center justify-between gap-3">
           <p className="text-sm text-zinc-700">
             {selected.length === 0 ? (
@@ -162,10 +162,10 @@ export function ServicePicker({
             type="button"
             onClick={continueToBook}
             disabled={continueDisabled}
-            className={primaryButtonClass}
+            className={`${primaryButtonClass} focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900`}
             data-testid="continue-booking"
           >
-            Continue
+            Book now
           </button>
         </div>
         {selectedIds.length > 0 && !hasCapableStaff ? (

@@ -13,9 +13,10 @@ test.describe("search marketplace", () => {
     await page.getByTestId("category-hair").click();
     await page.waitForURL("/?category=hair");
 
-    await expect(page.getByRole("heading", { name: "Search" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "What would you like to book?" })).toBeVisible();
     await expect(page.getByTestId("category-hair")).toHaveClass(/bg-zinc-900/);
     await expect(page.getByTestId("service-chip-haircut")).toBeVisible();
+    await expect(page.getByTestId("avail-today")).toBeVisible();
 
     await expect(page.getByTestId(`business-${DEMO_ORG_SLUG}`)).toBeVisible();
     await expect(page.getByTestId(`business-${LUXE_ORG_SLUG}`)).toBeVisible();
@@ -28,6 +29,8 @@ test.describe("search marketplace", () => {
       "alt",
       "BeautyBook Demo Salon cover",
     );
+    await expect(page.getByTestId(`business-${DEMO_ORG_SLUG}`).getByTestId("availability-badge")).toBeVisible();
+    await expect(page.getByTestId(`business-${DEMO_ORG_SLUG}`).getByTestId("trust-signal-row")).toBeVisible();
     await expect(page.getByText("₱350.00").first()).toBeVisible();
     await expect(page.getByText("Haircut").first()).toBeVisible();
 
@@ -35,6 +38,14 @@ test.describe("search marketplace", () => {
     await page.waitForURL("/?category=hair&service=Blowout");
     await expect(page.getByTestId(`business-${LUXE_ORG_SLUG}`)).toBeVisible();
     await expect(page.getByTestId(`business-${DEMO_ORG_SLUG}`)).toHaveCount(0);
+  });
+
+  test("quick availability today shows real open slots", async ({ page }) => {
+    await page.goto("/?category=hair");
+    await page.getByTestId("avail-today").click();
+    await page.waitForURL(/category=hair/);
+    await expect(page).toHaveURL(/avail=today/);
+    await expect(page.getByRole("heading", { name: "Available times" })).toBeVisible();
   });
 
   test("area filter keeps only branches in that Manila area", async ({ page }) => {
@@ -55,7 +66,7 @@ test.describe("search marketplace", () => {
   }) => {
     await page.goto("/marketplace");
     await page.waitForURL("/");
-    await expect(page.getByRole("heading", { name: "Search" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "What would you like to book?" })).toBeVisible();
 
     await page.getByTestId("category-nails").click();
     await page.waitForURL("/?category=nails");
@@ -69,16 +80,16 @@ test.describe("search marketplace", () => {
     await expect(page.getByTestId(`business-${GLOW_ORG_SLUG}`)).toBeVisible();
 
     await page.getByTestId(`book-now-${DEMO_ORG_SLUG}`).click();
-    await page.waitForURL(new RegExp(`/s/${DEMO_ORG_SLUG}(?:\\?|$)`));
-    await expect(page.getByRole("heading", { name: "BeautyBook Demo Salon" })).toBeVisible();
-    await expect(page.getByText("Haircut").first()).toBeVisible();
+    await page.waitForURL(new RegExp(`/s/${DEMO_ORG_SLUG}/book`));
+    await expect(page.getByRole("heading", { name: "Book online" })).toBeVisible();
 
     await page.goto("/?category=nails");
     await page
       .getByTestId(`business-${GLOW_ORG_SLUG}`)
       .getByRole("link", { name: "View salon" })
       .click();
-    await page.waitForURL(`/s/${GLOW_ORG_SLUG}`);
+    await page.waitForURL(new RegExp(`/s/${GLOW_ORG_SLUG}`));
+    await expect(page.getByTestId("salon-book-cta")).toBeVisible();
     await expect(page.getByText("QC Studio")).toBeVisible();
 
     await page.goto(`/s/${LUXE_ORG_SLUG}`);

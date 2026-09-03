@@ -36,10 +36,22 @@ test.describe("salon storefront", () => {
     await expect(page.getByText(/Booked! Pay at the salon/i)).toBeVisible();
   });
 
-  test("homepage Book now keeps the service name on the salon page", async ({ page }) => {
+  test("homepage Book now deep-links into booking with the service", async ({ page }) => {
     await page.goto("/?service=Haircut");
     await page.getByTestId(`book-now-${DEMO_ORG_SLUG}`).click();
+    await page.waitForURL(new RegExp(`/s/${DEMO_ORG_SLUG}/book\\?`));
+    await expect(page).toHaveURL(/serviceId=/);
+    await expect(page.getByRole("heading", { name: "Book online" })).toBeVisible();
+  });
+
+  test("homepage View salon keeps the service name on the salon page", async ({ page }) => {
+    await page.goto("/?service=Haircut");
+    await page
+      .getByTestId(`business-${DEMO_ORG_SLUG}`)
+      .getByRole("link", { name: "View salon" })
+      .click();
     await page.waitForURL(`/s/${DEMO_ORG_SLUG}?service=Haircut`);
     await expect(page.getByTestId("service-checkbox-Haircut")).toBeChecked();
+    await expect(page.getByTestId("salon-book-cta")).toBeVisible();
   });
 });
