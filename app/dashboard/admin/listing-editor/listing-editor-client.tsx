@@ -530,7 +530,11 @@ export function ListingEditorClient({
           </div>
           {previewMode === "card" ? (
             <div className="max-w-sm">
-              <ListingCard listing={cardPreview} preview />
+              <ListingCard
+                key={`${draft.theme.accentColor}-${draft.theme.backgroundColor}-${draft.theme.fontScale}`}
+                listing={cardPreview}
+                preview
+              />
             </div>
           ) : (
             <div

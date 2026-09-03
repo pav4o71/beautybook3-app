@@ -79,5 +79,9 @@ export function themeCardBorderStyle(theme: ListingTheme, tier: ListingTier) {
   if (!isPremiumListing(tier)) {
     return undefined;
   }
-  return { borderColor: theme.accentColor };
+  return {
+    borderColor: theme.accentColor,
+    borderStyle: "solid" as const,
+    borderWidth: 2,
+  };
 }
