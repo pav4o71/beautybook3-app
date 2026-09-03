@@ -7,6 +7,7 @@ import { DEMO_ACCOUNT } from "@/lib/demo-account";
 import {
   controlClass,
   errorAlertClass,
+  infoAlertClass,
   labelClass,
   labelTextClass,
   primaryButtonClass,
@@ -73,7 +74,7 @@ export function LoginForm() {
       </button>
 
       {process.env.NODE_ENV !== "production" ? (
-        <p className="rounded-md bg-zinc-100 px-3 py-2 text-xs text-zinc-600">
+        <p className={`${infoAlertClass} text-xs`}>
           Demo account: {DEMO_ACCOUNT.email} / {DEMO_ACCOUNT.password}
         </p>
       ) : null}

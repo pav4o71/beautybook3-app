@@ -2,7 +2,13 @@ import Link from "next/link";
 import { LocationHeading } from "@/components/booking/location-heading";
 import { formatPrice } from "@/lib/format";
 import type { MarketplaceListing } from "@/lib/marketplace";
-import { focusRingClass, primaryButtonClass, surfaceInteractiveClass } from "@/lib/ui";
+import { focusRingClass, surfaceInteractiveClass } from "@/lib/ui";
+
+const discoveryButtonClass =
+  `inline-flex items-center justify-center rounded-lg bg-emerald-800 px-4 py-2 text-sm font-medium text-emerald-50 shadow-sm shadow-emerald-900/15 hover:bg-emerald-700 disabled:opacity-60 ${focusRingClass} focus-visible:ring-emerald-700`;
+
+const discoveryCardClass =
+  `${surfaceInteractiveClass} flex h-full flex-col overflow-hidden border-emerald-200/70 hover:border-emerald-300/80 hover:shadow-md hover:shadow-emerald-900/5`;
 
 export function BusinessCard({
   listing,
@@ -22,7 +28,7 @@ export function BusinessCard({
 
   return (
     <article
-      className={`${surfaceInteractiveClass} flex h-full flex-col overflow-hidden`}
+      className={discoveryCardClass}
       data-testid={`business-${listing.slug}`}
     >
       <Link href={salonHref} className={`block shrink-0 ${focusRingClass}`}>
@@ -38,22 +44,22 @@ export function BusinessCard({
             data-testid={`business-cover-${listing.slug}`}
           />
         ) : (
-          <div className="flex h-44 items-end bg-zinc-100 px-4 py-3 sm:h-48">
-            <span className="text-sm font-medium text-zinc-500">{listing.name}</span>
+          <div className="flex h-44 items-end bg-emerald-50 px-4 py-3 sm:h-48">
+            <span className="text-sm font-medium text-emerald-700/80">{listing.name}</span>
           </div>
         )}
       </Link>
       <div className="flex flex-1 flex-col p-4">
         <Link href={salonHref} className={`inline-block rounded-sm ${focusRingClass}`}>
-          <h2 className="text-lg font-semibold tracking-tight text-zinc-900 hover:text-zinc-700">
+          <h2 className="text-lg font-semibold tracking-tight text-emerald-950 hover:text-emerald-800">
             {listing.name}
           </h2>
         </Link>
 
         {featuredService ? (
-          <p className="mt-1 text-sm text-zinc-600">
+          <p className="mt-1 text-sm text-stone-600">
             From{" "}
-            <span className="font-medium text-zinc-900">
+            <span className="font-medium text-emerald-900">
               {formatPrice(featuredService.priceCents)}
             </span>
             {" · "}
@@ -86,7 +92,7 @@ export function BusinessCard({
         <div className="mt-4">
           <Link
             href={salonHref}
-            className={primaryButtonClass}
+            className={discoveryButtonClass}
             data-testid={`book-now-${listing.slug}`}
           >
             View salon

@@ -90,25 +90,33 @@ export async function createStaff(
     const bio = parseOptionalString(formData.get("bio"));
     const active = parseBooleanCheckbox(formData.get("active"));
     const serviceIds = parseServiceIds(formData);
+    const uploaded = formData.get("photo");
+    const hasUpload = uploaded instanceof File && uploaded.size > 0;
+
+    let photoUrl: string | null = null;
+    if (!hasUpload) {
+      photoUrl = parseStaffPhotoUrl(String(formData.get("photoUrl") ?? ""), organizationId);
+    }
 
     // Bookable catalog row only — do not set Staff.userId (login stays separate).
     const staff = await prisma.staff.create({
-      data: { organizationId, locationId, name, bio, active },
+      data: { organizationId, locationId, name, bio, active, photoUrl },
     });
 
-    try {
-      const photoUrl = await resolveStaffPhotoUrl(organizationId, staff.id, formData);
-      if (photoUrl) {
+    if (hasUpload) {
+      try {
+        photoUrl = await saveStaffPhoto(organizationId, staff.id, uploaded);
         await prisma.staff.update({
           where: { id: staff.id },
           data: { photoUrl },
         });
+      } catch (error) {
+        await prisma.staff.delete({ where: { id: staff.id } });
+        if (error instanceof CoverImageError) {
+          return { error: error.message };
+        }
+        throw error;
       }
-    } catch (error) {
-      if (error instanceof CoverImageError) {
-        return { error: error.message };
-      }
-      throw error;
     }
 
     await syncStaffServices(organizationId, staff.id, serviceIds);

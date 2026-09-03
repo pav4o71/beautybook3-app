@@ -44,7 +44,7 @@ alwaysApply: true
 
 ## Testing
 
-- Verify scripts: `npm run verify` (mutates DB — set `VERIFY_ALLOW_REMOTE=1` when `DATABASE_URL` is hosted Supabase).
+- Verify scripts: `npm run verify` (mutates DB — **local Docker Postgres only**: `localhost`/`127.0.0.1`, port `5433`, database `beautybook`. There is no `VERIFY_ALLOW_REMOTE` bypass).
 - E2E: `npm run test:e2e` (Playwright)
 - Demo accounts: `lib/demo-account.ts` (`demo@beautybook.local`, `customer@beautybook.local`)
 

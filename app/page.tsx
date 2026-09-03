@@ -68,13 +68,21 @@ export default async function Home({
   return (
     <>
       <SiteHeader />
-      <main className={pageMainClass}>
-        <div className="space-y-2">
-          <h1 className={pageTitleClass}>Find a salon</h1>
-          <p className={pageLeadClass}>
+      <main className={`${pageMainClass} bg-linear-to-b from-stone-50/80 via-emerald-50/30 to-white`}>
+        <div className="mx-auto max-w-2xl space-y-3 text-center">
+          <h1 className={`${pageTitleClass} text-emerald-950`}>Find a salon</h1>
+          <p className={`${pageLeadClass} mx-auto text-stone-600`}>
             Browse hair and nail salons in Manila. Pick a service, then book a slot — pay
             at the salon when you arrive.
           </p>
+          <div
+            aria-hidden
+            className="mx-auto flex max-w-xs items-center justify-center gap-2 pt-1"
+          >
+            <span className="h-px flex-1 bg-linear-to-r from-transparent to-emerald-300/70" />
+            <span className="size-1.5 rotate-45 border border-emerald-400/80 bg-emerald-50" />
+            <span className="h-px flex-1 bg-linear-to-l from-transparent to-emerald-300/70" />
+          </div>
         </div>
 
         <section aria-labelledby="discovery-filters" className="space-y-3">
@@ -96,57 +104,57 @@ export default async function Home({
 
         <section aria-labelledby="discovery-results" className="space-y-3">
           {hasActiveFilters ? (
-            <p className="text-sm text-zinc-600">
+            <p className="text-center text-sm text-stone-600">
               Showing{" "}
               {activeCategory ? (
                 <>
-                  <span className="font-medium text-zinc-900">{activeCategory.name}</span>{" "}
+                  <span className="font-medium text-emerald-950">{activeCategory.name}</span>{" "}
                 </>
               ) : null}
               {date ? "availability" : "salons"}
               {serviceName ? (
                 <>
                   {" "}
-                  for <span className="font-medium text-zinc-900">{serviceName}</span>
+                  for <span className="font-medium text-emerald-950">{serviceName}</span>
                 </>
               ) : null}
               {area ? (
                 <>
                   {" "}
-                  in <span className="font-medium text-zinc-900">{area}</span>
+                  in <span className="font-medium text-emerald-950">{area}</span>
                 </>
               ) : null}
               {date ? (
                 <>
                   {" "}
-                  on <span className="font-medium text-zinc-900">{formatDay(date)}</span>
+                  on <span className="font-medium text-emerald-950">{formatDay(date)}</span>
                 </>
               ) : null}
               {date && time ? (
                 <>
                   {" "}
-                  around <span className="font-medium text-zinc-900">{time}</span>
+                  around <span className="font-medium text-emerald-950">{time}</span>
                 </>
               ) : null}
             </p>
           ) : null}
 
           {date ? (
-            <p className="text-sm text-zinc-600">
+            <p className="text-center text-sm text-stone-600">
               Showing open times matching your filters.
             </p>
           ) : null}
 
           {date ? (
             <>
-              <h2 id="discovery-results" className={sectionTitleClass}>
+              <h2 id="discovery-results" className={`${sectionTitleClass} text-center text-emerald-950`}>
                 Available times
               </h2>
               <AvailabilityResults results={availability} />
             </>
           ) : (
             <>
-              <h2 id="discovery-results" className={sectionTitleClass}>
+              <h2 id="discovery-results" className={`${sectionTitleClass} text-center text-emerald-950`}>
                 Salons
               </h2>
               <BusinessResults listings={listings} serviceName={serviceName} />

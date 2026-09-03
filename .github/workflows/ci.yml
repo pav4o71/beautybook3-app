@@ -13,18 +13,18 @@ jobs:
       postgres:
         image: postgres:16
         env:
-          POSTGRES_USER: ci
-          POSTGRES_PASSWORD: ci
-          POSTGRES_DB: ci
+          POSTGRES_USER: beautybook
+          POSTGRES_PASSWORD: beautybook
+          POSTGRES_DB: beautybook
         ports:
-          - 5432:5432
+          - 5433:5432
         options: >-
-          --health-cmd "pg_isready -U ci -d ci"
+          --health-cmd "pg_isready -U beautybook -d beautybook"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
     env:
-      DATABASE_URL: postgresql://ci:ci@localhost:5432/ci?sslmode=disable
+      DATABASE_URL: postgresql://beautybook:beautybook@localhost:5433/beautybook?sslmode=disable
       BETTER_AUTH_SECRET: ci-better-auth-secret-min-32-chars
       BETTER_AUTH_URL: http://localhost:3000
       CI: "1"
@@ -55,18 +55,18 @@ jobs:
       postgres:
         image: postgres:16
         env:
-          POSTGRES_USER: ci
-          POSTGRES_PASSWORD: ci
-          POSTGRES_DB: ci
+          POSTGRES_USER: beautybook
+          POSTGRES_PASSWORD: beautybook
+          POSTGRES_DB: beautybook
         ports:
-          - 5432:5432
+          - 5433:5432
         options: >-
-          --health-cmd "pg_isready -U ci -d ci"
+          --health-cmd "pg_isready -U beautybook -d beautybook"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
     env:
-      DATABASE_URL: postgresql://ci:ci@localhost:5432/ci?sslmode=disable
+      DATABASE_URL: postgresql://beautybook:beautybook@localhost:5433/beautybook?sslmode=disable
       BETTER_AUTH_SECRET: ci-better-auth-secret-min-32-chars
       BETTER_AUTH_URL: http://localhost:3000
       CI: "1"

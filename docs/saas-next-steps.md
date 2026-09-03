@@ -102,6 +102,8 @@ Homepage **View salon** and **Book now** both open the salon page. Availability 
 
 **Schema:** `Organization.description` / `phone`, `Location.phone`, `AppointmentService` unique on `(appointmentId, serviceId)`. Hosted Prisma includes `20260830183000_salon_profile_and_appointment_service_unique`. Live file is `prisma/schema.prisma` — do not switch the app to `prisma/schema-saas.prisma`.
 
+**Org admin:** `/dashboard/admin` is gated by `OrganizationMember` OrgRole (`OWNER`/`ADMIN`) only. Leftover `User.role = ADMIN` is not a platform superadmin and must not open another org's admin UI.
+
 ## Next steps
 
 1. Object storage for covers (Cloudflare R2 / S3) when deploying without a persistent disk.

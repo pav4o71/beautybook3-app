@@ -15,6 +15,7 @@
     "prisma:seed": "prisma db seed",
     "verify": "tsx scripts/verify/run-all.ts",
     "verify:format": "tsx scripts/verify/format.ts",
+    "verify:guard": "tsx scripts/verify/local-db-guard.ts",
     "verify:seed": "tsx scripts/verify/seed-counts.ts",
     "verify:slots": "tsx scripts/verify/slots.ts",
     "verify:booking": "tsx scripts/verify/booking.ts",

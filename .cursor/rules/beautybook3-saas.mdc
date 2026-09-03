@@ -283,7 +283,7 @@ export function ServiceForm() {
 **Verify Scripts:**
 - Use `npm run verify` for integration tests
 - Scripts in `scripts/verify/`
-- Guard with `VERIFY_ALLOW_REMOTE=1` for hosted DB
+- Guard: seed, verify, and Playwright refuse any database that is not local Docker Postgres (`localhost`/`127.0.0.1`, port `5433`, database `beautybook`). There is no `VERIFY_ALLOW_REMOTE` bypass.
 
 **Test Coverage:**
 - Minimum 80% for new features

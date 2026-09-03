@@ -4,7 +4,20 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AreaFilter } from "@/components/booking/AreaFilter";
 import type { MarketplaceCategoryFilter } from "@/lib/marketplace";
-import { chipActiveClass, chipClass, controlClass, labelClass, labelTextClass } from "@/lib/ui";
+import { labelClass } from "@/lib/ui";
+
+const discoveryChipClass =
+  "inline-flex shrink-0 items-center rounded-full border border-emerald-200/90 bg-white/90 px-3.5 py-1.5 text-sm text-emerald-900 shadow-sm transition hover:border-emerald-300 hover:bg-emerald-50/90 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-600";
+
+const discoveryChipActiveClass =
+  "inline-flex shrink-0 items-center rounded-full bg-emerald-800 px-3.5 py-1.5 text-sm font-medium text-emerald-50 shadow-md shadow-emerald-900/20 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-200";
+
+const discoveryControlClass =
+  "w-full rounded-lg border border-emerald-200/90 bg-white/95 px-3 py-2 text-sm text-emerald-950 shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-emerald-700 focus-visible:ring-offset-2 focus:border-emerald-700 disabled:cursor-not-allowed disabled:bg-emerald-50/50 disabled:text-emerald-400";
+
+const discoveryLabelTextClass = "font-medium text-emerald-950";
+
+const discoveryHelpClass = "text-xs text-emerald-700/70";
 
 const TIME_OPTIONS = [
   "09:00",
@@ -88,24 +101,15 @@ export function SearchFilters({
   };
 
   const chipRowClass =
-    "flex flex-nowrap gap-2 overflow-x-auto scroll-px-3 scroll-py-1 pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden";
+    "flex flex-wrap justify-center gap-2 px-1 sm:gap-2.5";
 
   return (
-    <div className="space-y-4">
-      <div className="space-y-2 rounded-lg border border-zinc-200 bg-zinc-50/50 p-3 sm:p-4">
-        <div className="relative">
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-y-0 left-0 z-10 w-6 bg-linear-to-r from-zinc-50 to-transparent sm:hidden"
-          />
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-y-0 right-0 z-10 w-6 bg-linear-to-l from-zinc-50 to-transparent sm:hidden"
-          />
-          <nav aria-label="Filter by category" className={chipRowClass}>
+    <div className="mx-auto w-full max-w-3xl space-y-4">
+      <div className="space-y-3 rounded-2xl border border-emerald-200/70 bg-linear-to-b from-emerald-50/90 via-stone-50/70 to-white p-4 shadow-sm sm:p-5">
+        <nav aria-label="Filter by category" className={chipRowClass}>
             <Link
               href={searchHref({ ...current, category: undefined, service: undefined })}
-              className={!activeSlug ? chipActiveClass : chipClass}
+              className={!activeSlug ? discoveryChipActiveClass : discoveryChipClass}
               data-testid="category-all"
             >
               All services
@@ -118,25 +122,16 @@ export function SearchFilters({
                   category: category.slug,
                   service: undefined,
                 })}
-                className={activeSlug === category.slug ? chipActiveClass : chipClass}
+                className={activeSlug === category.slug ? discoveryChipActiveClass : discoveryChipClass}
                 data-testid={`category-${category.slug}`}
               >
                 {category.name}
                 <span className="ml-1 text-xs opacity-80">({category.salonCount})</span>
               </Link>
             ))}
-          </nav>
-        </div>
+        </nav>
         {services.length > 0 ? (
-          <div className="relative border-t border-zinc-200/80 pt-2">
-            <div
-              aria-hidden
-              className="pointer-events-none absolute inset-y-0 left-0 z-10 w-6 bg-linear-to-r from-zinc-50 to-transparent sm:hidden"
-            />
-            <div
-              aria-hidden
-              className="pointer-events-none absolute inset-y-0 right-0 z-10 w-6 bg-linear-to-l from-zinc-50 to-transparent sm:hidden"
-            />
+          <div className="border-t border-emerald-200/60 pt-3">
             <nav aria-label="Filter by service" className={chipRowClass}>
               {services.map((service) => {
                 const active =
@@ -149,7 +144,7 @@ export function SearchFilters({
                       ...current,
                       service: active ? undefined : service.name,
                     })}
-                    className={active ? chipActiveClass : chipClass}
+                    className={active ? discoveryChipActiveClass : discoveryChipClass}
                     data-testid={`service-chip-${serviceKey(service.name)}`}
                   >
                     {service.name}
@@ -160,15 +155,18 @@ export function SearchFilters({
           </div>
         ) : null}
       </div>
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-3 sm:gap-5">
         <AreaFilter
           selectedArea={area ?? ""}
           onAreaChange={(nextArea) => {
             router.push(searchHref({ ...current, area: nextArea || undefined }));
           }}
+          controlClassName={discoveryControlClass}
+          labelTextClassName={discoveryLabelTextClass}
+          helpClassName={discoveryHelpClass}
         />
         <label className={labelClass}>
-          <span className={labelTextClass}>Date</span>
+          <span className={discoveryLabelTextClass}>Date</span>
           <input
             type="date"
             min={minDate}
@@ -182,12 +180,12 @@ export function SearchFilters({
                 }),
               );
             }}
-            className={controlClass}
+            className={discoveryControlClass}
             data-testid="date-picker"
           />
         </label>
         <label className={labelClass}>
-          <span className={labelTextClass}>Preferred time</span>
+          <span className={discoveryLabelTextClass}>Preferred time</span>
           <select
             value={time ?? ""}
             disabled={!date}
@@ -195,7 +193,7 @@ export function SearchFilters({
             onChange={(event) => {
               router.push(searchHref({ ...current, time: event.target.value || undefined }));
             }}
-            className={controlClass}
+            className={discoveryControlClass}
             data-testid="time-filter"
           >
             <option value="">Any time</option>
@@ -205,7 +203,7 @@ export function SearchFilters({
               </option>
             ))}
           </select>
-          <p id="time-filter-help" className="text-xs text-zinc-500">
+          <p id="time-filter-help" className={discoveryHelpClass}>
             {date
               ? "Shows slots within 30 minutes of this time."
               : "Choose a date first to filter by time."}

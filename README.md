@@ -15,8 +15,17 @@ Do **not** run `supabase db push` for app tables — Prisma owns the schema.
 
 ## Setup
 
+Seed, verify, and Playwright **require local Docker Postgres**. The app can still talk to hosted Supabase for day-to-day browsing, but those mutating commands refuse any URL that is not `localhost`/`127.0.0.1` port **5433** database `beautybook`.
+
 1. Copy `.env.example` → `.env`.
-2. Set **`DATABASE_URL`** to the Supabase **session pooler** URI (port **5432**, host `*.pooler.supabase.com`). This project uses the `beautybook_prisma.[PROJECT-REF]` user — it works on the pooler, not on the direct `db.*.supabase.co` host.
+2. For local seed / verify / e2e, start Docker and use the local URL:
+
+```bash
+docker start beautybook3-pg
+# DATABASE_URL="postgresql://beautybook:beautybook@localhost:5433/beautybook?sslmode=disable"
+```
+
+   Optional: point `DATABASE_URL` at the Supabase **session pooler** (port **5432**, host `*.pooler.supabase.com`, user `beautybook_prisma.[PROJECT-REF]`) only for running the app against hosted data. Do **not** run `prisma:seed`, `npm run verify`, or Playwright against that URI.
 
    From [Supabase → beautybook → Database](https://supabase.com/dashboard/project/jjkmelcuwefymvsmxxkd/settings/database), use **Connection pooling → Session mode → URI** (not Transaction mode on port 6543, not Direct unless you switch to `postgres.[REF]`).
 3. Set `BETTER_AUTH_SECRET` (long random string) and `BETTER_AUTH_URL` (`http://localhost:3000` in dev).
@@ -25,6 +34,11 @@ Do **not** run `supabase db push` for app tables — Prisma owns the schema.
 ```bash
 npm install
 npx prisma generate
+```
+
+   Local Docker (required before seed):
+
+```bash
 npx prisma migrate deploy
 npm run prisma:seed
 ```
@@ -85,6 +99,7 @@ Server gates: `requireUser()`, `requireAdmin()` in `lib/`.
 - **`20260830034500_appointment_staff_no_overlap`**: enables `btree_gist` and adds an exclusion constraint. On deploy it **deletes the newer row** in each overlapping non-cancelled pair (one-time cleanup). Re-applying on a DB with overlaps has the same effect — review before deploy on production data.
 - **`20260830100000`–`20260830100200` (tenancy)**: adds `Organization`, `Location`, `OrganizationMember`, and scopes catalog/booking tables. Migration C backfills `beautybook-demo` and enforces `NOT NULL`. If pooler DDL fails with `must be owner of table`, run migrations B and C SQL in the Supabase SQL editor, then `npx prisma migrate resolve --applied <name>` for each.
 - **`20260830183000_salon_profile_and_appointment_service_unique`**: adds `Organization.description` / `phone`, `Location.phone`, and a unique constraint on `AppointmentService(appointmentId, serviceId)` (deletes duplicate join rows, keeping the lowest id).
+- **`20260903120000_location_one_default_and_org_published_idx`**: collapses extra `isDefault` locations per org (keeps the lowest `Location.id`), then adds a partial unique index and `Organization.published` index.
 
 ## Learn more
 

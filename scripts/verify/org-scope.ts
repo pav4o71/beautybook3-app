@@ -2,6 +2,7 @@ import "dotenv/config";
 import { listAdminCatalog, listAdminStaffBoard } from "../../lib/catalog";
 import { GLOW_ORG_SLUG } from "../../lib/demo-constants";
 import { prisma } from "../../lib/prisma";
+import { getStaffTimeOffInRange } from "../../lib/schedule";
 import { getDemoTenantContext } from "../../lib/tenant";
 
 function assert(condition: boolean, message: string) {
@@ -46,6 +47,37 @@ async function main() {
     !glowServiceIds.includes(demoHaircut.id),
     "Glow catalog must not include demo services",
   );
+
+  const demoTimeOff = await prisma.timeOff.findMany({
+    where: { organizationId: demo.organizationId, staffId: maya.id },
+    take: 1,
+  });
+  if (demoTimeOff[0]) {
+    const leaked = await getStaffTimeOffInRange(
+      glowOrg.id,
+      maya.id,
+      demoTimeOff[0].startsAt,
+      demoTimeOff[0].endsAt,
+    );
+    assert(leaked.length === 0, "Time-off helper must not leak another org's staff blocks");
+  }
+
+  try {
+    await prisma.location.create({
+      data: {
+        organizationId: demo.organizationId,
+        name: "verify-second-default",
+        isDefault: true,
+      },
+    });
+    throw new Error("second default location should be rejected");
+  } catch (error) {
+    const code =
+      typeof error === "object" && error !== null && "code" in error
+        ? String(error.code)
+        : "";
+    assert(code === "P2002", `expected unique default constraint, got ${code || error}`);
+  }
 
   await prisma.$disconnect();
 
