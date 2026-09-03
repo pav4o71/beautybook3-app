@@ -18,6 +18,8 @@ export type PublicListingProfile = {
   galleryUrls: string[];
   highlights: string[];
   featuredService: ListingFeaturedService | null;
+  listingTheme: unknown;
+  storefrontLayout: unknown;
 };
 
 type OrganizationListingRow = {
@@ -31,6 +33,8 @@ type OrganizationListingRow = {
   galleryUrls: unknown;
   highlights: string[];
   featuredServiceId: string | null;
+  listingTheme?: unknown;
+  storefrontLayout?: unknown;
   featuredService?: {
     id: string;
     name: string;
@@ -103,6 +107,8 @@ export function mapOrganizationListingProfile(
     galleryUrls: parseGalleryUrls(org.galleryUrls),
     highlights: org.highlights,
     featuredService: resolveFeaturedService(org, fallbackFeatured),
+    listingTheme: org.listingTheme ?? {},
+    storefrontLayout: org.storefrontLayout ?? [],
   };
 }
 

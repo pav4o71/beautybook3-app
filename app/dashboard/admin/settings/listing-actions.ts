@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { actionError, type ActionFormState } from "@/lib/action-form-state";
+import { isPremiumListing } from "@/lib/listing";
 import {
   CoverImageError,
   parseOrgImageUrl,
@@ -14,6 +15,7 @@ import { formatZodError } from "@/lib/validations/organization";
 import { parseListingProfileForm } from "@/lib/validations/listing";
 
 function revalidateListingPaths(slug: string) {
+  revalidatePath("/dashboard/admin/listing-editor");
   revalidatePath("/dashboard/admin/settings");
   revalidatePath("/");
   revalidatePath("/marketplace");
@@ -71,10 +73,19 @@ export async function updateListingProfileAction(
         highlights: data.highlights,
         featuredServiceId: data.featuredServiceId,
         logoUrl,
-        accentColor: data.accentColor,
-        instagramUrl: data.instagramUrl,
-        facebookUrl: data.facebookUrl,
-        websiteUrl: data.websiteUrl,
+        ...(isPremiumListing(organization.listingTier)
+          ? {
+              accentColor: data.accentColor,
+              instagramUrl: data.instagramUrl,
+              facebookUrl: data.facebookUrl,
+              websiteUrl: data.websiteUrl,
+            }
+          : {
+              accentColor: null,
+              instagramUrl: null,
+              facebookUrl: null,
+              websiteUrl: null,
+            }),
       },
     });
   } catch (error) {

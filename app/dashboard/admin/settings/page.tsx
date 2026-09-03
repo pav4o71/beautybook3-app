@@ -59,6 +59,12 @@ export default async function BusinessSettingsPage({
         <p className={`mt-4 ${successAlertClass}`}>Listing profile saved.</p>
       ) : null}
 
+      <div className="mt-4">
+        <Link href="/dashboard/admin/listing-editor" className={primaryButtonClass}>
+          Customize listing
+        </Link>
+      </div>
+
       <ActionForm
         action={updateOrganizationSettings}
         encType="multipart/form-data"

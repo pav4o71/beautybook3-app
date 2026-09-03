@@ -12,6 +12,7 @@ import {
   salonCoverPath,
 } from "@/lib/demo-constants";
 import { prisma } from "@/lib/prisma";
+import { syncListingPhotosFromOrganization } from "@/lib/listing-gallery-sync";
 
 const WEEKDAYS: Weekday[] = ["MON", "TUE", "WED", "THU", "FRI"];
 
@@ -89,6 +90,7 @@ async function ensureOrg(
       facebookUrl: profile?.facebookUrl ?? null,
       websiteUrl: profile?.websiteUrl ?? null,
       galleryUrls: profile?.galleryUrls ?? [],
+      photoLimit: profile?.listingTier === "PREMIUM" ? 6 : 1,
     },
     create: {
       name,
@@ -106,8 +108,11 @@ async function ensureOrg(
       facebookUrl: profile?.facebookUrl ?? null,
       websiteUrl: profile?.websiteUrl ?? null,
       galleryUrls: profile?.galleryUrls ?? [],
+      photoLimit: profile?.listingTier === "PREMIUM" ? 6 : 1,
     },
   });
+
+  await syncListingPhotosFromOrganization(org.id);
 
   if (profile?.featuredServiceName) {
     const service = await prisma.service.findFirst({

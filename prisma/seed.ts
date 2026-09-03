@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { DEMO_ACCOUNT, DEMO_CUSTOMER } from "@/lib/demo-account";
 import { DEMO_ORG_SLUG, salonCoverPath } from "@/lib/demo-constants";
 import { prisma } from "@/lib/prisma";
+import { syncListingPhotosFromOrganization } from "@/lib/listing-gallery-sync";
 import {
   addSalonDays,
   salonDateAtTime,
@@ -60,6 +61,8 @@ async function seedOrganization(): Promise<TenantContext> {
       phone: "+63 2 8888 0100",
     },
   });
+
+  await syncListingPhotosFromOrganization(org.id);
 
   let location = await prisma.location.findFirst({
     where: { organizationId: org.id, isDefault: true },

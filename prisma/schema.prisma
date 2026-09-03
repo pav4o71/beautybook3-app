@@ -140,10 +140,19 @@ model Organization {
   highlights    String[] @default([])
   featuredServiceId String?
   featuredService   Service? @relation("FeaturedService", fields: [featuredServiceId], references: [id], onDelete: SetNull)
+  /// Max photos allowed (1 standard, 6 premium default; admin can extend).
+  photoLimit        Int      @default(1)
+  /// Theme preset: { backgroundColor, textColor, accentColor, fontScale }
+  listingTheme      Json     @default("{}")
+  /// Storefront section order: hero, about, gallery, highlights, services, locations, staff, social
+  storefrontLayout  Json     @default("[]")
+  /// Named presets: [{ id, name, theme, layout, savedAt }]
+  listingPresets    Json     @default("[]")
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
   members      OrganizationMember[]
+  photos       ListingPhoto[]
   locations    Location[]
   categories   ServiceCategory[]
   services     Service[]
@@ -153,6 +162,19 @@ model Organization {
   appointments Appointment[]
 
   @@index([listingTier, published])
+}
+
+model ListingPhoto {
+  id             String   @id @default(cuid())
+  organizationId String
+  url            String
+  caption        String?
+  sortOrder      Int      @default(0)
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, sortOrder])
 }
 
 model OrganizationMember {
@@ -178,6 +200,8 @@ model Location {
   timezone       String   @default("Asia/Manila")
   address        String?
   area           String?
+  /// City shown on marketplace cards (defaults to Manila).
+  city           String?  @default("Manila")
   /// Optional branch phone shown on the salon storefront.
   phone          String?
   active         Boolean  @default(true)

@@ -19,12 +19,14 @@ export type MarketplaceListing = PublicListingProfile & {
   name: string;
   slug: string;
   coverImageUrl: string | null;
+  photoCount: number;
   cardHighlights: string[];
   locations: {
     id: string;
     name: string;
     address: string | null;
     area: string | null;
+    city: string | null;
     isDefault: boolean;
   }[];
   serviceCount: number;
@@ -114,8 +116,9 @@ export async function listMarketplaceOrganizations(input: {
       published: true,
       services: { some: staffedService },
     },
-    orderBy: { name: "asc" },
+    orderBy: [{ listingTier: "desc" }, { name: "asc" }],
     include: {
+      photos: { select: { id: true }, orderBy: { sortOrder: "asc" } },
       locations: {
         where: {
           ...publicLocationWhere,
@@ -150,7 +153,11 @@ export async function listMarketplaceOrganizations(input: {
         name: org.name,
         slug: org.slug,
         coverImageUrl: org.coverImageUrl,
-        locations: org.locations,
+        photoCount: org.photos.length || (org.coverImageUrl ? 1 : 0),
+        locations: org.locations.map((loc) => ({
+          ...loc,
+          city: loc.city ?? "Manila",
+        })),
         serviceCount: org._count.services,
         cardHighlights: cardHighlights(listing.highlights, listing.listingTier),
         ...listing,
