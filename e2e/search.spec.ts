@@ -55,8 +55,8 @@ test.describe("search marketplace", () => {
 
     await expect(page.getByTestId(`business-${DEMO_ORG_SLUG}`)).toBeVisible();
     await expect(
-      page.getByTestId(`business-${DEMO_ORG_SLUG}`).getByText("Makati", { exact: true }),
-    ).toBeVisible();
+      page.getByTestId(`business-${DEMO_ORG_SLUG}`).getByTestId("trust-signal-row"),
+    ).toHaveText(/Makati/);
     await expect(page.getByTestId(`business-${LUXE_ORG_SLUG}`)).toHaveCount(0);
     await expect(page.getByTestId(`business-${GLOW_ORG_SLUG}`)).toHaveCount(0);
   });
