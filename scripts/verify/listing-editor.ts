@@ -41,6 +41,17 @@ async function main() {
 
   const premium = orgs.filter((o) => isPremiumListing(o.listingTier));
   const standard = orgs.filter((o) => !isPremiumListing(o.listingTier));
+  const luxe = orgs.find((o) => o.slug === "luxe-hair-lounge");
+
+  if (luxe) {
+    if (luxe.photos.length < 2) {
+      throw new Error("Premium Luxe org should have multiple listing photos.");
+    }
+    const theme = resolveListingTheme(luxe.listingTheme, luxe.accentColor, luxe.listingTier);
+    if (theme.accentColor === "#18181B") {
+      throw new Error("Premium Luxe org should have a custom accent theme.");
+    }
+  }
 
   console.log(
     `listing-editor: ${orgs.length} orgs (${premium.length} premium, ${standard.length} standard)`,

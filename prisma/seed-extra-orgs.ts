@@ -1,3 +1,4 @@
+import type { Prisma } from "@/app/generated/prisma/client";
 import { OrgRole, Role, Weekday } from "@/app/generated/prisma/enums";
 import { auth } from "@/lib/auth";
 import {
@@ -68,6 +69,14 @@ async function ensureOrg(
     websiteUrl?: string;
     galleryUrls?: string[];
     featuredServiceName?: string;
+    listingTheme?: {
+      backgroundColor: string;
+      textColor: string;
+      accentColor: string;
+      fontScale: "sm" | "md" | "lg";
+    };
+    storefrontLayout?: string[];
+    listingPresets?: Prisma.InputJsonValue;
   },
 ) {
   const coverImageUrl = salonCoverPath(slug);
@@ -91,6 +100,13 @@ async function ensureOrg(
       websiteUrl: profile?.websiteUrl ?? null,
       galleryUrls: profile?.galleryUrls ?? [],
       photoLimit: profile?.listingTier === "PREMIUM" ? 6 : 1,
+      ...(profile?.listingTheme
+        ? { listingTheme: profile.listingTheme as Prisma.InputJsonValue }
+        : {}),
+      ...(profile?.storefrontLayout
+        ? { storefrontLayout: profile.storefrontLayout as Prisma.InputJsonValue }
+        : {}),
+      ...(profile?.listingPresets ? { listingPresets: profile.listingPresets } : {}),
     },
     create: {
       name,
@@ -109,6 +125,13 @@ async function ensureOrg(
       websiteUrl: profile?.websiteUrl ?? null,
       galleryUrls: profile?.galleryUrls ?? [],
       photoLimit: profile?.listingTier === "PREMIUM" ? 6 : 1,
+      ...(profile?.listingTheme
+        ? { listingTheme: profile.listingTheme as Prisma.InputJsonValue }
+        : {}),
+      ...(profile?.storefrontLayout
+        ? { storefrontLayout: profile.storefrontLayout as Prisma.InputJsonValue }
+        : {}),
+      ...(profile?.listingPresets ? { listingPresets: profile.listingPresets } : {}),
     },
   });
 
@@ -407,6 +430,23 @@ export async function seedGlowNailsStudio() {
 }
 
 export async function seedLuxeHairLounge() {
+  const warmTheme = {
+    backgroundColor: "#FFF7ED",
+    textColor: "#1C1917",
+    accentColor: "#EA580C",
+    fontScale: "lg" as const,
+  };
+  const galleryFirstLayout = [
+    "hero",
+    "gallery",
+    "about",
+    "highlights",
+    "services",
+    "locations",
+    "staff",
+    "social",
+  ];
+
   const org = await ensureOrg(LUXE_ORG_SLUG, "Luxe Hair Lounge", true, {
     description: "Precision cuts and blowouts in Ortigas. Book one or more services in a single slot.",
     phone: "+63 2 8888 0300",
@@ -414,15 +454,42 @@ export async function seedLuxeHairLounge() {
     tagline: "Precision cuts and luxury blowouts in Ortigas",
     highlights: ["Senior stylists on every visit", "Premium product lines", "Same-day booking"],
     logoUrl: `/images/salons/${LUXE_ORG_SLUG}.jpg`,
-    accentColor: "#9333EA",
+    accentColor: warmTheme.accentColor,
     instagramUrl: "https://instagram.com/luxehairlounge",
     facebookUrl: "https://facebook.com/luxehairlounge",
     websiteUrl: "https://luxehairlounge.example.com",
     galleryUrls: [
       `/images/salons/${LUXE_ORG_SLUG}.jpg`,
       `/images/salons/beautybook-demo.jpg`,
+      `/images/salons/glow-nails-studio.jpg`,
+    ],
+    listingTheme: warmTheme,
+    storefrontLayout: galleryFirstLayout,
+    listingPresets: [
+      {
+        id: "warm-launch",
+        name: "Warm launch",
+        theme: warmTheme,
+        layout: galleryFirstLayout,
+        savedAt: new Date().toISOString(),
+      },
     ],
   });
+
+  const photos = await prisma.listingPhoto.findMany({
+    where: { organizationId: org.id },
+    orderBy: { sortOrder: "asc" },
+  });
+  const captions = ["Salon exterior", "Signature colour work", "Relaxing waiting lounge"];
+  for (let index = 0; index < photos.length; index += 1) {
+    const photo = photos[index];
+    if (!photo) continue;
+    await prisma.listingPhoto.update({
+      where: { id: photo.id },
+      data: { caption: captions[index] ?? null },
+    });
+  }
+
   const ortigas = await ensureLocation(org.id, {
     name: "Ortigas branch",
     address: "Ortigas Center, Pasig",

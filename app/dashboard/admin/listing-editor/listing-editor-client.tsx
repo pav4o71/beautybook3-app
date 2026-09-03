@@ -24,6 +24,7 @@ import {
   reorderListingPhotosAction,
   saveListingCustomizationAction,
   saveListingPresetAction,
+  applyListingPresetAction,
   setPhotoLimitAction,
   updatePhotoCaptionAction,
   uploadListingPhotoAction,
@@ -168,13 +169,36 @@ export function ListingEditorClient({
 
   const handleSavePreset = () => {
     startTransition(async () => {
-      const res = await saveListingPresetAction(presetName);
+      const res = await saveListingPresetAction(
+        presetName,
+        JSON.stringify(draft.theme),
+        JSON.stringify(draft.layout),
+      );
       if (res.error) {
         setError(res.error);
         return;
       }
       setMessage("Preset saved.");
       setPresetName("");
+      window.location.reload();
+    });
+  };
+
+  const handleApplyPreset = (presetId: string) => {
+    const preset = initialState.presets.find((entry) => entry.id === presetId);
+    if (!preset) return;
+    setDraft((prev) => ({
+      ...prev,
+      theme: preset.theme,
+      layout: preset.layout,
+    }));
+    startTransition(async () => {
+      const res = await applyListingPresetAction(presetId);
+      if (res.error) {
+        setError(res.error);
+        return;
+      }
+      setMessage(`Applied preset "${preset.name}".`);
     });
   };
 
@@ -449,13 +473,7 @@ export function ListingEditorClient({
                     <button
                       type="button"
                       className="text-zinc-900 underline hover:text-zinc-700"
-                      onClick={() =>
-                        setDraft((prev) => ({
-                          ...prev,
-                          theme: preset.theme,
-                          layout: preset.layout,
-                        }))
-                      }
+                      onClick={() => handleApplyPreset(preset.id)}
                     >
                       Apply &quot;{preset.name}&quot;
                     </button>

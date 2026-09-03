@@ -243,7 +243,11 @@ export async function deleteListingPhotoAction(photoId: string): Promise<ActionF
   return {};
 }
 
-export async function saveListingPresetAction(name: string): Promise<ActionFormState> {
+export async function saveListingPresetAction(
+  name: string,
+  themeJson?: string,
+  layoutJson?: string,
+): Promise<ActionFormState> {
   const { organizationId, organization } = await requireActiveOrgAdmin();
 
   if (!isPremiumListing(organization.listingTier)) {
@@ -260,9 +264,20 @@ export async function saveListingPresetAction(name: string): Promise<ActionFormS
     return { error: "Organization not found." };
   }
 
+  let themeSource: unknown = org.listingTheme;
+  let layoutSource: unknown = org.storefrontLayout;
+  if (themeJson && layoutJson) {
+    try {
+      themeSource = JSON.parse(themeJson);
+      layoutSource = JSON.parse(layoutJson);
+    } catch {
+      return { error: "Invalid preset theme or layout." };
+    }
+  }
+
   const draftParsed = listingEditorDraftSchema.safeParse({
-    theme: org.listingTheme,
-    layout: org.storefrontLayout,
+    theme: themeSource,
+    layout: layoutSource,
     tagline: org.tagline ?? "",
     highlights: org.highlights,
     featuredServiceId: org.featuredServiceId ?? "",
@@ -294,6 +309,47 @@ export async function saveListingPresetAction(name: string): Promise<ActionFormS
     await prisma.organization.update({
       where: { id: organizationId },
       data: { listingPresets: [...presets, preset] },
+    });
+  } catch (error) {
+    return actionError(error);
+  }
+
+  revalidateListingPaths(organization.slug);
+  return {};
+}
+
+export async function applyListingPresetAction(presetId: string): Promise<ActionFormState> {
+  const { organizationId, organization } = await requireActiveOrgAdmin();
+
+  if (!isPremiumListing(organization.listingTier)) {
+    return { error: "Presets require a Premium listing." };
+  }
+
+  const org = await prisma.organization.findUnique({ where: { id: organizationId } });
+  if (!org) {
+    return { error: "Organization not found." };
+  }
+
+  let presets: import("@/lib/listing-editor").ListingPreset[] = [];
+  try {
+    presets = listingPresetsSchema.parse(org.listingPresets);
+  } catch {
+    presets = [];
+  }
+
+  const preset = presets.find((entry) => entry.id === presetId);
+  if (!preset) {
+    return { error: "Preset not found." };
+  }
+
+  try {
+    await prisma.organization.update({
+      where: { id: organizationId },
+      data: {
+        listingTheme: preset.theme,
+        storefrontLayout: preset.layout,
+        accentColor: preset.theme.accentColor,
+      },
     });
   } catch (error) {
     return actionError(error);

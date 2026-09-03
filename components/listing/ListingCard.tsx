@@ -54,7 +54,15 @@ export function ListingCard({
   return (
     <Wrapper
       className={`${surfaceInteractiveClass} relative flex h-full flex-col overflow-hidden ${premium ? "border-2" : ""}`}
-      style={themeCardBorderStyle(theme, listing.listingTier)}
+      style={{
+        ...themeCardBorderStyle(theme, listing.listingTier),
+        ...(premium
+          ? {
+              backgroundColor: theme.backgroundColor,
+              color: theme.textColor,
+            }
+          : undefined),
+      }}
       data-testid={`business-${listing.slug}`}
     >
       {premium ? (
@@ -111,37 +119,47 @@ export function ListingCard({
 
       <div className="flex flex-1 flex-col p-4">
         {preview ? (
-          <h2 className="line-clamp-1 text-lg font-semibold tracking-tight text-zinc-900">
+          <h2
+            className={`line-clamp-1 text-lg font-semibold tracking-tight ${premium ? "" : "text-zinc-900"}`}
+          >
             {listing.name}
           </h2>
         ) : (
           <Link href={salonHref} className={`inline-block rounded-sm ${focusRingClass}`}>
-            <h2 className="line-clamp-1 text-lg font-semibold tracking-tight text-zinc-900 hover:text-zinc-700">
+            <h2
+              className={`line-clamp-1 text-lg font-semibold tracking-tight ${premium ? "hover:opacity-80" : "text-zinc-900 hover:text-zinc-700"}`}
+            >
               {listing.name}
             </h2>
           </Link>
         )}
 
         {listing.tagline ? (
-          <p className="mt-0.5 line-clamp-1 text-sm text-zinc-600">{listing.tagline}</p>
+          <p className={`mt-0.5 line-clamp-1 text-sm ${premium ? "opacity-80" : "text-zinc-600"}`}>
+            {listing.tagline}
+          </p>
         ) : (
           <p className="mt-0.5 min-h-5" aria-hidden="true" />
         )}
 
         {listing.featuredService ? (
-          <p className="mt-1 line-clamp-1 text-sm text-zinc-600">
+          <p className={`mt-1 line-clamp-1 text-sm ${premium ? "opacity-80" : "text-zinc-600"}`}>
             From{" "}
-            <span className="font-medium text-zinc-900">
+            <span className={`font-medium ${premium ? "" : "text-zinc-900"}`}>
               {formatPrice(listing.featuredService.priceCents)}
             </span>
             {" · "}
             {listing.featuredService.name}
           </p>
         ) : (
-          <p className="mt-1 min-h-5 text-sm text-zinc-500">No bookable services yet</p>
+          <p className={`mt-1 min-h-5 text-sm ${premium ? "opacity-60" : "text-zinc-500"}`}>
+            No bookable services yet
+          </p>
         )}
 
-        <ListingLocationLine city={listing.city} area={listing.area} />
+        <div className={premium ? "opacity-80" : ""}>
+          <ListingLocationLine city={listing.city} area={listing.area} />
+        </div>
 
         {listing.cardHighlights.length > 0 ? (
           premium ? (
