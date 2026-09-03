@@ -53,7 +53,7 @@ export function ListingCard({
 
   return (
     <Wrapper
-      className={`${surfaceInteractiveClass} relative flex h-full flex-col overflow-hidden ${premium ? "!border-2" : ""}`}
+      className={`${surfaceInteractiveClass} bb-card-lift relative flex h-full flex-col overflow-hidden ${premium ? "!border-2" : ""}`}
       style={{
         ...themeCardBorderStyle(theme, listing.listingTier),
         ...(premium

@@ -1,5 +1,6 @@
 import { EmptyState } from "@/components/empty-state";
 import { BusinessCard } from "@/components/booking/BusinessCard";
+import { Reveal } from "@/components/motion/Reveal";
 import type { MarketplaceListing } from "@/lib/marketplace";
 import { secondaryButtonClass } from "@/lib/ui";
 import Link from "next/link";
@@ -28,10 +29,10 @@ export function BusinessResults({
 
   return (
     <ul className="grid gap-4 sm:grid-cols-2">
-      {listings.map((listing) => (
-        <li key={listing.id}>
+      {listings.map((listing, index) => (
+        <Reveal key={listing.id} as="li" index={index} className="h-full">
           <BusinessCard listing={listing} serviceName={serviceName} />
-        </li>
+        </Reveal>
       ))}
     </ul>
   );

@@ -1,3 +1,5 @@
+import { AreaMarquee } from "@/components/motion/AreaMarquee";
+import { HeroAtmosphere } from "@/components/motion/HeroAtmosphere";
 import { SiteHeader } from "@/components/site-header";
 import { isManilaArea } from "@/lib/areas";
 import { formatDay } from "@/lib/format";
@@ -9,7 +11,7 @@ import {
   searchMarketplaceAvailability,
 } from "@/lib/marketplace";
 import { parseSalonIsoDate, parseSalonTime, salonIsoDate } from "@/lib/timezone";
-import { pageLeadClass, pageMainClass, pageTitleClass, sectionTitleClass } from "@/lib/ui";
+import { pageLeadClass, pageMainClass, sectionTitleClass } from "@/lib/ui";
 import { firstQueryValue } from "@/lib/validations/booking";
 import { AvailabilityResults } from "./search/availability-results";
 import { BusinessResults } from "./search/business-results";
@@ -69,13 +71,21 @@ export default async function Home({
     <>
       <SiteHeader />
       <main className={pageMainClass}>
-        <div className="space-y-2">
-          <h1 className={pageTitleClass}>Find a salon</h1>
-          <p className={pageLeadClass}>
-            Browse hair and nail salons in Manila. Pick a service, then book a slot — pay
-            at the salon when you arrive.
+        <HeroAtmosphere>
+          <p className="font-[family-name:var(--font-display)] text-4xl font-semibold tracking-tight text-stone-900 sm:text-5xl">
+            BeautyBook
           </p>
-        </div>
+          <h1 className="mt-3 max-w-xl font-[family-name:var(--font-display)] text-xl font-medium tracking-tight text-stone-800 sm:text-2xl">
+            Find a salon
+          </h1>
+          <p className={`${pageLeadClass} mt-2 text-stone-600`}>
+            Browse hair and nail salons in Manila. Pick a service, then book a slot — pay at
+            the salon when you arrive.
+          </p>
+          <div className="mt-6">
+            <AreaMarquee />
+          </div>
+        </HeroAtmosphere>
 
         <section aria-labelledby="discovery-filters" className="space-y-3">
           <h2 id="discovery-filters" className="sr-only">

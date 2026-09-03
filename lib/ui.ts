@@ -12,7 +12,7 @@ export const labelClass = "block space-y-1.5 text-sm";
 export const labelTextClass = "font-medium text-zinc-900";
 
 export const brandLinkClass =
-  `rounded-sm text-sm font-semibold tracking-tight text-zinc-900 ${focusRingClass}`;
+  `rounded-sm text-sm font-semibold tracking-tight text-stone-900 ${focusRingClass}`;
 
 export const textLinkClass =
   `inline-flex min-h-10 items-center rounded-sm px-2 text-sm text-zinc-600 hover:text-zinc-900 ${focusRingClass}`;
