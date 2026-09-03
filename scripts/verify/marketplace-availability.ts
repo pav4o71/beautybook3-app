@@ -69,16 +69,22 @@ async function main() {
     "Hair availability must not include Glow Nail Studio",
   );
 
+  // Anchor the preferred-time filter on a real slot for this calendar day.
+  // Hardcoding "10:00" flakes when the first open day only has afternoon inventory
+  // (e.g. mornings already passed in Manila).
+  const anchorTime = formatTime(results[0].startsAt);
   const timed = await searchMarketplaceAvailability({
     categorySlug: "hair",
     date,
-    time: "10:00",
+    time: anchorTime,
   });
-  assert(timed.length > 0, "10:00 hair search should keep nearby slots");
+  assert(timed.length > 0, `${anchorTime} hair search should keep nearby slots`);
+  const [anchorHours, anchorMinutes] = anchorTime.split(":").map(Number);
+  const anchorMinutesOfDay = anchorHours * 60 + anchorMinutes;
   assert(
     timed.every((row) => {
       const [hours, minutes] = formatTime(row.startsAt).split(":").map(Number);
-      return Math.abs(hours * 60 + minutes - 10 * 60) <= 30;
+      return Math.abs(hours * 60 + minutes - anchorMinutesOfDay) <= 30;
     }),
     "Time filter must keep slots within ±30 minutes",
   );
