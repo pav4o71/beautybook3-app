@@ -12,6 +12,7 @@ const scripts = [
   "marketplace-search.ts",
   "marketplace-availability.ts",
   "org-scope.ts",
+  "org-roles.ts",
   "slots.ts",
   "booking.ts",
   "appointments.ts",
