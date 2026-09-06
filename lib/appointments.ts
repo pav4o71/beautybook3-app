@@ -53,7 +53,7 @@ export async function getAppointmentsForDay(organizationId: string, day: Date = 
       startsAt: { gte: start, lt: end },
     },
     include: {
-      customer: { select: { id: true, name: true, email: true } },
+      customer: { select: { id: true, name: true, email: true, phone: true } },
       staff: true,
       services: {
         include: { service: true },
