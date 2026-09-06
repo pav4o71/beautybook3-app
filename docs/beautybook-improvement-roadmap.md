@@ -1,6 +1,10 @@
 # BeautyBook Improvement Roadmap
 
-**Date:** 2026-09-03  
+> **Status (as of 2026-09-06):**
+> - **Phase 1 (Marketplace conversion foundations):** **COMPLETE & MERGED** in PR #27 (`b63bb8d`). Features 1–6 (Sticky CTA, service-first search, quick availability filters, next available badges, trust signals, card polish) are canonical in main.
+> - **Phase 2 (Better booking & retention) & Phase 3 (Premium salon mini-sites):** Active future roadmap.
+
+**Date:** 2026-09-03
 **Companion audit:** [`beautybook-product-audit.md`](./beautybook-product-audit.md)
 
 Product phases below are **marketplace / conversion** phases. They do not replace SaaS infra phases in [`saas-next-steps.md`](./saas-next-steps.md).
@@ -36,7 +40,7 @@ Product phases below are **marketplace / conversion** phases. They do not replac
 
 ---
 
-## Phase 1 — Marketplace conversion foundations
+## Phase 1 — Marketplace conversion foundations (**COMPLETE — Merged in PR #27**)
 
 **Goal:** Make discover → compare → book clearer on mobile and desktop without new payment/review schema.
 

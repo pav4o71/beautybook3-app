@@ -68,9 +68,9 @@ npm run verify
 
 ## Screenshots (if UI changes)
 
-Before: 
+Before:
 
-After: 
+After:
 
 ## Deployment Notes
 
@@ -88,7 +88,7 @@ After:
 ### Rollback Plan
 If this needs to be reverted:
 1. Revert this PR
-2. Rollback migration: `npm run prisma:migrate:rollback`
+2. Revert migration via compensating migration / SQL script (Prisma has no automated rollback)
 3. Restore from backup (if needed)
 
 ## Security Checklist
