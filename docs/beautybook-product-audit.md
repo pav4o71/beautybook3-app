@@ -1,7 +1,12 @@
 # BeautyBook Product Audit
 
-**Date:** 2026-09-03  
-**Scope:** Marketplace discovery, salon storefront, booking conversion path  
+> [!NOTE]
+> **Status: Historical baseline audit (2026-09-03).**
+> This document records the marketplace and storefront audit prior to PR #27 (`feat/marketplace-conversion`).
+> For current architecture and setup, see [`README.md`](../README.md) and [`docs/architecture.md`](./architecture.md).
+
+**Date:** 2026-09-03
+**Scope:** Marketplace discovery, salon storefront, booking conversion path
 **Codebase:** BeautyBook3 (`beautybook3-app`) — multi-tenant salon booking SaaS
 
 > Product phases in this document (marketplace conversion) are **distinct** from the SaaS infrastructure phases in [`IMPLEMENTATION-PHASES.md`](./IMPLEMENTATION-PHASES.md) and [`saas-next-steps.md`](./saas-next-steps.md).

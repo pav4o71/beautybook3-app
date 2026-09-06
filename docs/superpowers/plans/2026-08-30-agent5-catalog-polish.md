@@ -1,5 +1,10 @@
 # Agent 5 — Catalog CRUD Polish Implementation Plan
 
+> [!NOTE]
+> **Status: Historical agent plan (2026-08-30).**
+> This reflects subagent task planning for Phase 2C catalog polish.
+> For current architecture and setup, see [`README.md`](../../README.md) and [`docs/architecture.md`](../architecture.md).
+
 > **Status:** Implemented.
 
 **Goal:** Improve admin catalog UX while staying schema-faithful. PHP pricing from Agent 1 is assumed done.

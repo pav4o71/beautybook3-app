@@ -1,8 +1,16 @@
 ---
 description: BeautyBook3 SaaS - Multi-Tenant Platform Rules
 globs: **/*
-alwaysApply: true
+alwaysApply: false
 ---
+
+> [!WARNING]
+> **Status: Historical / Superseded Planning Document.**
+> This file is an early aspirational draft from the initial SaaS design phase. It contains hypothetical APIs and schema sketches (e.g. `requireOrgMembership`, `organization.isActive`, `scheduledAt`) that were refined during canonical implementation.
+> For current conventions and technical truth, refer to:
+> - Active conventions: [`.cursor/rules/beautybook3.mdc`](./beautybook3.mdc)
+> - Technical architecture: [`docs/architecture.md`](../../docs/architecture.md)
+> - Primary guide: [`README.md`](../../README.md)
 
 ## Project Overview
 
@@ -54,18 +62,18 @@ import { prisma } from '@/lib/prisma';
 export async function requireOrgMembership(organizationId: string) {
   const session = await getSession();
   if (!session?.user) throw new Error('Unauthorized');
-  
+
   const membership = await prisma.organizationMember.findFirst({
     where: {
       userId: session.user.id,
       organizationId,
     },
   });
-  
+
   if (!membership) {
     throw new Error('Access denied to this organization');
   }
-  
+
   return membership;
 }
 ```
@@ -90,7 +98,7 @@ export async function createAppointmentWithServices(data: CreateAppointmentData)
         status: 'PENDING',
       }
     });
-    
+
     await tx.appointmentService.createMany({
       data: data.services.map(service => ({
         appointmentId: appointment.id,
@@ -98,7 +106,7 @@ export async function createAppointmentWithServices(data: CreateAppointmentData)
         price: service.price,
       }))
     });
-    
+
     return appointment;
   });
 }
@@ -129,20 +137,20 @@ import { revalidatePath } from 'next/cache';
 export async function createServiceAction(formData: FormData) {
   const session = await getSession();
   if (!session?.user) throw new Error('Unauthorized');
-  
+
   const organizationId = formData.get('organizationId') as string;
-  
+
   // Verify membership
   await requireOrgMembership(organizationId);
-  
+
   const name = formData.get('name') as string;
   const priceCents = parseInt(formData.get('priceCents') as string);
-  
+
   // Validate
   if (!name || priceCents <= 0) {
     throw new Error('Invalid service data');
   }
-  
+
   // Create
   await prisma.service.create({
     data: {
@@ -151,7 +159,7 @@ export async function createServiceAction(formData: FormData) {
       priceCents,
     }
   });
-  
+
   revalidatePath(`/dashboard/org/${organizationId}/services`);
 }
 ```
@@ -173,7 +181,7 @@ export async function createServiceAction(formData: FormData) {
 export default async function ServicesPage() {
   const session = await getSession();
   const services = await listServices(session.organizationId);
-  
+
   return (
     <div>
       <h1>Services</h1>
@@ -187,7 +195,7 @@ export default async function ServicesPage() {
 
 export function ServiceList({ services }) {
   const [selected, setSelected] = useState(null);
-  
+
   return (
     <ul>
       {services.map(service => (
@@ -215,9 +223,9 @@ export async function updateServiceAction(formData: FormData) {
     if (!session?.user) {
       return { error: 'Unauthorized' };
     }
-    
+
     // ... operation
-    
+
     return { success: true };
   } catch (error) {
     console.error('Failed to update service:', error);
@@ -232,17 +240,17 @@ export async function updateServiceAction(formData: FormData) {
 
 export function ServiceForm() {
   const [error, setError] = useState<string | null>(null);
-  
+
   const handleSubmit = async (formData: FormData) => {
     const result = await updateServiceAction(formData);
-    
+
     if (result.error) {
       setError(result.error);
     } else {
       // Success
     }
   };
-  
+
   return (
     <form action={handleSubmit}>
       {error && <div className="error-alert">{error}</div>}
@@ -283,7 +291,7 @@ export function ServiceForm() {
 **Verify Scripts:**
 - Use `npm run verify` for integration tests
 - Scripts in `scripts/verify/`
-- Guard with `VERIFY_ALLOW_REMOTE=1` for hosted DB
+- Guarded by fail-closed local test DB safety; no remote bypass is permitted
 
 **Test Coverage:**
 - Minimum 80% for new features

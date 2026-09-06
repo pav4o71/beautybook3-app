@@ -1,5 +1,10 @@
 # Schedule + PHP + Booking UX Implementation Plan
 
+> [!NOTE]
+> **Status: Historical agent plan (2026-08-30).**
+> This reflects subagent task planning for schedule and PHP booking UX.
+> For current architecture and setup, see [`README.md`](../../README.md) and [`docs/architecture.md`](../architecture.md).
+
 > **For agentic workers:** Run Agents 1–3 in parallel, then Agent 4 (schedule UI) and Agent 5 (catalog polish) after merges.
 
 **Goal:** PHP pricing, visible pay-at-salon booking UX, and slot engine that respects TimeOff.

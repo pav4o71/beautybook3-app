@@ -1,122 +1,65 @@
-# SaaS Next Steps (after Phase 1 merge)
+# SaaS Progress & Next Steps
 
-Phase 1 (multi-tenant foundation) is implemented in PR #3. Phase 2 (multi-location + marketplace) is complete in PRs #4–#6. Phase 5 (hardening) is complete in PRs #7–#10. Phase 7 (salon storefront + multi-service booking) is complete in PR #19.
+**Status:** Living Document
+**Canonical Reference:** Up to date with canonical `origin/main` (`b63bb8da66963c89db9f8c6a621802ce0a028e20`)
+**Companion Documents:** [`README.md`](../README.md), [`docs/architecture.md`](./architecture.md), [`docs/beautybook-improvement-roadmap.md`](./beautybook-improvement-roadmap.md)
 
-## Completed in Phase 1
+---
 
-- [x] `Organization`, `Location`, `OrganizationMember`, `OrgRole`
-- [x] Nullable → backfilled → NOT NULL `organizationId` / `locationId` on catalog & booking models
-- [x] Org-scoped libs (`catalog`, `booking`, `schedule`, `appointments`)
-- [x] Active org cookie + switcher + `requireActiveOrgContext()` / `requireActiveOrgAdmin()`
-- [x] Public routes: `/marketplace`, `/s/[orgSlug]`, `/s/[orgSlug]/book`
-- [x] Onboarding (`/onboarding`) + admin business settings
-- [x] Zod validation on key server actions
-- [x] Middleware security headers + auth rate limit (production only)
-- [x] CI: Postgres service, migrate, seed, verify, E2E
+## 1. Completed Integration Phases
 
-See also: [`docs/saas-upgrade-progress.md`](./saas-upgrade-progress.md), [`docs/IMPLEMENTATION-PHASES.md`](./IMPLEMENTATION-PHASES.md).
+| Phase / Focus | Merged PRs | Summary of Deliverables |
+|---|---|---|
+| **Phase 1: Multi-Tenant Foundation** | PR #3 | `Organization`, `Location`, `OrganizationMember`, `OrgRole`; tenant scoping on catalog & bookings; active org cookies; onboarding flow. |
+| **Phase 2: Multi-Location & Marketplace** | PRs #4–#6 | Admin location CRUD; branch switcher; branch-scoped bookings; marketplace category filters & `BusinessCard`. |
+| **Phase 3: Hosted Supabase Alignment** | Ops / PR #3 | Migrations deployment; session pooler verification; fail-closed local test safety guard. |
+| **Phase 5: Hardening & Isolation** | PRs #7–#10 | Staff schedule location assignment; cross-tenant isolation E2E (`e2e/isolation.spec.ts`); `verify/org-scope.ts`. |
+| **Phase 6: Search-First Marketplace UI** | PRs #12–#15 | `Location.area` column; 14 Manila areas; landing search filters; cross-org availability search. |
+| **Phase 7: Storefront & Multi-Service** | PRs #17, #19 | Salon storefront (`/s/[orgSlug]`), multi-service picker (`ServicePicker`, max 6 services, max 240 min), profile fields, `AppointmentService` uniqueness. |
+| **UI Polish & Marketplace E2E** | PR #20 | Shared surfaces, `PageHeader`, alert tokens, URL encoding handling in marketplace redirects. |
+| **Fail-Closed Local DB Safety** | PR #23 | Enforced `assertLocalOnlyDatabase()` in `lib/test-only-local-db.ts`; eliminated remote test bypass entirely. |
+| **Organization-Role Authorization Gate** | PR #24 | Admin routes gated strictly by active `OrgRole` (`OWNER` or `ADMIN`); removed `User.role === ADMIN` gate; no superadmin path. |
+| **Organization-Scoped Booking Safety** | PR #25 | Scoped staff time-off queries in `lib/booking.ts` and `lib/schedule.ts` strictly by `organizationId`. |
+| **Default Location Integrity & Index** | PR #26 | Enforced partial unique index `Location_one_default_per_org` (**at most one default location per organization**) and index on `Organization(published)`. |
+| **Marketplace Conversion Foundations** | PR #27 | Service-first discovery; quick availability filters (`today`, `tomorrow`, `weekend`, `open`, `earliest`); next-available badges; trust signals; card deep-link booking CTA; sticky mobile CTA. |
 
-## Phase 2 — Multi-location & marketplace depth — **complete**
+---
 
-**Plan:** [`docs/saas-phase-2-plan.md`](./saas-phase-2-plan.md)
+## 2. Current Canonical Test Baseline
 
-| PR | Item | Status |
-|----|------|--------|
-| #4 | Location admin CRUD | Merged |
-| #5 | Location switcher + branch-scoped booking | Merged |
-| #6 | Marketplace category filters + `BusinessCard` | Merged |
+- **Verify Suite (`npm run verify`):** **11 scripts** executed by `scripts/verify/run-all.ts`:
+  `format.ts`, `local-db-guard.ts`, `seed-counts.ts`, `areas.ts`, `marketplace-search.ts`, `marketplace-availability.ts`, `org-scope.ts`, `org-roles.ts`, `slots.ts`, `booking.ts`, `appointments.ts`.
+- **Playwright E2E Suite (`npm run test:e2e`):** **34 tests** across 11 spec files:
+  `admin-appointments.spec.ts` (4), `auth.spec.ts` (5), `booking.spec.ts` (4), `catalog.spec.ts` (3), `isolation.spec.ts` (3), `location-booking.spec.ts` (1), `locations.spec.ts` (2), `onboarding.spec.ts` (1), `salon-storefront.spec.ts` (3), `search-availability.spec.ts` (2), `search.spec.ts` (6).
 
-**Deferred:** org invites (2D) — not planned for now.
+---
 
-## Phase 3 — Hosted Supabase alignment — **complete**
+## 3. Marketplace & Storefront Flow (Verified Behavior)
 
-| Item | Status |
-|------|--------|
-| Apply migrations B/C on hosted DB | Done — [`docs/supabase-migration-runbook.md`](./supabase-migration-runbook.md) |
-| Staging `DATABASE_URL` at Supabase pooler | Done — smoke-tested 2026-08-30 |
-| Verify/seed/e2e local-only DB guard | Done — fail-closed; no `VERIFY_ALLOW_REMOTE` bypass |
+- **Marketplace Discovery (`/`):**
+  - Service-first header: "What would you like to book?"
+  - Category chips + service chips + Manila area `<select>` + date/time inputs.
+  - Quick availability pills: `today`, `tomorrow`, `weekend`, `open`, `earliest`.
+  - Salon cards show real next-available badges, trust signals, and featured service duration/pricing.
+  - **"Book now"** CTA deep-links to `/s/{slug}/book?serviceId=...` using the next available service or featured service (falls back to `/s/{slug}#services` if no bookable service is found; note `BusinessCard` does not add `locationId`, unlike cross-org availability results).
+  - **"View salon"** link opens `/s/{slug}` (preserving the selected service-name query parameter when one exists).
+- **Storefront (`/s/{slug}`):** Catalog, opening hours from schedules, multi-service cart with sticky total bar.
+- **Public Booking (`/s/{slug}/book`):** Supports both anonymous guest booking and logged-in customers.
 
-## Phase 4 — Billing (deferred)
+---
 
-- Stripe Connect or per-org subscriptions
-- Plan limits (staff count, locations)
-- Not started — keep pay-at-salon copy until then
+## 4. Current Next Steps & Future Backlog
 
-## Phase 5 — Hardening — **complete**
+### Product Enhancements (Roadmap Phase 2 & 3)
+1. **Self-Service Customer Registration:** Add public signup UI form (currently login-only; accounts are seeded).
+2. **Customer Appointment Actions:** Enable customer cancellation and rescheduling with configurable lead-time policies.
+3. **Durable Cloud Object Storage:** Integrate Cloudflare R2 or AWS S3 for salon cover images and staff photos.
+4. **Online Payments & Deposits:** Add PayMongo / Stripe Connect integration for online booking deposits or prepayments.
+5. **Customer Reviews & Verified Ratings:** Implement `Review` schema and customer review collection after completed appointments.
+6. **Transactional Notifications:** Email and SMS confirmation, reminder, and status update notifications.
 
-**Plan:** [`docs/saas-phase-5-plan.md`](./saas-phase-5-plan.md)
-
-| PR | Item | Status |
-|----|------|--------|
-| #7 | Schedule saves use `staff.locationId` (not admin cookie) | Merged |
-| #8 | Cross-org isolation E2E (`e2e/isolation.spec.ts`) | Merged |
-| #9 | Staff admin: reassign `locationId` on edit | Merged |
-| #10 | `scripts/verify/org-scope.ts` org isolation check | Merged |
-
-**Deferred:**
-
-- [ ] `middleware.ts` → Next.js `proxy` when stable (deprecation warning only)
-- [ ] Rate-limit tuning per route in production
-- [ ] Staff edit: preserve inactive location in picker (Bugbot follow-up from #9)
-
-## Phase 6 — Search-first marketplace UI — **complete**
-
-**Plan:** [`docs/saas-phase-6-plan.md`](./saas-phase-6-plan.md)
-
-**Vision:** Landing category search → list services (Hair, Nails, …) → filter by Manila area → pick day/time → see salons with real availability → book at `/s/{slug}/book`.
-
-| PR | Item | Status |
-|----|------|--------|
-| #12 | `Location.area` migration + `lib/areas.ts` + admin | Merged |
-| #13 | Landing search + `/search` service discovery | Merged |
-| #14 | Cross-org availability search + book deep-links | Merged |
-| #15 | Visual polish + E2E updates | Merged |
-
-E2E: **27** Playwright tests (`e2e/search.spec.ts`, `e2e/search-availability.spec.ts`, plus existing admin/auth/booking/isolation).
-
-**One schema change:** `Location.area` (required for area filter). Everything else is UI + `lib/marketplace` queries.
-
-**Reuse:** `components/booking/*` scaffolds, `lib/ui.ts`, `getAvailableSlots` logic, `BookingForm`.
-
-**Gates:** `npm run build`, `npm run verify`, `npm run test:e2e`
-
-## Homepage salon listings (complete)
-
-**Spec:** [`docs/superpowers/specs/2026-08-30-homepage-salon-listings-design.md`](./superpowers/specs/2026-08-30-homepage-salon-listings-design.md)
-
-Merged in PR #17.
-
-`/` is discovery: category chips → service chips → salon cards with `Organization.coverImageUrl`. `/search` and `/marketplace` redirect to `/`. Admin settings accept a cover URL or a disk upload under `public/uploads/orgs/` (not Supabase Storage). Disk uploads need a persistent host disk.
-
-## Phase 7 — Salon storefront and multi-service booking — **complete**
-
-**Spec:** [`docs/superpowers/specs/2026-08-30-salon-storefront-design.md`](./superpowers/specs/2026-08-30-salon-storefront-design.md)
-
-| PR | Item | Status |
-|----|------|--------|
-| #19 | Salon storefront + multi-service booking | Merged |
-
-`/s/{slug}` is the catalog: cover, about, phone, locations, hours from staff schedules, and a multi-select service cart. Continue books **one combined slot** (staff must offer every selected service). Caps: 6 services, 240 minutes. Pay-at-salon stays.
-
-Homepage **View salon** and **Book now** both open the salon page. Availability **Book** still deep-links to `/s/{slug}/book?serviceId=`.
-
-**Schema:** `Organization.description` / `phone`, `Location.phone`, `AppointmentService` unique on `(appointmentId, serviceId)`. Hosted Prisma includes `20260830183000_salon_profile_and_appointment_service_unique`. Live file is `prisma/schema.prisma` — do not switch the app to `prisma/schema-saas.prisma`.
-
-## Next steps
-
-1. Object storage for covers (Cloudflare R2 / S3) when deploying without a persistent disk.
-2. Deferred from earlier phases: Stripe/billing, org invites, `middleware` → `proxy`, staff edit inactive location picker, leftover E2E Branch rows in admin location switcher (public filter already hides them), geo/maps, ratings.
-
-## Local dev quick start
-
-```bash
-docker start beautybook3-pg
-export DATABASE_URL="postgresql://beautybook:beautybook@localhost:5433/beautybook?sslmode=disable"
-export BETTER_AUTH_SECRET="local-dev-better-auth-secret-min-32-chars"
-export BETTER_AUTH_URL="http://localhost:3000"
-npm run dev
-```
-
-Demo logins: `demo@beautybook.local` / `Demo1234!` (admin), `customer@beautybook.local` / `Demo1234!`
-
-Additional marketplace owners: `owner@glow-nails.local`, `owner@luxe-hair.local` (same password).
+### Technical & Infrastructure Hardening
+1. **Loading & Error Boundaries:** Add `loading.tsx` skeletons and `error.tsx` error boundaries across public marketplace and dashboard routes.
+2. **Rate Limiting Refinement:** Fine-tune per-route rate limits for public booking and search endpoints.
+3. **Next.js Proxy Migration:** Evaluate migrating `middleware.ts` to Next.js route proxying once stable.
+4. **Staff Management Follow-up:** Preserve deactivated branch in staff edit picker when viewing historical staff assignments.

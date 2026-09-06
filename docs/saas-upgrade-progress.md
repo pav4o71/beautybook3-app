@@ -1,5 +1,10 @@
 # SaaS Upgrade Progress (local Postgres session)
 
+> [!NOTE]
+> **Status: Historical session scratchpad.**
+> This reflects an early local development session (Phase 1, 5 migrations, 18 tests).
+> For current architecture and setup, see [`README.md`](../README.md) and [`docs/architecture.md`](./architecture.md).
+
 **Target DB:** Local Postgres (`postgresql://beautybook:beautybook@localhost:5433/beautybook`)
 
 ## Checklist
