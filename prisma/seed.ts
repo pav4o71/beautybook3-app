@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { DEMO_ACCOUNT, DEMO_CUSTOMER } from "@/lib/demo-account";
 import { DEMO_ORG_SLUG, salonCoverPath } from "@/lib/demo-constants";
 import { prisma } from "@/lib/prisma";
+import { assertLocalOnlyDatabase } from "@/lib/test-only-local-db";
 import {
   addSalonDays,
   salonDateAtTime,
@@ -582,6 +583,7 @@ async function seedCatalogAndStaff(tenant: TenantContext, customerId: string) {
 }
 
 async function main() {
+  assertLocalOnlyDatabase();
   const tenant = await seedOrganization();
   const admin = await seedDemoUser();
   const customer = await seedDemoCustomer();

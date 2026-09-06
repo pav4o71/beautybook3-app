@@ -46,10 +46,11 @@ Open [http://localhost:3000](http://localhost:3000). Sign in at `/login`.
 
 ### Verify & E2E
 
+Verify, seed, and Playwright global setup **refuse any database that is not an approved local test/dev database** (`localhost` or `127.0.0.1`, approved database name). There is no `VERIFY_ALLOW_REMOTE` bypass.
+
 ```bash
-# Hosted Supabase: verify scripts mutate DB — set in .env first:
-# VERIFY_ALLOW_REMOTE=1
-npm run verify        # format, seed counts, slots, booking, appointments
+# DATABASE_URL must point to an approved local database (e.g. host port 5433 / beautybook)
+npm run verify        # format, db-guard, seed counts, slots, booking, appointments
 npm run test:e2e      # Playwright (seeds DB first; starts dev server when CI=1)
 ```
 

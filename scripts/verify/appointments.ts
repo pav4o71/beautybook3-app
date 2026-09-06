@@ -1,5 +1,6 @@
 import "dotenv/config";
 import { AppointmentStatus } from "../../app/generated/prisma/enums";
+import { assertSafeVerifyTarget } from "./assert-safe-target";
 import { createAppointment, getAvailableSlots } from "../../lib/booking";
 import {
   getAppointmentsForDay,
@@ -53,6 +54,7 @@ async function pickOpenSlot(input: {
 }
 
 async function main() {
+  assertSafeVerifyTarget();
   const tenant = await getDemoTenantContext();
   const customer = await prisma.user.findFirstOrThrow({
     where: { email: "customer@beautybook.local" },
