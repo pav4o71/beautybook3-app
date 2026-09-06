@@ -2,9 +2,10 @@ import "dotenv/config";
 import { listAdminCatalog, listAdminStaffBoard } from "../../lib/catalog";
 import { GLOW_ORG_SLUG } from "../../lib/demo-constants";
 import { prisma } from "../../lib/prisma";
+import { getStaffTimeOffInRange } from "../../lib/schedule";
 import { getDemoTenantContext } from "../../lib/tenant";
 
-function assert(condition: boolean, message: string) {
+function assert(condition: unknown, message: string): asserts condition {
   if (!condition) {
     throw new Error(message);
   }
@@ -46,6 +47,29 @@ async function main() {
     !glowServiceIds.includes(demoHaircut.id),
     "Glow catalog must not include demo services",
   );
+
+  const demoTimeOff = await prisma.timeOff.findMany({
+    where: { organizationId: demo.organizationId, staffId: maya.id },
+    take: 1,
+  });
+  assert(demoTimeOff.length > 0, "Demo seed must include time off for Maya");
+
+  const [firstTimeOff] = demoTimeOff;
+  const leaked = await getStaffTimeOffInRange(
+    glowOrg.id,
+    maya.id,
+    firstTimeOff.startsAt,
+    firstTimeOff.endsAt,
+  );
+  assert(leaked.length === 0, "Time-off helper must not leak another org's staff blocks");
+
+  const scoped = await getStaffTimeOffInRange(
+    demo.organizationId,
+    maya.id,
+    firstTimeOff.startsAt,
+    firstTimeOff.endsAt,
+  );
+  assert(scoped.length > 0, "Time-off helper must find staff block within owning org");
 
   await prisma.$disconnect();
 
