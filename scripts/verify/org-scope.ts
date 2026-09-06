@@ -71,6 +71,23 @@ async function main() {
   );
   assert(scoped.length > 0, "Time-off helper must find staff block within owning org");
 
+  try {
+    await prisma.location.create({
+      data: {
+        organizationId: demo.organizationId,
+        name: "verify-second-default",
+        isDefault: true,
+      },
+    });
+    throw new Error("second default location should be rejected");
+  } catch (error) {
+    const code =
+      typeof error === "object" && error !== null && "code" in error
+        ? String(error.code)
+        : "";
+    assert(code === "P2002", `expected unique default constraint, got ${code || error}`);
+  }
+
   await prisma.$disconnect();
 
   console.log("verify-org-scope: ok", {

@@ -2,8 +2,9 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider = "prisma-client"
-  output   = "../app/generated/prisma"
+  provider        = "prisma-client"
+  output          = "../app/generated/prisma"
+  previewFeatures = ["partialIndexes"]
 }
 
 datasource db {
@@ -135,6 +136,8 @@ model Organization {
   schedules    StaffSchedule[]
   timeOff      TimeOff[]
   appointments Appointment[]
+
+  @@index([published])
 }
 
 model OrganizationMember {
@@ -174,6 +177,7 @@ model Location {
 
   @@index([organizationId])
   @@index([area])
+  @@unique([organizationId], map: "Location_one_default_per_org", where: { isDefault: true })
 }
 
 model Staff {
