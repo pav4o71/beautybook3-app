@@ -1,15 +1,17 @@
+import { MarketplaceStickyCta } from "@/components/marketplace/marketplace-sticky-cta";
 import { SiteHeader } from "@/components/site-header";
+import { isQuickAvailabilityKey } from "@/lib/availability/types";
+import { resolveQuickAvailability } from "@/lib/availability/quick-filters";
 import { isManilaArea } from "@/lib/areas";
-import { formatDay } from "@/lib/format";
 import {
   listMarketplaceCategoryFilters,
   listMarketplaceOrganizations,
   listMarketplaceServiceChips,
   listMarketplaceServices,
   searchMarketplaceAvailability,
+  searchMarketplaceAvailabilityAcrossDates,
 } from "@/lib/marketplace";
 import { parseSalonIsoDate, parseSalonTime, salonIsoDate } from "@/lib/timezone";
-import { pageLeadClass, pageMainClass, pageTitleClass, sectionTitleClass } from "@/lib/ui";
 import { firstQueryValue } from "@/lib/validations/booking";
 import { AvailabilityResults } from "./search/availability-results";
 import { BusinessResults } from "./search/business-results";
@@ -27,6 +29,7 @@ export default async function Home({
     date?: string | string[];
     time?: string | string[];
     serviceId?: string | string[];
+    avail?: string | string[];
   }>;
 }) {
   const query = await searchParams;
@@ -34,28 +37,51 @@ export default async function Home({
   const serviceName = firstQueryValue(query.service)?.trim() || undefined;
   const areaRaw = firstQueryValue(query.area)?.trim();
   const area = areaRaw && isManilaArea(areaRaw) ? areaRaw : undefined;
+  const availParam = firstQueryValue(query.avail)?.trim();
+  const quickKey =
+    availParam && isQuickAvailabilityKey(availParam) ? availParam : undefined;
+  const quick = quickKey ? resolveQuickAvailability(quickKey) : null;
+
   const dateRaw = firstQueryValue(query.date)?.trim();
-  const date = dateRaw ? parseSalonIsoDate(dateRaw) : null;
-  const timeRaw = firstQueryValue(query.time)?.trim();
-  const time = timeRaw && parseSalonTime(timeRaw) != null ? timeRaw : undefined;
+  const dateFromQuery = dateRaw ? parseSalonIsoDate(dateRaw) : null;
+  const date = dateFromQuery ?? quick?.date ?? null;
+  const timeRaw = firstQueryValue(query.time)?.trim() ?? quick?.time;
+  const time =
+    timeRaw && parseSalonTime(timeRaw) != null ? timeRaw : undefined;
   const serviceId = firstQueryValue(query.serviceId)?.trim() || undefined;
   const minDate = salonIsoDate();
+
+  const multiDates = quick?.dates;
+  const showAvailability =
+    Boolean(date) || Boolean(multiDates && multiDates.length > 0);
 
   const [categories, services, listings, availability] = await Promise.all([
     listMarketplaceCategoryFilters(),
     listMarketplaceServices({ categorySlug, area }),
-    date
+    showAvailability
       ? Promise.resolve([])
       : listMarketplaceOrganizations({ categorySlug, area, serviceName }),
-    date
-      ? searchMarketplaceAvailability({
-          categorySlug,
-          serviceId,
-          serviceName,
-          area,
-          date,
-          time,
-        })
+    showAvailability
+      ? multiDates && multiDates.length > 0
+        ? searchMarketplaceAvailabilityAcrossDates({
+            categorySlug,
+            serviceId,
+            serviceName,
+            area,
+            dates: multiDates,
+            time,
+            stopOnFirstDayWithResults: quickKey === "earliest",
+          })
+        : date
+          ? searchMarketplaceAvailability({
+              categorySlug,
+              serviceId,
+              serviceName,
+              area,
+              date,
+              time,
+            })
+          : Promise.resolve([])
       : Promise.resolve([]),
   ]);
 
@@ -63,97 +89,102 @@ export default async function Home({
   const activeCategory = categorySlug
     ? categories.find((category) => category.slug === categorySlug)
     : undefined;
-  const hasActiveFilters = Boolean(activeCategory || serviceName || area || date);
+
+  const stickyLabel = serviceName
+    ? `Book ${serviceName}`
+    : activeCategory
+      ? `Browse ${activeCategory.name}`
+      : "Find a salon";
+  const stickyHref = showAvailability
+    ? "#availability-results"
+    : "#salon-results";
+  const showSticky = Boolean(categorySlug || serviceName);
 
   return (
     <>
       <SiteHeader />
-      <main className={pageMainClass}>
-        <div className="space-y-2">
-          <h1 className={pageTitleClass}>Find a salon</h1>
-          <p className={pageLeadClass}>
-            Browse hair and nail salons in Manila. Pick a service, then book a slot — pay
-            at the salon when you arrive.
+      <main
+        className={`mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-10 ${
+          showSticky ? "pb-24 md:pb-10" : ""
+        }`}
+      >
+        <div className="space-y-1">
+          <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">
+            What would you like to book?
+          </h1>
+          <p className="text-sm text-zinc-600">
+            Choose a service, compare salons and real availability, then book in a few
+            taps. Pay at the salon when you arrive.
           </p>
         </div>
 
-        <section aria-labelledby="discovery-filters" className="space-y-3">
-          <h2 id="discovery-filters" className="sr-only">
-            Search filters
-          </h2>
-          <SearchFilters
-            categories={categories}
-            services={serviceChips}
-            activeSlug={activeCategory?.slug}
-            activeService={serviceName}
-            serviceId={serviceId}
-            area={area}
-            date={date ? salonIsoDate(date) : undefined}
-            time={time}
-            minDate={minDate}
-          />
-        </section>
+        <SearchFilters
+          categories={categories}
+          services={serviceChips}
+          activeSlug={activeCategory?.slug}
+          activeService={serviceName}
+          serviceId={serviceId}
+          area={area}
+          date={date ? salonIsoDate(date) : undefined}
+          time={time}
+          avail={quickKey}
+          minDate={minDate}
+        />
 
-        <section aria-labelledby="discovery-results" className="space-y-3">
-          {hasActiveFilters ? (
-            <p className="text-sm text-zinc-600">
-              Showing{" "}
-              {activeCategory ? (
-                <>
-                  <span className="font-medium text-zinc-900">{activeCategory.name}</span>{" "}
-                </>
-              ) : null}
-              {date ? "availability" : "salons"}
-              {serviceName ? (
-                <>
-                  {" "}
-                  for <span className="font-medium text-zinc-900">{serviceName}</span>
-                </>
-              ) : null}
-              {area ? (
-                <>
-                  {" "}
-                  in <span className="font-medium text-zinc-900">{area}</span>
-                </>
-              ) : null}
-              {date ? (
-                <>
-                  {" "}
-                  on <span className="font-medium text-zinc-900">{formatDay(date)}</span>
-                </>
-              ) : null}
-              {date && time ? (
-                <>
-                  {" "}
-                  around <span className="font-medium text-zinc-900">{time}</span>
-                </>
-              ) : null}
-            </p>
-          ) : null}
+        {activeCategory || serviceName || area || quick ? (
+          <p className="text-sm text-zinc-600">
+            Showing{" "}
+            <span className="font-medium">
+              {showAvailability ? "availability" : "salons"}
+            </span>
+            {activeCategory ? (
+              <>
+                {" "}
+                for <span className="font-medium">{activeCategory.name}</span>
+              </>
+            ) : null}
+            {serviceName ? (
+              <>
+                {" "}
+                · <span className="font-medium">{serviceName}</span>
+              </>
+            ) : null}
+            {area ? (
+              <>
+                {" "}
+                in <span className="font-medium">{area}</span>
+              </>
+            ) : null}
+            {quick ? (
+              <>
+                {" "}
+                · <span className="font-medium">{quick.label}</span>
+              </>
+            ) : null}
+          </p>
+        ) : null}
 
-          {date ? (
-            <p className="text-sm text-zinc-600">
-              Showing open times matching your filters.
-            </p>
-          ) : null}
-
-          {date ? (
-            <>
-              <h2 id="discovery-results" className={sectionTitleClass}>
-                Available times
-              </h2>
-              <AvailabilityResults results={availability} />
-            </>
-          ) : (
-            <>
-              <h2 id="discovery-results" className={sectionTitleClass}>
-                Salons
-              </h2>
-              <BusinessResults listings={listings} serviceName={serviceName} />
-            </>
-          )}
-        </section>
+        {showAvailability ? (
+          <section id="availability-results" className="space-y-3">
+            <h2 className="text-lg font-semibold tracking-tight text-zinc-900">
+              Available times
+            </h2>
+            <AvailabilityResults results={availability} />
+          </section>
+        ) : (
+          <section id="salon-results" className="space-y-3">
+            <h2 className="text-lg font-semibold tracking-tight text-zinc-900">Salons</h2>
+            <BusinessResults listings={listings} serviceName={serviceName} />
+          </section>
+        )}
       </main>
+      {showSticky ? (
+        <MarketplaceStickyCta
+          href={stickyHref}
+          label={stickyLabel}
+          hint="Scroll to matching results"
+        />
+      ) : null}
     </>
   );
 }

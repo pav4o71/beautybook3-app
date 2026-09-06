@@ -3,8 +3,10 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AreaFilter } from "@/components/booking/AreaFilter";
+import type { QuickAvailabilityKey } from "@/lib/availability/types";
+import { quickFilterHrefParams } from "@/lib/availability/quick-filters";
 import type { MarketplaceCategoryFilter } from "@/lib/marketplace";
-import { chipActiveClass, chipClass, controlClass, labelClass, labelTextClass } from "@/lib/ui";
+import { controlClass, labelClass, labelTextClass } from "@/lib/ui";
 
 const TIME_OPTIONS = [
   "09:00",
@@ -13,8 +15,6 @@ const TIME_OPTIONS = [
   "10:30",
   "11:00",
   "11:30",
-  "12:00",
-  "12:30",
   "13:00",
   "13:30",
   "14:00",
@@ -28,6 +28,14 @@ const TIME_OPTIONS = [
   "18:00",
   "18:30",
 ] as const;
+
+const QUICK_AVAILABILITY: { key: QuickAvailabilityKey; label: string }[] = [
+  { key: "today", label: "Available today" },
+  { key: "tomorrow", label: "Available tomorrow" },
+  { key: "weekend", label: "This weekend" },
+  { key: "open", label: "Open now" },
+  { key: "earliest", label: "Earliest available" },
+];
 
 function serviceKey(name: string) {
   return name
@@ -44,6 +52,7 @@ function searchHref(input: {
   area?: string;
   date?: string;
   time?: string;
+  avail?: string;
 }) {
   const params = new URLSearchParams();
   if (input.category) params.set("category", input.category);
@@ -52,8 +61,15 @@ function searchHref(input: {
   if (input.area) params.set("area", input.area);
   if (input.date) params.set("date", input.date);
   if (input.time) params.set("time", input.time);
+  if (input.avail) params.set("avail", input.avail);
   const query = params.toString();
   return query ? `/?${query}` : "/";
+}
+
+function filterLinkClass(active: boolean) {
+  return active
+    ? "rounded-full bg-zinc-900 px-3 py-1 text-sm font-medium text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900"
+    : "rounded-full border border-zinc-300 bg-white px-3 py-1 text-sm text-zinc-700 hover:bg-zinc-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900";
 }
 
 export function SearchFilters({
@@ -65,6 +81,7 @@ export function SearchFilters({
   area,
   date,
   time,
+  avail,
   minDate,
 }: {
   categories: MarketplaceCategoryFilter[];
@@ -75,6 +92,7 @@ export function SearchFilters({
   area?: string;
   date?: string;
   time?: string;
+  avail?: QuickAvailabilityKey;
   minDate: string;
 }) {
   const router = useRouter();
@@ -85,88 +103,105 @@ export function SearchFilters({
     area,
     date,
     time,
+    avail,
   };
-
-  const chipRowClass =
-    "flex flex-nowrap gap-2 overflow-x-auto scroll-px-3 scroll-py-1 pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden";
 
   return (
     <div className="space-y-4">
-      <div className="space-y-2 rounded-lg border border-zinc-200 bg-zinc-50/50 p-3 sm:p-4">
-        <div className="relative">
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-y-0 left-0 z-10 w-6 bg-linear-to-r from-zinc-50 to-transparent sm:hidden"
-          />
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-y-0 right-0 z-10 w-6 bg-linear-to-l from-zinc-50 to-transparent sm:hidden"
-          />
-          <nav aria-label="Filter by category" className={chipRowClass}>
+      <div className="space-y-1">
+        <p className="text-sm font-medium text-zinc-900">What would you like to book?</p>
+        <nav aria-label="Filter by category" className="flex flex-nowrap gap-2 overflow-x-auto pb-1">
+          <Link
+            href={searchHref({
+              ...current,
+              category: undefined,
+              service: undefined,
+              avail: undefined,
+              date: undefined,
+              time: undefined,
+            })}
+            className={`${filterLinkClass(!activeSlug)} shrink-0`}
+            data-testid="category-all"
+          >
+            All services
+          </Link>
+          {categories.map((category) => (
             <Link
-              href={searchHref({ ...current, category: undefined, service: undefined })}
-              className={!activeSlug ? chipActiveClass : chipClass}
-              data-testid="category-all"
+              key={category.slug}
+              href={searchHref({
+                ...current,
+                category: category.slug,
+                service: undefined,
+              })}
+              className={`${filterLinkClass(activeSlug === category.slug)} shrink-0`}
+              data-testid={`category-${category.slug}`}
             >
-              All services
+              {category.name}
+              <span className="ml-1 text-xs opacity-80">({category.salonCount})</span>
             </Link>
-            {categories.map((category) => (
+          ))}
+        </nav>
+      </div>
+      {services.length > 0 ? (
+        <nav aria-label="Filter by service" className="flex flex-nowrap gap-2 overflow-x-auto pb-1">
+          {services.map((service) => {
+            const active =
+              activeService != null &&
+              activeService.toLowerCase() === service.name.toLowerCase();
+            return (
               <Link
-                key={category.slug}
+                key={service.name}
                 href={searchHref({
                   ...current,
-                  category: category.slug,
-                  service: undefined,
+                  service: active ? undefined : service.name,
                 })}
-                className={activeSlug === category.slug ? chipActiveClass : chipClass}
-                data-testid={`category-${category.slug}`}
+                className={`${filterLinkClass(active)} shrink-0`}
+                data-testid={`service-chip-${serviceKey(service.name)}`}
               >
-                {category.name}
-                <span className="ml-1 text-xs opacity-80">({category.salonCount})</span>
+                {service.name}
               </Link>
-            ))}
-          </nav>
-        </div>
-        {services.length > 0 ? (
-          <div className="relative border-t border-zinc-200/80 pt-2">
-            <div
-              aria-hidden
-              className="pointer-events-none absolute inset-y-0 left-0 z-10 w-6 bg-linear-to-r from-zinc-50 to-transparent sm:hidden"
-            />
-            <div
-              aria-hidden
-              className="pointer-events-none absolute inset-y-0 right-0 z-10 w-6 bg-linear-to-l from-zinc-50 to-transparent sm:hidden"
-            />
-            <nav aria-label="Filter by service" className={chipRowClass}>
-              {services.map((service) => {
-                const active =
-                  activeService != null &&
-                  activeService.toLowerCase() === service.name.toLowerCase();
-                return (
-                  <Link
-                    key={service.name}
-                    href={searchHref({
+            );
+          })}
+        </nav>
+      ) : null}
+      <nav aria-label="Quick availability" className="flex flex-nowrap gap-2 overflow-x-auto pb-1">
+        {QUICK_AVAILABILITY.map((option) => {
+          const active = avail === option.key;
+          const params = quickFilterHrefParams(option.key);
+          return (
+            <Link
+              key={option.key}
+              href={
+                active
+                  ? searchHref({
                       ...current,
-                      service: active ? undefined : service.name,
-                    })}
-                    className={active ? chipActiveClass : chipClass}
-                    data-testid={`service-chip-${serviceKey(service.name)}`}
-                  >
-                    {service.name}
-                  </Link>
-                );
-              })}
-            </nav>
-          </div>
-        ) : null}
-      </div>
-      <div className="grid gap-4 sm:grid-cols-3">
-        <AreaFilter
-          selectedArea={area ?? ""}
-          onAreaChange={(nextArea) => {
-            router.push(searchHref({ ...current, area: nextArea || undefined }));
-          }}
-        />
+                      avail: undefined,
+                      date: undefined,
+                      time: undefined,
+                    })
+                  : searchHref({
+                      category: current.category,
+                      service: current.service,
+                      serviceId: current.serviceId,
+                      area: current.area,
+                      ...params,
+                    })
+              }
+              className={`${filterLinkClass(active)} shrink-0`}
+              data-testid={`avail-${option.key}`}
+            >
+              {option.label}
+            </Link>
+          );
+        })}
+      </nav>
+      <AreaFilter
+        selectedArea={area ?? ""}
+        onAreaChange={(nextArea) => {
+          router.push(searchHref({ ...current, area: nextArea || undefined }));
+        }}
+      />
+      <div className="grid gap-4 sm:grid-cols-2">
         <label className={labelClass}>
           <span className={labelTextClass}>Date</span>
           <input
@@ -179,6 +214,7 @@ export function SearchFilters({
                   ...current,
                   date: event.target.value || undefined,
                   time: event.target.value ? time : undefined,
+                  avail: event.target.value ? undefined : current.avail,
                 }),
               );
             }}
@@ -190,7 +226,7 @@ export function SearchFilters({
           <span className={labelTextClass}>Preferred time</span>
           <select
             value={time ?? ""}
-            disabled={!date}
+            disabled={!date && avail !== "open"}
             aria-describedby="time-filter-help"
             onChange={(event) => {
               router.push(searchHref({ ...current, time: event.target.value || undefined }));
@@ -206,7 +242,7 @@ export function SearchFilters({
             ))}
           </select>
           <p id="time-filter-help" className="text-xs text-zinc-500">
-            {date
+            {date || avail === "open"
               ? "Shows slots within 30 minutes of this time."
               : "Choose a date first to filter by time."}
           </p>

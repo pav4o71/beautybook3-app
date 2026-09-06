@@ -1,7 +1,11 @@
+import { attachNextAvailability } from "@/lib/availability/next-slot";
+import type { NextAvailability } from "@/lib/availability/types";
 import { getAvailableSlotsForDay } from "@/lib/booking";
 import { publicLocationWhere } from "@/lib/locations";
 import { prisma } from "@/lib/prisma";
 import { parseSalonTime, salonMinutesOfDay } from "@/lib/timezone";
+import type { SalonTrustSignals } from "@/lib/trust/types";
+import { emptyTrustSignals } from "@/lib/trust/types";
 
 export type MarketplaceCategoryFilter = {
   slug: string;
@@ -28,6 +32,9 @@ export type MarketplaceListing = {
     priceCents: number;
     categoryName: string;
   } | null;
+  /** Real next slot when computed; null if skipped or errored (omit badge). */
+  nextAvailability: NextAvailability | null;
+  trust: SalonTrustSignals;
 };
 
 export type MarketplaceServiceResult = {
@@ -88,6 +95,8 @@ export async function listMarketplaceOrganizations(input: {
   categorySlug?: string;
   area?: string;
   serviceName?: string;
+  /** When false, skip next-slot computation (default true). */
+  includeNextAvailability?: boolean;
 } = {}): Promise<MarketplaceListing[]> {
   const area = input.area?.trim() || undefined;
   const categorySlug = input.categorySlug?.trim() || undefined;
@@ -137,24 +146,38 @@ export async function listMarketplaceOrganizations(input: {
     },
   });
 
-  return orgs
+  const base = orgs
     .filter((org) => org.locations.length > 0)
-    .map((org) => ({
-      id: org.id,
-      name: org.name,
-      slug: org.slug,
-      coverImageUrl: org.coverImageUrl,
-      locations: org.locations,
-      serviceCount: org._count.services,
-      featuredService: org.services[0]
-        ? {
-            id: org.services[0].id,
-            name: org.services[0].name,
-            priceCents: org.services[0].priceCents,
-            categoryName: org.services[0].category.name,
-          }
-        : null,
-    }));
+    .map((org) => {
+      const primaryArea =
+        org.locations.find((location) => location.isDefault)?.area ??
+        org.locations[0]?.area ??
+        null;
+      return {
+        id: org.id,
+        name: org.name,
+        slug: org.slug,
+        coverImageUrl: org.coverImageUrl,
+        locations: org.locations,
+        serviceCount: org._count.services,
+        featuredService: org.services[0]
+          ? {
+              id: org.services[0].id,
+              name: org.services[0].name,
+              priceCents: org.services[0].priceCents,
+              categoryName: org.services[0].category.name,
+            }
+          : null,
+        nextAvailability: null as NextAvailability | null,
+        trust: emptyTrustSignals({ primaryArea }),
+      };
+    });
+
+  if (input.includeNextAvailability === false) {
+    return base;
+  }
+
+  return attachNextAvailability(base, { serviceName, area });
 }
 
 export function listMarketplaceServiceChips(
@@ -371,6 +394,50 @@ export async function searchMarketplaceAvailability(input: {
   }
 
   return results
+    .sort((left, right) => {
+      const timeDelta = left.startsAt.getTime() - right.startsAt.getTime();
+      if (timeDelta !== 0) return timeDelta;
+      return left.priceCents - right.priceCents;
+    })
+    .slice(0, AVAILABILITY_RESULT_LIMIT);
+}
+
+/**
+ * Search availability across multiple Manila calendar days (weekend / earliest).
+ * Stops early for `earliest` once the result cap is filled from the first day(s) with slots.
+ */
+export async function searchMarketplaceAvailabilityAcrossDates(input: {
+  categorySlug?: string;
+  serviceId?: string;
+  serviceName?: string;
+  area?: string;
+  dates: Date[];
+  time?: string;
+  /** When true, stop after the first day that yields any slots. */
+  stopOnFirstDayWithResults?: boolean;
+}): Promise<MarketplaceAvailabilityResult[]> {
+  const merged: MarketplaceAvailabilityResult[] = [];
+
+  for (const date of input.dates) {
+    const dayResults = await searchMarketplaceAvailability({
+      categorySlug: input.categorySlug,
+      serviceId: input.serviceId,
+      serviceName: input.serviceName,
+      area: input.area,
+      date,
+      time: input.time,
+    });
+    if (dayResults.length === 0) continue;
+    merged.push(...dayResults);
+    if (input.stopOnFirstDayWithResults) {
+      break;
+    }
+    if (merged.length >= AVAILABILITY_RESULT_LIMIT) {
+      break;
+    }
+  }
+
+  return merged
     .sort((left, right) => {
       const timeDelta = left.startsAt.getTime() - right.startsAt.getTime();
       if (timeDelta !== 0) return timeDelta;

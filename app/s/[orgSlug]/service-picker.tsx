@@ -111,10 +111,10 @@ export function ServicePicker({
               return (
                 <li key={service.id}>
                   <label
-                    className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3.5 transition ${
+                    className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 ${
                       checked
                         ? "border-zinc-900 bg-zinc-50"
-                        : "border-zinc-200 bg-white hover:border-zinc-300"
+                        : "border-zinc-200 bg-white"
                     } ${atCap ? "cursor-not-allowed opacity-60" : ""}`}
                   >
                     <input
@@ -146,7 +146,7 @@ export function ServicePicker({
         </section>
       ))}
 
-      <div className="sticky bottom-0 z-10 -mx-4 border-t border-zinc-200 bg-white/95 px-4 py-3 shadow-[0_-8px_24px_rgba(0,0,0,0.06)] backdrop-blur">
+      <div className="sticky bottom-0 z-30 -mx-4 border-t border-zinc-200 bg-white/95 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur">
         <div className="mx-auto flex w-full max-w-5xl flex-wrap items-center justify-between gap-3">
           <p className="text-sm text-zinc-700">
             {selected.length === 0 ? (
@@ -162,10 +162,10 @@ export function ServicePicker({
             type="button"
             onClick={continueToBook}
             disabled={continueDisabled}
-            className={`${primaryButtonClass} min-h-10 min-w-28`}
+            className={`${primaryButtonClass} focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900`}
             data-testid="continue-booking"
           >
-            Continue
+            Book now
           </button>
         </div>
         {selectedIds.length > 0 && !hasCapableStaff ? (
