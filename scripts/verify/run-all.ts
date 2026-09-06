@@ -6,6 +6,7 @@ import { assertSafeVerifyTarget } from "./assert-safe-target";
 const root = path.resolve(import.meta.dirname, "../..");
 const scripts = [
   "format.ts",
+  "local-db-guard.ts",
   "seed-counts.ts",
   "areas.ts",
   "marketplace-search.ts",

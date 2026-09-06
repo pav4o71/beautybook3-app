@@ -132,9 +132,9 @@ flowchart LR
 
 ## Testing plan (each PR)
 
-- `npm run verify` (local Postgres)
+- `npm run verify` (local Docker Postgres only; no `VERIFY_ALLOW_REMOTE` bypass)
 - `npm run test:e2e` — extend with location + marketplace cases
-- Smoke on hosted Supabase before merge (`VERIFY_ALLOW_REMOTE=1`)
+- Do not run seed/verify against hosted Supabase
 
 ---
 

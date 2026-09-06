@@ -34,7 +34,7 @@ See also: [`docs/saas-upgrade-progress.md`](./saas-upgrade-progress.md), [`docs/
 |------|--------|
 | Apply migrations B/C on hosted DB | Done — [`docs/supabase-migration-runbook.md`](./supabase-migration-runbook.md) |
 | Staging `DATABASE_URL` at Supabase pooler | Done — smoke-tested 2026-08-30 |
-| `VERIFY_ALLOW_REMOTE=1` on hosted | Done |
+| Verify/seed/e2e local-only DB guard | Done — fail-closed; no `VERIFY_ALLOW_REMOTE` bypass |
 
 ## Phase 4 — Billing (deferred)
 

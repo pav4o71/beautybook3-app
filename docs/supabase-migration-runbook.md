@@ -52,10 +52,7 @@ npx prisma migrate status   # should show all applied
 
 4. Seed hosted DB (optional, careful in shared env):
 
-```bash
-export VERIFY_ALLOW_REMOTE=1   # only if running verify against hosted
-npm run prisma:seed
-```
+`npm run prisma:seed` now **refuses** any database that is not an approved local test/dev database. Do not seed hosted Supabase from this helper. There is no `VERIFY_ALLOW_REMOTE` bypass.
 
 ## Option B — Direct connection migrate deploy
 
@@ -68,11 +65,7 @@ Switch back to pooler URI for app runtime (`*.pooler.supabase.com:5432`).
 
 ## Verify after migrate
 
-```bash
-export DATABASE_URL="<pooler-uri>"
-export VERIFY_ALLOW_REMOTE=1
-npm run verify
-```
+`npm run verify` is fail-closed local-only. Do not point it at hosted Supabase; there is no `VERIFY_ALLOW_REMOTE` bypass. After hosted `migrate deploy`, check `_prisma_migrations` and spot-check the app against the pooler URI instead.
 
 ## Rollback
 
