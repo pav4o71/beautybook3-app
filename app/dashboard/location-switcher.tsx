@@ -1,5 +1,6 @@
 "use client";
 
+import { controlCompactClass } from "@/lib/ui";
 import { switchLocation } from "./actions";
 
 export function LocationSwitcher({
@@ -11,12 +12,14 @@ export function LocationSwitcher({
 }) {
   if (locations.length <= 1) {
     return locations[0] ? (
-      <span className="text-xs text-zinc-500">{locations[0].name}</span>
+      <span className="block min-w-0 truncate text-sm text-zinc-500">
+        {locations[0].name}
+      </span>
     ) : null;
   }
 
   return (
-    <form action={switchLocation}>
+    <form action={switchLocation} className="min-w-0 w-full sm:w-auto">
       <label className="sr-only" htmlFor="locationId">
         Active location
       </label>
@@ -24,7 +27,7 @@ export function LocationSwitcher({
         id="locationId"
         name="locationId"
         defaultValue={activeLocationId}
-        className="rounded-md border border-zinc-300 bg-white px-2 py-1 text-xs text-zinc-900"
+        className={`${controlCompactClass} w-full max-w-full`}
         onChange={(event) => {
           event.currentTarget.form?.requestSubmit();
         }}

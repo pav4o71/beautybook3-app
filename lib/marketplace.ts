@@ -94,7 +94,7 @@ export async function listMarketplaceOrganizations(input: {
   const serviceName = input.serviceName?.trim() || undefined;
   const staffedService = {
     active: true,
-    ...(serviceName ? { name: serviceName } : {}),
+    ...(serviceName ? { name: { equals: serviceName, mode: "insensitive" as const } } : {}),
     ...(categorySlug ? { category: { slug: categorySlug } } : {}),
     staff: {
       some: {
@@ -311,7 +311,7 @@ export async function searchMarketplaceAvailability(input: {
       organization: { published: true },
       staff: { some: staffInArea },
       ...(serviceId ? { id: serviceId } : {}),
-      ...(serviceName && !serviceId ? { name: serviceName } : {}),
+      ...(serviceName && !serviceId ? { name: { equals: serviceName, mode: "insensitive" as const } } : {}),
       ...(categorySlug && !serviceId ? { category: { slug: categorySlug } } : {}),
     },
     include: {

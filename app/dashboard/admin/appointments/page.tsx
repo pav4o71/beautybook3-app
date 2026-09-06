@@ -35,7 +35,9 @@ export default async function AdminAppointmentsPage() {
 
       <div className="mt-6 space-y-4">
         {appointments.length === 0 ? (
-          <p className="text-sm text-zinc-600">No appointments scheduled for today.</p>
+          <p className="rounded-lg border border-dashed border-zinc-300 bg-zinc-50 px-4 py-8 text-center text-sm text-zinc-600">
+            No appointments scheduled for today.
+          </p>
         ) : (
           appointments.map((appointment) => {
             const totalCents = appointment.services.reduce(
