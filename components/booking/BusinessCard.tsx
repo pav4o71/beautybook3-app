@@ -1,8 +1,15 @@
 import Link from "next/link";
+import { AvailabilityBadge } from "@/components/marketplace/availability-badge";
+import { TrustSignalRow } from "@/components/marketplace/trust-signal-row";
 import { LocationHeading } from "@/components/booking/location-heading";
 import { formatPrice } from "@/lib/format";
 import type { MarketplaceListing } from "@/lib/marketplace";
-import { focusRingClass, primaryButtonClass, surfaceInteractiveClass } from "@/lib/ui";
+import {
+  focusRingClass,
+  primaryButtonClass,
+  secondaryButtonClass,
+  surfaceInteractiveClass,
+} from "@/lib/ui";
 
 export function BusinessCard({
   listing,
@@ -11,21 +18,28 @@ export function BusinessCard({
   listing: MarketplaceListing;
   serviceName?: string;
 }) {
-  const { locations, featuredService } = listing;
-  const salonHref = serviceName
+  const { locations, featuredService, serviceCount } = listing;
+  const viewHref = serviceName
     ? `/s/${listing.slug}?service=${encodeURIComponent(serviceName)}`
     : `/s/${listing.slug}`;
 
-  const primaryLocation =
-    locations.find((location) => location.isDefault) ?? locations[0] ?? null;
-  const extraLocationCount = primaryLocation ? locations.length - 1 : 0;
+  const bookServiceId =
+    listing.nextAvailability?.kind === "slot"
+      ? listing.nextAvailability.serviceId
+      : featuredService?.id;
+  const bookHref = bookServiceId
+    ? `/s/${listing.slug}/book?serviceId=${encodeURIComponent(bookServiceId)}`
+    : `/s/${listing.slug}#services`;
+
+  const visibleLocations = locations.slice(0, 2);
+  const extraLocationCount = locations.length - visibleLocations.length;
 
   return (
     <article
-      className={`${surfaceInteractiveClass} flex h-full flex-col overflow-hidden`}
+      className={`${surfaceInteractiveClass} group flex h-full flex-col overflow-hidden`}
       data-testid={`business-${listing.slug}`}
     >
-      <Link href={salonHref} className={`block shrink-0 ${focusRingClass}`}>
+      <Link href={viewHref} className={`block shrink-0 ${focusRingClass}`}>
         {listing.coverImageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element -- mixed local paths and owner-pasted http(s) URLs
           <img
@@ -34,62 +48,77 @@ export function BusinessCard({
             width={800}
             height={400}
             loading="lazy"
-            className="h-44 w-full object-cover sm:h-48"
+            className="aspect-[2/1] h-auto w-full object-cover"
             data-testid={`business-cover-${listing.slug}`}
           />
         ) : (
-          <div className="flex h-44 items-end bg-zinc-100 px-4 py-3 sm:h-48">
+          <div className="flex aspect-[2/1] items-end bg-zinc-100 px-4 py-3">
             <span className="text-sm font-medium text-zinc-500">{listing.name}</span>
           </div>
         )}
       </Link>
-      <div className="flex flex-1 flex-col p-4">
-        <Link href={salonHref} className={`inline-block rounded-sm ${focusRingClass}`}>
-          <h2 className="text-lg font-semibold tracking-tight text-zinc-900 hover:text-zinc-700">
+      <div className="flex flex-1 flex-col gap-2 p-4">
+        <Link href={viewHref} className={`inline-block rounded-sm ${focusRingClass}`}>
+          <h2 className="line-clamp-2 text-lg font-semibold tracking-tight text-zinc-900 hover:text-zinc-700">
             {listing.name}
           </h2>
         </Link>
 
+        <TrustSignalRow trust={listing.trust} />
+
+        <AvailabilityBadge value={listing.nextAvailability} />
+
         {featuredService ? (
-          <p className="mt-1 text-sm text-zinc-600">
+          <p className="text-sm text-zinc-600">
             From{" "}
             <span className="font-medium text-zinc-900">
               {formatPrice(featuredService.priceCents)}
             </span>
             {" · "}
-            {featuredService.name}
+            <span className="line-clamp-1">{featuredService.name}</span>
           </p>
         ) : (
-          <p className="mt-1 text-sm text-zinc-500">No bookable services yet</p>
+          <p className="text-sm text-zinc-500">No bookable services yet</p>
         )}
 
-        {locations.length === 0 ? (
-          <p className="mt-2 text-sm text-zinc-500">No active locations</p>
-        ) : primaryLocation ? (
-          <div className="mt-3 flex-1 text-sm text-zinc-600">
-            <LocationHeading
-              name={primaryLocation.name}
-              isDefault={primaryLocation.isDefault}
-              area={primaryLocation.area}
-            />
-            {primaryLocation.address ? (
-              <span className="block text-zinc-500">{primaryLocation.address}</span>
-            ) : null}
-            {extraLocationCount > 0 ? (
-              <p className="mt-1 text-xs text-zinc-500">
-                +{extraLocationCount} more location{extraLocationCount === 1 ? "" : "s"}
-              </p>
-            ) : null}
-          </div>
-        ) : null}
+        <p className="text-xs text-zinc-500">
+          {serviceCount} active service{serviceCount === 1 ? "" : "s"}
+        </p>
 
-        <div className="mt-4">
+        {locations.length === 0 ? (
+          <p className="text-sm text-zinc-500">No active locations</p>
+        ) : (
+          <ul className="mt-1 space-y-1">
+            {visibleLocations.map((location) => (
+              <li key={location.id} className="text-sm text-zinc-600">
+                <LocationHeading
+                  name={location.name}
+                  isDefault={location.isDefault}
+                  area={location.area}
+                />
+                {location.address ? (
+                  <span className="line-clamp-1 block text-zinc-500">{location.address}</span>
+                ) : null}
+              </li>
+            ))}
+            {extraLocationCount > 0 ? (
+              <li className="text-xs text-zinc-500">
+                +{extraLocationCount} more location{extraLocationCount === 1 ? "" : "s"}
+              </li>
+            ) : null}
+          </ul>
+        )}
+
+        <div className="mt-auto flex flex-wrap gap-2 pt-4">
+          <Link href={viewHref} className={secondaryButtonClass}>
+            View salon
+          </Link>
           <Link
-            href={salonHref}
+            href={bookHref}
             className={primaryButtonClass}
             data-testid={`book-now-${listing.slug}`}
           >
-            View salon
+            Book now
           </Link>
         </div>
       </div>

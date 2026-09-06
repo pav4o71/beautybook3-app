@@ -6,6 +6,7 @@ import { prisma } from "../../lib/prisma";
 import { salonDayBounds } from "../../lib/timezone";
 import { formatTime } from "../../lib/format";
 import { getDemoTenantContext } from "../../lib/tenant";
+import { assertSafeVerifyTarget } from "./assert-safe-target";
 
 function assert(condition: boolean, message: string) {
   if (!condition) {
@@ -14,6 +15,7 @@ function assert(condition: boolean, message: string) {
 }
 
 async function main() {
+  assertSafeVerifyTarget();
   const tenant = await getDemoTenantContext();
   const cut = await prisma.service.findFirstOrThrow({
     where: { organizationId: tenant.organizationId, name: "Haircut" },
@@ -69,9 +71,11 @@ async function main() {
     "Hair availability must not include Glow Nail Studio",
   );
 
+  const tenAmSlot = weekSlots.find((slot) => formatTime(slot) === "10:00");
+  const dateForTimed = tenAmSlot ?? date;
   const timed = await searchMarketplaceAvailability({
     categorySlug: "hair",
-    date,
+    date: dateForTimed,
     time: "10:00",
   });
   assert(timed.length > 0, "10:00 hair search should keep nearby slots");
