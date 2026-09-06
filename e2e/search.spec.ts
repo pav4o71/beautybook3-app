@@ -121,9 +121,17 @@ test.describe("search marketplace", () => {
     await page.goto(
       `/marketplace?category=hair&service=Haircut&area=Makati&date=${date}&time=10:00`,
     );
-    await page.waitForURL(
-      `/?category=hair&service=Haircut&area=Makati&date=${date}&time=10:00`,
-    );
+    await page.waitForURL((url) => {
+      const parsed = new URL(url);
+      return (
+        parsed.pathname === "/" &&
+        parsed.searchParams.get("category") === "hair" &&
+        parsed.searchParams.get("service") === "Haircut" &&
+        parsed.searchParams.get("area") === "Makati" &&
+        parsed.searchParams.get("date") === date &&
+        parsed.searchParams.get("time") === "10:00"
+      );
+    });
 
     await expect(page.getByRole("heading", { name: "Find a salon" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Available times" })).toBeVisible();
