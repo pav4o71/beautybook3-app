@@ -78,7 +78,6 @@ All demo accounts use password: `Demo1234!`
 |---|---|---|
 | **Admin / Owner** | `demo@beautybook.local` | `OrgRole.OWNER` for Demo Salon |
 | **Customer** | `customer@beautybook.local` | Customer member in Demo Salon |
-| **Staff** | `staff@beautybook.local` | Staff member in Demo Salon |
 | **Owner (Glow)** | `owner@glow-nails.local` | `OrgRole.OWNER` for Glow Nails Studio |
 | **Owner (Luxe)** | `owner@luxe-hair.local` | `OrgRole.OWNER` for Luxe Hair Lounge |
 
@@ -125,10 +124,10 @@ npm run test:e2e
 ## Key Routes & Flow
 
 ### Public Marketplace & Storefront
-- **`/` (Canonical Marketplace):** Service-first discovery ("What would you like to book?"). Supports category chips, service chips, Manila area filter (17 areas), date and preferred time filters, quick availability pills (`today`, `tomorrow`, `weekend`, `open`, `earliest`), sticky booking CTA, trust rows, and next-available badges.
-  - **"Book {service}" / "Book now"** CTA deep-links directly into `/s/{slug}/book?serviceId=...&locationId=...`.
+- **`/` (Canonical Marketplace):** Service-first discovery ("What would you like to book?"). Supports category chips, service chips, Manila area filter (14 areas defined in `lib/areas.ts`), date and preferred time filters, quick availability pills (`today`, `tomorrow`, `weekend`, `open`, `earliest`), sticky booking CTA, trust rows, and next-available badges.
+  - **"Book now"** CTA deep-links to `/s/{slug}/book?serviceId=...` (or falls back to `/s/{slug}#services` if no bookable service is found).
   - **"View salon"** link opens `/s/{slug}`.
-- **`/search` & `/marketplace`:** Permanent redirects (`HTTP 308`) to `/?${qs}` or `/`.
+- **`/search` & `/marketplace`:** Permanent redirects (`HTTP 308`) to `/?${qs}` or `/` (whitelists `category`, `service`, `area`, `date`, `time`, `serviceId`; drops unhandled params such as `avail`).
 - **`/s/{orgSlug}`:** Salon storefront displaying about information, contact phone, cover image, branch locations with opening hours, and multi-service cart (`ServicePicker`).
 - **`/s/{orgSlug}/book`:** Public booking page. Works for both anonymous guests and logged-in customers. Multi-service booking (up to 6 services, max 240 minutes) with staff filtering by branch capability.
 
@@ -142,7 +141,7 @@ npm run test:e2e
 ### Organization Admin (`/dashboard/admin/*`)
 Gated strictly by active `OrgRole` (`OWNER` or `ADMIN`).
 - **`/dashboard/admin`:** Admin summary dashboard.
-- **`/dashboard/admin/appointments`:** Today's appointment board (confirm, mark completed, no-show, or cancel).
+- **`/dashboard/admin/appointments`:** Today's appointment board (mark completed, no-show, or cancel; appointments are confirmed upon creation).
 - **`/dashboard/admin/services`:** Catalog management (create/edit services, PHP pricing, active status).
 - **`/dashboard/admin/categories`:** Service categories CRUD.
 - **`/dashboard/admin/locations`:** Branch location management (enforces at most one default location per organization).

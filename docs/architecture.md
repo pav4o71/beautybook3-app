@@ -29,10 +29,12 @@ Every salon tenant is represented by an `Organization`. All operational models (
 
 ### Membership & Role Hierarchy (`lib/org-roles.ts`)
 Users link to organizations through `OrganizationMember` records with role enum `OrgRole`:
-- `OWNER` (rank 4) — Full administrative rights, settings management, location creation
-- `ADMIN` (rank 3) — Catalog, staff, schedule, and appointment management
+- `OWNER` (rank 4) — Organization owner; shares full administrative capabilities with `ADMIN`
+- `ADMIN` (rank 3) — Organization administrator; shares full administrative capabilities with `OWNER`
 - `STAFF` (rank 2) — Staff membership within an organization
 - `MEMBER` (rank 1) — Baseline organization affiliation
+
+In application code, `isOrgAdminRole(role)` (`orgRoleAtLeast(role, "ADMIN")`) is the sole gate for organization administration: both `OWNER` and `ADMIN` have identical administrative capabilities across salon settings, catalog, staff, schedules, locations, and appointments.
 
 ### Server Authorization Gates (`lib/require-org.ts`, `lib/require-user.ts`)
 - **`requireUser()`**: Ensures the client has an active session via Better Auth; redirects unauthenticated requests to `/login`.
@@ -74,8 +76,8 @@ The canonical schema is defined in [`prisma/schema.prisma`](../prisma/schema.pri
    ALTER TABLE "Appointment"
    ADD CONSTRAINT "Appointment_staff_no_overlap"
    EXCLUDE USING gist (
-     staff_id WITH =,
-     tsrange(starts_at, ends_at) WITH =
+     "staffId" WITH =,
+     tsrange("startsAt", "endsAt", '[)') WITH &&
    )
    WHERE (status <> 'CANCELLED');
    ```
@@ -110,7 +112,7 @@ The canonical schema is defined in [`prisma/schema.prisma`](../prisma/schema.pri
   - Service-first header: *"What would you like to book?"*
   - Category pills: Hair, Nails, Massage, Brows & Lashes, etc.
   - Service chips: Filtered by active category and area
-  - Manila Area filter: Dropdown with 17 Metro Manila areas (`lib/areas.ts`)
+  - Manila Area filter: Dropdown with 14 Metro Manila areas (`lib/areas.ts`)
   - Date & Preferred Time picker: Optional time preference with ±30 min window
   - Quick availability pills:
     - `today`: Slots today in Manila
@@ -121,10 +123,10 @@ The canonical schema is defined in [`prisma/schema.prisma`](../prisma/schema.pri
   - Sticky booking CTA on mobile viewports
   - Salon cards (`BusinessCard.tsx`):
     - Real next-available slot badge (`NextAvailability`)
-    - Trust signal row (verified salon badge, cancellation policy, pay at salon)
-    - **"Book {service}" / "Book now"**: Deep-links directly to `/s/{slug}/book?serviceId=...&locationId=...`
+    - Trust signal row (`TrustSignalRow` renders up to 3 truthful signals from area, rating/reviews, verified business, popularity, cancellation flexibility, and distance; note "pay at salon" is an appointment payment status copy on customer booking cards, not a `TrustSignalRow` signal)
+    - **"Book now"**: Deep-links to `/s/{slug}/book?serviceId=...` using the next available service or featured service (falls back to `/s/{slug}#services` if no bookable service is found)
     - **"View salon"**: Navigates to storefront `/s/{slug}`
-- **`/search` & `/marketplace`:** Issue HTTP 308 permanent redirects to `/?${qs}` or `/`.
+- **`/search` & `/marketplace`:** Issue HTTP 308 permanent redirects to `/?${qs}` or `/`, preserving 6 whitelisted parameters (`category`, `service`, `area`, `date`, `time`, `serviceId`) and dropping unhandled query params (such as `avail`).
 - **`/s/[orgSlug]` (Salon Storefront):**
   - Displays cover image, description, contact phone, branch locations, and opening hours.
   - Multi-service picker (`ServicePicker`) with sticky continue bar (caps: max 6 services, max 240 minutes).

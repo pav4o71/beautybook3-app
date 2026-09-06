@@ -50,7 +50,6 @@ alwaysApply: true
 - Demo accounts: `lib/demo-account.ts` (all passwords `Demo1234!`):
   - `demo@beautybook.local` (Owner/Admin)
   - `customer@beautybook.local` (Customer)
-  - `staff@beautybook.local` (Staff)
   - `owner@glow-nails.local` / `owner@luxe-hair.local` (Marketplace owners)
 
 ## Validation

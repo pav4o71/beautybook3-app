@@ -33,10 +33,15 @@ Subsequent cross-table foreign key migrations (migrations 4 and 5) will then fai
 `ERROR: permission denied for table Organization` or `must be owner of table`.
 
 ### Resolution
-Execute the following grant statements in the Supabase SQL Editor (as `postgres`):
+In PostgreSQL, permissions on an object can only be granted by the object's owner (or a superuser). Because `postgres` is not a superuser on hosted Supabase, executing `GRANT` statements as `postgres` will fail with permission denied if the tables are owned by `beautybook_prisma`.
+
+Execute the following commands in the Supabase SQL Editor as the table owner (or switch role via `SET ROLE "beautybook_prisma.[REF]";`), or reassign table ownership directly to `postgres`:
 
 ```sql
--- Grant permissions across roles
+-- Option A: Reassign table ownership to postgres (recommended)
+REASSIGN OWNED BY "beautybook_prisma.[REF]" TO postgres;
+
+-- Option B: Grant permissions across roles as the table owner
 GRANT REFERENCES ON TABLE "Organization" TO postgres;
 GRANT REFERENCES ON TABLE "Location" TO postgres;
 GRANT ALL ON TABLE "Organization" TO postgres;
@@ -54,7 +59,7 @@ npx prisma migrate status
 ```
 
 ### Prevention (Best Practice)
-When running DDL migrations against hosted Supabase, connect via the **direct** connection URI on port 5432 using the primary `postgres` role (`db.[REF].supabase.co:5432`), ensuring all database objects share a single owner.
+When running DDL migrations against hosted Supabase, connect via the **direct** connection URI on port 5432 using the primary `postgres` role (`db.[REF].supabase.co:5432`), ensuring all database objects share a single owner. Note that on direct connections the database user is `postgres` (unlike the connection pooler which requires `postgres.[PROJECT-REF]`).
 
 ---
 
@@ -62,9 +67,9 @@ When running DDL migrations against hosted Supabase, connect via the **direct** 
 
 ### Recommended Workflow: Direct Connection
 1. Retrieve the direct connection URI from the Supabase Dashboard (`Project Settings → Database → Connection string → URI`, port 5432).
-2. Set the environment variable temporarily:
+2. Set the environment variable temporarily (note the username is `postgres`, not `postgres.[PROJECT-REF]`):
    ```bash
-   export DATABASE_URL="postgresql://postgres.[PROJECT-REF]:[PASSWORD]@db.[PROJECT-REF].supabase.co:5432/postgres"
+   export DATABASE_URL="postgresql://postgres:[PASSWORD]@db.[PROJECT-REF].supabase.co:5432/postgres"
    ```
 3. Deploy migrations:
    ```bash

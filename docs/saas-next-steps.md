@@ -14,7 +14,7 @@
 | **Phase 2: Multi-Location & Marketplace** | PRs #4–#6 | Admin location CRUD; branch switcher; branch-scoped bookings; marketplace category filters & `BusinessCard`. |
 | **Phase 3: Hosted Supabase Alignment** | Ops / PR #3 | Migrations deployment; session pooler verification; fail-closed local test safety guard. |
 | **Phase 5: Hardening & Isolation** | PRs #7–#10 | Staff schedule location assignment; cross-tenant isolation E2E (`e2e/isolation.spec.ts`); `verify/org-scope.ts`. |
-| **Phase 6: Search-First Marketplace UI** | PRs #12–#15 | `Location.area` column; 17 Manila areas; landing search filters; cross-org availability search. |
+| **Phase 6: Search-First Marketplace UI** | PRs #12–#15 | `Location.area` column; 14 Manila areas; landing search filters; cross-org availability search. |
 | **Phase 7: Storefront & Multi-Service** | PRs #17, #19 | Salon storefront (`/s/[orgSlug]`), multi-service picker (`ServicePicker`, max 6 services, max 240 min), profile fields, `AppointmentService` uniqueness. |
 | **UI Polish & Marketplace E2E** | PR #20 | Shared surfaces, `PageHeader`, alert tokens, URL encoding handling in marketplace redirects. |
 | **Fail-Closed Local DB Safety** | PR #23 | Enforced `assertLocalOnlyDatabase()` in `lib/test-only-local-db.ts`; eliminated remote test bypass entirely. |
