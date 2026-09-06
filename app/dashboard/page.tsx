@@ -8,9 +8,7 @@ import { focusRingClass, pageMainClass, surfaceInteractiveClass } from "@/lib/ui
 export default async function DashboardPage() {
   const session = await requireUser();
   const active = await resolveActiveOrganization(session.user.id);
-  const isOrgAdmin =
-    session.user.role === "ADMIN" ||
-    (active ? isOrgAdminRole(active.membership.role) : false);
+  const isOrgAdmin = active ? isOrgAdminRole(active.membership.role) : false;
 
   return (
     <main className={pageMainClass}>

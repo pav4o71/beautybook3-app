@@ -13,9 +13,7 @@ export async function DashboardNav() {
   const memberships = await listUserMemberships(session.user.id);
   const active = await resolveActiveOrganization(session.user.id);
 
-  const isLegacyAdmin = session.user.role === "ADMIN";
-  const isOrgAdmin =
-    isLegacyAdmin || (active ? isOrgAdminRole(active.membership.role) : false);
+  const isOrgAdmin = active ? isOrgAdminRole(active.membership.role) : false;
 
   const showContextRow =
     memberships.length > 0 || Boolean(active && active.locations.length > 0);
