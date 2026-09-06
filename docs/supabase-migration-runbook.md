@@ -25,23 +25,45 @@ There are **9 migrations** under `prisma/migrations/`. All migrations must be ap
 
 ---
 
-## 2. Mixed Table Ownership (Supabase Pitfall)
+## 2. Mixed Table Ownership & Permission Diagnosis (Supabase Pitfall)
 
-If migration 3 (`20260830100000_add_tenancy_tables`) was executed via the **session pooler** user (`beautybook_prisma.[REF]`), the newly created tenancy tables (`Organization`, `Location`, `OrganizationMember`) are owned by `beautybook_prisma`, while legacy tables are owned by `postgres`.
+If migrations are executed across different connection endpoints (for example, applying initial migrations via direct `postgres` and subsequent migrations via a Supavisor connection pooler role such as `beautybook_prisma`), tables in the `public` schema may end up owned by different PostgreSQL roles.
 
-Subsequent cross-table foreign key migrations (migrations 4 and 5) will then fail with:
+When a later migration adds cross-table foreign keys (e.g., migrations 4 and 5 referencing `Organization` and `Location`), PostgreSQL requires `REFERENCES` privilege on the referenced table. If the connecting role does not own the target table or have explicit `REFERENCES` privileges granted by the owner, the migration fails with:
 `ERROR: permission denied for table Organization` or `must be owner of table`.
 
-### Resolution
-In PostgreSQL, permissions on an object can only be granted by the object's owner (or a superuser). Because `postgres` is not a superuser on hosted Supabase, executing `GRANT` statements as `postgres` will fail with permission denied if the tables are owned by `beautybook_prisma`.
+### Step 1: Diagnose Object Ownership and Roles
 
-Execute the following commands in the Supabase SQL Editor as the table owner (or switch role via `SET ROLE "beautybook_prisma.[REF]";`), or reassign table ownership directly to `postgres`:
+Never assume role names or ownership blindly. In the Supabase SQL Editor, inspect actual table ownership:
 
 ```sql
--- Option A: Reassign table ownership to postgres (recommended)
-REASSIGN OWNED BY "beautybook_prisma.[REF]" TO postgres;
+SELECT schemaname, tablename, tableowner
+FROM pg_tables
+WHERE schemaname = 'public'
+ORDER BY tablename;
+```
 
--- Option B: Grant permissions across roles as the table owner
+Inspect the actual database roles present in PostgreSQL:
+
+```sql
+SELECT rolname
+FROM pg_roles
+ORDER BY rolname;
+```
+
+> [!IMPORTANT]
+> **Supavisor Username vs PostgreSQL Role Name:**
+> Supavisor pooler connection strings use the syntax `[DB-USER].[PROJECT-REF]` (e.g. `beautybook_prisma.abcdefghijklmnop`). The `.[PROJECT-REF]` suffix is part of Supavisor's connection routing convention. The actual internal PostgreSQL role defined in `pg_roles` is typically `beautybook_prisma` (without the project ref suffix).
+> **Never copy a pooler connection username string directly into SQL DDL or ownership commands.** Always verify the actual role name from `pg_roles`.
+
+### Step 2: Targeted Remediation (Preferred)
+
+Permissions on a PostgreSQL table can only be granted by the object's owner or a role with sufficient authorization (on hosted Supabase, `postgres` is `NOSUPERUSER` and cannot grant permissions on objects it does not own).
+
+Execute targeted grants in the Supabase SQL Editor under the owner role context (or after switching to the owner role via `SET ROLE <actual_owner_role>;`):
+
+```sql
+-- Grant necessary references and access on tenancy tables to postgres
 GRANT REFERENCES ON TABLE "Organization" TO postgres;
 GRANT REFERENCES ON TABLE "Location" TO postgres;
 GRANT ALL ON TABLE "Organization" TO postgres;
@@ -50,13 +72,25 @@ GRANT ALL ON TABLE "OrganizationMember" TO postgres;
 GRANT USAGE ON TYPE "OrgRole" TO postgres;
 ```
 
-After running the SQL in the editor, resolve the migration status on your local terminal:
+After applying pending migration SQL in the SQL Editor, mark them applied locally:
 
 ```bash
 npx prisma migrate resolve --applied 20260830100100_add_tenant_fks_nullable
 npx prisma migrate resolve --applied 20260830100200_backfill_tenant_data
 npx prisma migrate status
 ```
+
+### Step 3: Ownership Normalization (When Genuinely Required)
+
+If ownership normalization across all tables is required:
+- Do **not** run broad `REASSIGN OWNED` commands blindly without verifying the target role and the scope of affected objects.
+- Inspect the exact owner role name from `pg_tables` and `pg_roles`.
+- If appropriate, reassign only the specific verified role's objects to `postgres`:
+  ```sql
+  -- Run only after confirming <actual_owner_role> exists in pg_roles
+  REASSIGN OWNED BY "<actual_owner_role>" TO postgres;
+  ```
+- Targeted remediation (Step 2) is always preferred over blanket reassignment.
 
 ### Prevention (Best Practice)
 When running DDL migrations against hosted Supabase, connect via the **direct** connection URI on port 5432 using the primary `postgres` role (`db.[REF].supabase.co:5432`), ensuring all database objects share a single owner. Note that on direct connections the database user is `postgres` (unlike the connection pooler which requires `postgres.[PROJECT-REF]`).

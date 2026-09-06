@@ -125,8 +125,8 @@ npm run test:e2e
 
 ### Public Marketplace & Storefront
 - **`/` (Canonical Marketplace):** Service-first discovery ("What would you like to book?"). Supports category chips, service chips, Manila area filter (14 areas defined in `lib/areas.ts`), date and preferred time filters, quick availability pills (`today`, `tomorrow`, `weekend`, `open`, `earliest`), sticky booking CTA, trust rows, and next-available badges.
-  - **"Book now"** CTA deep-links to `/s/{slug}/book?serviceId=...` (or falls back to `/s/{slug}#services` if no bookable service is found).
-  - **"View salon"** link opens `/s/{slug}`.
+  - **"Book now"** CTA deep-links to `/s/{slug}/book?serviceId=...` (or falls back to `/s/{slug}#services` if no bookable service is found; `BusinessCard` does not add `locationId`).
+  - **"View salon"** link opens `/s/{slug}` (preserving the selected service-name query parameter when one exists).
 - **`/search` & `/marketplace`:** Permanent redirects (`HTTP 308`) to `/?${qs}` or `/` (whitelists `category`, `service`, `area`, `date`, `time`, `serviceId`; drops unhandled params such as `avail`).
 - **`/s/{orgSlug}`:** Salon storefront displaying about information, contact phone, cover image, branch locations with opening hours, and multi-service cart (`ServicePicker`).
 - **`/s/{orgSlug}/book`:** Public booking page. Works for both anonymous guests and logged-in customers. Multi-service booking (up to 6 services, max 240 minutes) with staff filtering by branch capability.

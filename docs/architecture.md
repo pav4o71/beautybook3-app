@@ -124,8 +124,8 @@ The canonical schema is defined in [`prisma/schema.prisma`](../prisma/schema.pri
   - Salon cards (`BusinessCard.tsx`):
     - Real next-available slot badge (`NextAvailability`)
     - Trust signal row (`TrustSignalRow` renders up to 3 truthful signals from area, rating/reviews, verified business, popularity, cancellation flexibility, and distance; note "pay at salon" is an appointment payment status copy on customer booking cards, not a `TrustSignalRow` signal)
-    - **"Book now"**: Deep-links to `/s/{slug}/book?serviceId=...` using the next available service or featured service (falls back to `/s/{slug}#services` if no bookable service is found)
-    - **"View salon"**: Navigates to storefront `/s/{slug}`
+    - **"Book now"**: Deep-links to `/s/{slug}/book?serviceId=...` using the next available service or featured service (falls back to `/s/{slug}#services` if no bookable service is found; `BusinessCard` does not add `locationId`)
+    - **"View salon"**: Navigates to storefront `/s/{slug}` (preserving the active service parameter when present)
 - **`/search` & `/marketplace`:** Issue HTTP 308 permanent redirects to `/?${qs}` or `/`, preserving 6 whitelisted parameters (`category`, `service`, `area`, `date`, `time`, `serviceId`) and dropping unhandled query params (such as `avail`).
 - **`/s/[orgSlug]` (Salon Storefront):**
   - Displays cover image, description, contact phone, branch locations, and opening hours.

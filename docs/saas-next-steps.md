@@ -41,8 +41,8 @@
   - Category chips + service chips + Manila area `<select>` + date/time inputs.
   - Quick availability pills: `today`, `tomorrow`, `weekend`, `open`, `earliest`.
   - Salon cards show real next-available badges, trust signals, and featured service duration/pricing.
-  - **"Book {service}" / "Book now"** CTA deep-links directly into `/s/{slug}/book?serviceId=...&locationId=...`.
-  - **"View salon"** link opens `/s/{slug}` preserving the service parameter.
+  - **"Book now"** CTA deep-links to `/s/{slug}/book?serviceId=...` using the next available service or featured service (falls back to `/s/{slug}#services` if no bookable service is found; note `BusinessCard` does not add `locationId`, unlike cross-org availability results).
+  - **"View salon"** link opens `/s/{slug}` (preserving the selected service-name query parameter when one exists).
 - **Storefront (`/s/{slug}`):** Catalog, opening hours from schedules, multi-service cart with sticky total bar.
 - **Public Booking (`/s/{slug}/book`):** Supports both anonymous guest booking and logged-in customers.
 
