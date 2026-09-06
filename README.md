@@ -17,6 +17,7 @@ For comprehensive technical specifications and data models, see [`docs/architect
 | **Styling** | Tailwind CSS v4 | CSS-first configuration via `app/globals.css` |
 | **Overlap Protection** | Postgres exclusion constraint | `Appointment_staff_no_overlap` (`btree_gist` migration) |
 | **Partial Indexes** | Prisma partial unique index | `Location_one_default_per_org` (at most one default location per org) |
+| **Phone Normalization** | `libphonenumber-js` | Server-side canonical E.164 normalization for Philippine and international mobile numbers |
 
 ---
 

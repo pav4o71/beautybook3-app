@@ -15,6 +15,7 @@ const scripts = [
   "org-roles.ts",
   "slots.ts",
   "booking.ts",
+  "contact-capture.ts",
   "appointments.ts",
 ];
 

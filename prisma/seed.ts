@@ -330,6 +330,9 @@ async function upsertSeedAppointment(
     durationMin: number;
     priceCents: number;
     status: AppointmentStatus;
+    customerName?: string | null;
+    customerPhone?: string | null;
+    customerEmail?: string | null;
   },
 ) {
   const existing = await prisma.appointment.findFirst({
@@ -362,6 +365,9 @@ async function upsertSeedAppointment(
         startsAt: input.startsAt,
         endsAt,
         status: input.status,
+        customerName: input.customerName ?? null,
+        customerPhone: input.customerPhone ?? null,
+        customerEmail: input.customerEmail ?? null,
       },
     });
     await prisma.appointmentService.create({
@@ -385,6 +391,9 @@ async function upsertSeedAppointment(
       endsAt,
       status: input.status,
       notes: input.marker,
+      customerName: input.customerName ?? null,
+      customerPhone: input.customerPhone ?? null,
+      customerEmail: input.customerEmail ?? null,
       services: {
         create: {
           serviceId: input.serviceId,
@@ -519,6 +528,9 @@ async function seedCatalogAndStaff(tenant: TenantContext, customerId: string) {
     durationMin: gel.durationMin,
     priceCents: gel.priceCents,
     status: AppointmentStatus.CONFIRMED,
+    customerName: "Maria Santos",
+    customerPhone: "+639171234567",
+    customerEmail: "maria@example.com",
   });
   await upsertSeedAppointment(tenant, {
     marker: "seed:today-no-show",
