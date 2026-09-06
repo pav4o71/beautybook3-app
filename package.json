@@ -20,6 +20,7 @@
     "verify:slots": "tsx scripts/verify/slots.ts",
     "verify:booking": "tsx scripts/verify/booking.ts",
     "verify:roles": "tsx scripts/verify/org-roles.ts",
+    "verify:scope": "tsx scripts/verify/org-scope.ts",
     "verify:appointments": "tsx scripts/verify/appointments.ts",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui"
