@@ -1,10 +1,15 @@
 # BeautyBook3 SaaS Upgrade Plan
 
+> [!NOTE]
+> **Status: Historical planning document.**
+> This reflects the repository during early multi-tenant SaaS scoping prior to Phase 1.
+> For current architecture and setup, see [`README.md`](../README.md) and [`docs/architecture.md`](./architecture.md).
+
 ## Executive Summary
 
-**Current State:** Functional single-salon MVP with excellent foundations  
-**Target State:** Multi-tenant SaaS platform for multiple beauty salons in Manila  
-**Approach:** Incremental migration preserving existing booking functionality  
+**Current State:** Functional single-salon MVP with excellent foundations
+**Target State:** Multi-tenant SaaS platform for multiple beauty salons in Manila
+**Approach:** Incremental migration preserving existing booking functionality
 **Timeline:** 8-10 weeks (4 phases)
 
 ---
@@ -68,14 +73,14 @@ model Organization {
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  
+
   // Relations
   members     OrganizationMember[]
   staff       Staff[]
   services    Service[]
   appointments Appointment[]
   settings    OrganizationSettings?
-  
+
   @@index([slug])
 }
 
@@ -85,11 +90,11 @@ model OrganizationMember {
   role           OrgRole  @default(MEMBER)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
-  
+
   // Relations
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+
   @@id([organizationId, userId])
   @@index([userId])
 }
@@ -109,7 +114,7 @@ model OrganizationSettings {
   bookingEnabled Boolean  @default(true)
   advanceBookingDays Int  @default(30)
   slotDurationMinutes Int @default(30)
-  
+
   // Relations
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 }
@@ -121,7 +126,7 @@ model Staff {
   organizationId String  // ADD THIS
   // ... existing fields
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  
+
   @@index([organizationId])
 }
 
@@ -129,7 +134,7 @@ model Service {
   organizationId String  // ADD THIS
   // ... existing fields
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  
+
   @@index([organizationId])
 }
 
@@ -137,7 +142,7 @@ model Appointment {
   organizationId String  // ADD THIS
   // ... existing fields
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  
+
   @@index([organizationId])
 }
 ```
@@ -169,7 +174,7 @@ model Appointment {
        currency: 'PHP',
      }
    });
-   
+
    // Update all existing data
    await prisma.staff.updateMany({ data: { organizationId: defaultOrg.id } });
    await prisma.service.updateMany({ data: { organizationId: defaultOrg.id } });
@@ -218,14 +223,14 @@ export async function createAppointment(data: {...}, organizationId: string) {
 export async function createAppointmentAction(formData: FormData) {
   const session = await getSession();
   if (!session?.user) throw new Error('Unauthorized');
-  
+
   // Get user's primary organization
   const membership = await prisma.organizationMember.findFirst({
     where: { userId: session.user.id }
   });
-  
+
   if (!membership) throw new Error('No organization');
-  
+
   // Pass organizationId to booking logic
   const appointment = await createAppointment(formData, membership.organizationId);
   // ...
@@ -267,14 +272,14 @@ export async function createAppointmentAction(formData: FormData) {
 export async function createOrganizationAction(formData: FormData) {
   const session = await getSession();
   if (!session?.user) throw new Error('Unauthorized');
-  
+
   const name = formData.get('name') as string;
   const slug = formData.get('slug') as string;
-  
+
   // Check slug uniqueness
   const existing = await prisma.organization.findUnique({ where: { slug } });
   if (existing) throw new Error('Slug already taken');
-  
+
   // Create organization
   const org = await prisma.organization.create({
     data: {
@@ -290,14 +295,14 @@ export async function createOrganizationAction(formData: FormData) {
       }
     }
   });
-  
+
   // Create default settings
   await prisma.organizationSettings.create({
     data: {
       organizationId: org.id,
     }
   });
-  
+
   revalidatePath('/dashboard');
   redirect(`/dashboard/org/${org.id}`);
 }
@@ -312,7 +317,7 @@ export async function createOrganizationAction(formData: FormData) {
 export function OrganizationSwitcher() {
   const [memberships, setMemberships] = useState([]);
   const [currentOrg, setCurrentOrg] = useState(null);
-  
+
   useEffect(() => {
     // Fetch user's organizations
     const memberships = await prisma.organizationMember.findMany({
@@ -321,7 +326,7 @@ export function OrganizationSwitcher() {
     });
     setMemberships(memberships);
   }, []);
-  
+
   return (
     <select
       value={currentOrg?.id}
@@ -355,7 +360,7 @@ export function OrganizationSwitcher() {
 export async function inviteMemberAction(formData: FormData) {
   const session = await getSession();
   const orgId = formData.get('organizationId') as string;
-  
+
   // Verify user is OWNER or ADMIN
   const membership = await prisma.organizationMember.findFirst({
     where: {
@@ -364,12 +369,12 @@ export async function inviteMemberAction(formData: FormData) {
       role: { in: ['OWNER', 'ADMIN'] }
     }
   });
-  
+
   if (!membership) throw new Error('Unauthorized');
-  
+
   const email = formData.get('email') as string;
   const role = formData.get('role') as OrgRole;
-  
+
   // Find or create user
   let user = await prisma.user.findUnique({ where: { email } });
   if (!user) {
@@ -377,7 +382,7 @@ export async function inviteMemberAction(formData: FormData) {
       data: { email, role: 'CUSTOMER' }
     });
   }
-  
+
   // Create or update membership
   await prisma.organizationMember.upsert({
     where: {
@@ -393,7 +398,7 @@ export async function inviteMemberAction(formData: FormData) {
     },
     update: { role }
   });
-  
+
   // TODO: Send email notification
   revalidatePath(`/dashboard/org/${orgId}/members`);
 }
@@ -419,22 +424,22 @@ import { auth } from '@/lib/auth';
 export async function middleware(request: Request) {
   const session = await auth();
   const { nextUrl } = request;
-  
+
   // Get current organization from cookie
   const orgCookie = request.cookies.get('current_org');
   const currentOrgId = orgCookie?.value;
-  
+
   // If accessing dashboard without org, redirect to org selector
   if (nextUrl.pathname.startsWith('/dashboard') && !currentOrgId) {
     return NextResponse.redirect(new URL('/dashboard/organizations', nextUrl));
   }
-  
+
   // Add org context to headers for server actions
   const response = NextResponse.next();
   if (currentOrgId) {
     response.headers.set('x-organization-id', currentOrgId);
   }
-  
+
   return response;
 }
 
@@ -566,20 +571,20 @@ export async function publicBookAction(formData: FormData) {
   const customerName = formData.get('customerName') as string;
   const customerEmail = formData.get('customerEmail') as string;
   const customerPhone = formData.get('customerPhone') as string;
-  
+
   // Get service and organization
   const service = await prisma.service.findUnique({
     where: { id: serviceId },
     include: { organization: true }
   });
-  
+
   if (!service) throw new Error('Service not found');
-  
+
   // Create or find customer user
   let user = await prisma.user.findUnique({
     where: { email: customerEmail }
   });
-  
+
   if (!user) {
     user = await prisma.user.create({
       data: {
@@ -590,7 +595,7 @@ export async function publicBookAction(formData: FormData) {
       }
     });
   }
-  
+
   // Create appointment
   const appointment = await prisma.appointment.create({
     data: {
@@ -609,7 +614,7 @@ export async function publicBookAction(formData: FormData) {
       }
     }
   });
-  
+
   // TODO: Send confirmation email
   revalidatePath(`/book/${serviceId}`);
   redirect(`/book/confirmation/${appointment.id}`);
@@ -685,7 +690,7 @@ model Subscription {
   currentPeriodEnd   DateTime
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
-  
+
   // Relations
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 }
@@ -713,13 +718,13 @@ import { stripe } from '@/lib/stripe';
 export async function POST(req: Request) {
   const body = await req.text();
   const signature = req.headers.get('stripe-signature');
-  
+
   const event = stripe.webhooks.constructEvent(
     body,
     signature,
     process.env.STRIPE_WEBHOOK_SECRET
   );
-  
+
   switch (event.type) {
     case 'customer.subscription.created':
     case 'customer.subscription.updated':
@@ -729,7 +734,7 @@ export async function POST(req: Request) {
       // Downgrade to FREE
       break;
   }
-  
+
   return new Response('OK');
 }
 ```
@@ -752,18 +757,18 @@ const authLimiter = new RateLimiterMemory({
 
 export async function middleware(request: Request) {
   const { nextUrl } = request;
-  
+
   // Rate limit auth endpoints
   if (nextUrl.pathname.startsWith('/api/auth')) {
     const ip = request.headers.get('x-forwarded-for') || 'unknown';
-    
+
     try {
       await authLimiter.consume(ip);
     } catch {
       return new NextResponse('Too many requests', { status: 429 });
     }
   }
-  
+
   // ... existing middleware logic
 }
 ```
@@ -832,7 +837,7 @@ export async function listAppointments(
   limit: number = 20
 ) {
   const skip = (page - 1) * limit;
-  
+
   const [appointments, total] = await Promise.all([
     prisma.appointment.findMany({
       where: { organizationId },
@@ -844,7 +849,7 @@ export async function listAppointments(
       where: { organizationId }
     })
   ]);
-  
+
   return { appointments, total, pages: Math.ceil(total / limit) };
 }
 ```

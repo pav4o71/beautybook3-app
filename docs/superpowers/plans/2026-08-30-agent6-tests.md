@@ -1,5 +1,10 @@
 # Agent 6 — Verification & E2E Tests
 
+> [!NOTE]
+> **Status: Historical agent plan (2026-08-30).**
+> This reflects subagent task planning for Phase 2C test additions.
+> For current architecture and setup, see [`README.md`](../../README.md) and [`docs/architecture.md`](../architecture.md).
+
 > **Status:** Implemented.
 
 **Goal:** Repeatable scripts and Playwright specs for booking, admin, PHP pricing, and schedule logic.

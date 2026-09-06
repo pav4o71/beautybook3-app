@@ -1,5 +1,10 @@
 # BeautyBook3 SaaS - Implementation Phases
 
+> [!NOTE]
+> **Status: Historical implementation checklist.**
+> This reflects the repository during early SaaS migration planning (Phase 1).
+> For current architecture and setup, see [`README.md`](../README.md) and [`docs/architecture.md`](./architecture.md).
+
 ## Overview
 
 This document provides detailed, step-by-step implementation checklists for each phase of the SaaS migration.
@@ -32,13 +37,13 @@ model Organization {
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  
+
   members     OrganizationMember[]
   staff       Staff[]
   services    Service[]
   appointments Appointment[]
   settings    OrganizationSettings?
-  
+
   @@index([slug])
 }
 
@@ -48,10 +53,10 @@ model OrganizationMember {
   role           OrgRole  @default(MEMBER)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
-  
+
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+
   @@id([organizationId, userId])
   @@index([userId])
 }
@@ -71,7 +76,7 @@ model OrganizationSettings {
   bookingEnabled Boolean  @default(true)
   advanceBookingDays Int  @default(30)
   slotDurationMinutes Int @default(30)
-  
+
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 }
 ```
@@ -85,7 +90,7 @@ model Staff {
   organizationId String  // ADD THIS
   // ... existing fields
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  
+
   @@index([organizationId])  // ADD THIS
 }
 
@@ -93,7 +98,7 @@ model Service {
   organizationId String  // ADD THIS
   // ... existing fields
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  
+
   @@index([organizationId])  // ADD THIS
 }
 
@@ -101,7 +106,7 @@ model Appointment {
   organizationId String  // ADD THIS
   // ... existing fields
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  
+
   @@index([organizationId])  // ADD THIS
 }
 ```
@@ -265,7 +270,7 @@ export async function listCustomerAppointments(
 export async function createAppointmentAction(formData: FormData) {
   const session = await getSession();
   if (!session?.user) throw new Error('Unauthorized');
-  
+
   const appointment = await createAppointment(formData);
   // ...
 }
@@ -274,16 +279,16 @@ export async function createAppointmentAction(formData: FormData) {
 export async function createAppointmentAction(formData: FormData) {
   const session = await getSession();
   if (!session?.user) throw new Error('Unauthorized');
-  
+
   // Get user's organization
   const membership = await prisma.organizationMember.findFirst({
     where: { userId: session.user.id }
   });
-  
+
   if (!membership) {
     throw new Error('No organization found');
   }
-  
+
   const appointment = await createAppointment(formData, membership.organizationId);
   // ...
 }
@@ -300,10 +305,10 @@ Update all actions:
 export async function createServiceAction(formData: FormData) {
   const session = await getSession();
   if (!session?.user) throw new Error('Unauthorized');
-  
+
   // Get organization from form or session
   const organizationId = formData.get('organizationId') as string;
-  
+
   // Verify membership
   const membership = await prisma.organizationMember.findFirst({
     where: {
@@ -311,9 +316,9 @@ export async function createServiceAction(formData: FormData) {
       organizationId,
     }
   });
-  
+
   if (!membership) throw new Error('Unauthorized');
-  
+
   // Create service
   await prisma.service.create({
     data: {
@@ -322,7 +327,7 @@ export async function createServiceAction(formData: FormData) {
       // ...
     }
   });
-  
+
   revalidatePath(`/dashboard/admin/services`);
 }
 ```
@@ -334,20 +339,20 @@ export async function createServiceAction(formData: FormData) {
 ```typescript
 export default async function DashboardPage() {
   const session = await getSession();
-  
+
   // Get user's organization
   const membership = await prisma.organizationMember.findFirst({
     where: { userId: session?.user.id }
   });
-  
+
   if (!membership) {
     redirect('/dashboard/organizations/new');
   }
-  
+
   // Use membership.organizationId for all queries
   const appointments = await listAppointments(membership.organizationId);
   const services = await listServices(membership.organizationId);
-  
+
   // ...
 }
 ```
@@ -451,17 +456,17 @@ Enable users to create and manage multiple organizations.
 ```typescript
 export default async function OrganizationsPage() {
   const session = await getSession();
-  
+
   const memberships = await prisma.organizationMember.findMany({
     where: { userId: session?.user.id },
     include: { organization: true }
   });
-  
+
   return (
     <div>
       <h1>Your Organizations</h1>
       <Link href="/dashboard/organizations/new">Create New</Link>
-      
+
       <ul>
         {memberships.map(m => (
           <li key={m.organization.id}>
@@ -502,14 +507,14 @@ export default function NewOrganizationPage() {
 export async function createOrganizationAction(formData: FormData) {
   const session = await getSession();
   if (!session?.user) throw new Error('Unauthorized');
-  
+
   const name = formData.get('name') as string;
   const slug = formData.get('slug') as string;
-  
+
   // Check slug uniqueness
   const existing = await prisma.organization.findUnique({ where: { slug } });
   if (existing) throw new Error('Slug already taken');
-  
+
   // Create organization
   const org = await prisma.organization.create({
     data: {
@@ -525,12 +530,12 @@ export async function createOrganizationAction(formData: FormData) {
       }
     }
   });
-  
+
   // Create settings
   await prisma.organizationSettings.create({
     data: { organizationId: org.id }
   });
-  
+
   revalidatePath('/dashboard/organizations');
   redirect(`/dashboard/org/${org.id}`);
 }
@@ -577,22 +582,22 @@ import { auth } from '@/lib/auth';
 export async function middleware(request: Request) {
   const session = await auth();
   const { nextUrl } = request;
-  
+
   // Get current org from cookie
   const orgCookie = request.cookies.get('current_org');
   const currentOrgId = orgCookie?.value;
-  
+
   // Redirect if no org selected
   if (nextUrl.pathname.startsWith('/dashboard') && !currentOrgId) {
     return NextResponse.redirect(new URL('/dashboard/organizations', nextUrl));
   }
-  
+
   // Add org to headers
   const response = NextResponse.next();
   if (currentOrgId) {
     response.headers.set('x-organization-id', currentOrgId);
   }
-  
+
   return response;
 }
 
@@ -626,10 +631,10 @@ export default function HomePage() {
     <div>
       <h1>BeautyBook3</h1>
       <p>Book beauty services in Manila</p>
-      
+
       <h2>Browse Categories</h2>
       {/* Category grid */}
-      
+
       <Link href="/login">Login</Link>
     </div>
   );
@@ -647,7 +652,7 @@ export default async function CategoryPage({ params }) {
     },
     include: { organization: true }
   });
-  
+
   return (
     <div>
       <h1>{params.category}</h1>

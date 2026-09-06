@@ -1,5 +1,10 @@
 # BeautyBook3 SaaS Upgrade - Complete Summary
 
+> [!NOTE]
+> **Status: Historical summary document.**
+> This reflects the repository at the inception of the SaaS upgrade.
+> For current architecture and setup, see [`README.md`](../README.md) and [`docs/architecture.md`](./architecture.md).
+
 ## 🎯 What We've Created
 
 This upgrade transforms BeautyBook3 from a single-salon MVP into a multi-tenant SaaS platform for beauty salons across Manila, Philippines.

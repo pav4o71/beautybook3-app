@@ -1,5 +1,10 @@
 # Admin Gate + Catalog CRUD + UI Contrast Implementation Plan
 
+> [!NOTE]
+> **Status: Historical agent plan (2026-08-30).**
+> This reflects subagent task planning for Phase 2A admin catalog UI.
+> For current architecture and setup, see [`README.md`](../../README.md) and [`docs/architecture.md`](../architecture.md).
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Let ADMIN users manage categories, services, and staff (including StaffService links) via dashboard pages, while fixing dark-mode contrast on booking pickers and confirming appointments as pay-at-salon holds.
