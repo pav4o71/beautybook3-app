@@ -57,6 +57,9 @@ export async function getAppointmentByManagementToken(rawToken: unknown) {
       endsAt: true,
       status: true,
       customerName: true,
+      cancelledAt: true,
+      cancelReason: true,
+      cancelNote: true,
       organization: {
         select: {
           name: true,
@@ -89,5 +92,112 @@ export async function getAppointmentByManagementToken(rawToken: unknown) {
         orderBy: { service: { name: "asc" } },
       },
     },
+  });
+}
+
+export {
+  CANCELLATION_REASONS,
+  type CancellationReasonValue,
+  ALLOWED_CANCELLATION_REASONS,
+  CANCELLATION_CUTOFF_HOURS,
+} from "@/lib/cancellation-constants";
+import {
+  ALLOWED_CANCELLATION_REASONS,
+  CANCELLATION_CUTOFF_HOURS,
+} from "@/lib/cancellation-constants";
+
+export function canCustomerCancelAppointment(
+  appointment: {
+    startsAt: Date;
+    status: string;
+  },
+  now: Date = new Date(),
+): { allowed: boolean; reason?: string } {
+  if (appointment.status === "CANCELLED") {
+    return { allowed: false, reason: "Appointment is already cancelled." };
+  }
+  if (appointment.status !== "CONFIRMED" && appointment.status !== "PENDING") {
+    return { allowed: false, reason: "This appointment can no longer be cancelled." };
+  }
+  if (now >= appointment.startsAt) {
+    return { allowed: false, reason: "Past appointments cannot be cancelled." };
+  }
+  const hoursUntilStart =
+    (appointment.startsAt.getTime() - now.getTime()) / (1000 * 60 * 60);
+  if (hoursUntilStart < CANCELLATION_CUTOFF_HOURS) {
+    return {
+      allowed: false,
+      reason: `Appointments cannot be cancelled within ${CANCELLATION_CUTOFF_HOURS} hours of the scheduled time.`,
+    };
+  }
+  return { allowed: true };
+}
+
+export async function cancelAppointmentByManagementToken(input: {
+  rawToken: unknown;
+  reason?: string | null;
+  note?: string | null;
+}): Promise<{ success: boolean; alreadyCancelled: boolean }> {
+  if (!isValidManagementTokenFormat(input.rawToken)) {
+    throw new Error("Invalid management token.");
+  }
+
+  const tokenHash = hashManagementToken(input.rawToken);
+  const now = new Date();
+
+  // Validate optional reason
+  let validatedReason: string | null = null;
+  if (input.reason && input.reason.trim().length > 0) {
+    const trimmed = input.reason.trim();
+    if (!ALLOWED_CANCELLATION_REASONS.has(trimmed)) {
+      throw new Error("Invalid cancellation reason.");
+    }
+    validatedReason = trimmed;
+  }
+
+  // Validate optional note
+  let validatedNote: string | null = null;
+  if (input.note && input.note.trim().length > 0) {
+    const trimmed = input.note.trim();
+    if (trimmed.length > 300) {
+      throw new Error("Cancellation note must not exceed 300 characters.");
+    }
+    validatedNote = trimmed;
+  }
+
+  return prisma.$transaction(async (tx) => {
+    const appointment = await tx.appointment.findUnique({
+      where: { managementTokenHash: tokenHash },
+      select: {
+        id: true,
+        startsAt: true,
+        status: true,
+      },
+    });
+
+    if (!appointment) {
+      throw new Error("Appointment not found.");
+    }
+
+    if (appointment.status === "CANCELLED") {
+      return { success: true, alreadyCancelled: true };
+    }
+
+    const check = canCustomerCancelAppointment(appointment, now);
+    if (!check.allowed) {
+      throw new Error(check.reason || "Appointment cannot be cancelled.");
+    }
+
+    await tx.appointment.update({
+      where: { id: appointment.id },
+      data: {
+        status: "CANCELLED",
+        cancelledAt: now,
+        cancelReason: validatedReason,
+        cancelNote: validatedNote,
+      },
+    });
+
+    return { success: true, alreadyCancelled: false };
   });
 }
