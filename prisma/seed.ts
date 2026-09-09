@@ -50,6 +50,7 @@ async function seedOrganization(): Promise<TenantContext> {
       description:
         "Makati salon for cuts, colour, and nails. Book online and pay at the salon when you arrive.",
       phone: "+63 2 8888 0100",
+      cancellationCutoffHours: 24,
     },
     create: {
       name: "BeautyBook Demo Salon",
@@ -59,6 +60,7 @@ async function seedOrganization(): Promise<TenantContext> {
       description:
         "Makati salon for cuts, colour, and nails. Book online and pay at the salon when you arrive.",
       phone: "+63 2 8888 0100",
+      cancellationCutoffHours: 24,
     },
   });
 

@@ -32,6 +32,7 @@ export async function updateOrganizationSettings(
     published: formData.get("published") === "on",
     description: String(formData.get("description") ?? ""),
     phone: String(formData.get("phone") ?? ""),
+    cancellationCutoffHours: formData.get("cancellationCutoffHours"),
   });
 
   if (!parsed.success) {
@@ -65,6 +66,7 @@ export async function updateOrganizationSettings(
         published: parsed.data.published,
         description: parsed.data.description,
         phone: parsed.data.phone,
+        cancellationCutoffHours: parsed.data.cancellationCutoffHours,
         coverImageUrl,
       },
     });

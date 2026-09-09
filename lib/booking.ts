@@ -149,6 +149,9 @@ export async function getRescheduleSlotsByManagementToken(
       staffId: true,
       startsAt: true,
       status: true,
+      organization: {
+        select: { cancellationCutoffHours: true },
+      },
       services: {
         select: { durationMin: true },
       },

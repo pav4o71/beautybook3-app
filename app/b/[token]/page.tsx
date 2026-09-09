@@ -313,7 +313,8 @@ export default async function AppointmentManagementPage({
                     data-testid="cancellation-cutoff-notice"
                     className="text-xs text-amber-700 font-medium"
                   >
-                    Online changes are closed (cancellations and rescheduling must be made at least 24 hours in advance).
+                    Online changes are closed (cancellations and rescheduling must be made at least{" "}
+                    {appointment.organization.cancellationCutoffHours ?? 24} hours in advance).
                   </p>
                 ) : null}
               </div>

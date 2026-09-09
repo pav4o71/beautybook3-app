@@ -103,6 +103,22 @@ export default async function BusinessSettingsPage({
           />
         </label>
 
+        <label className={labelClass}>
+          <span className={labelTextClass}>
+            Cancellation and reschedule cutoff (hours)
+          </span>
+          <input
+            type="number"
+            name="cancellationCutoffHours"
+            data-testid="cancellation-cutoff-hours-input"
+            defaultValue={organization.cancellationCutoffHours ?? 24}
+            className={controlClass}
+          />
+          <span className="text-xs text-zinc-500">
+            Minimum hours before appointment start required for customers to cancel or reschedule online (1 to 168 hours, default 24).
+          </span>
+        </label>
+
         <label className="flex items-center gap-2 text-sm text-zinc-900">
           <input
             type="checkbox"
