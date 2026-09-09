@@ -19,6 +19,7 @@ const scripts = [
   "appointments.ts",
   "management-token.ts",
   "cancellation.ts",
+  "reschedule.ts",
 ];
 
 assertSafeVerifyTarget();

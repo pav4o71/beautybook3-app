@@ -16,11 +16,14 @@ import {
   surfaceClass,
 } from "@/lib/ui";
 import { firstQueryValue } from "@/lib/validations/booking";
+import { getRescheduleSlotsByManagementToken } from "@/lib/booking";
 import { CopyLinkButton } from "./copy-link-button";
 import { CancelDialog } from "./cancel-dialog";
+import { RescheduleDialog } from "./reschedule-dialog";
 import {
   CANCELLATION_REASONS,
   canCustomerCancelAppointment,
+  canCustomerRescheduleAppointment,
 } from "@/lib/appointment-management-token";
 
 export const metadata: Metadata = {
@@ -41,7 +44,10 @@ export default async function AppointmentManagementPage({
   searchParams,
 }: {
   params: Promise<{ token: string }>;
-  searchParams: Promise<{ booked?: string | string[] }>;
+  searchParams: Promise<{
+    booked?: string | string[];
+    rescheduled?: string | string[];
+  }>;
 }) {
   const { token } = await params;
   const query = await searchParams;
@@ -52,10 +58,18 @@ export default async function AppointmentManagementPage({
   }
 
   const isJustBooked = firstQueryValue(query.booked) === "1";
+  const isJustRescheduled = firstQueryValue(query.rescheduled) === "1";
   const cancelEligibility = canCustomerCancelAppointment(appointment);
+  const rescheduleEligibility = canCustomerRescheduleAppointment(appointment);
   const totalCents = appointment.services.reduce((sum, s) => sum + s.priceCents, 0);
   const totalDurationMin = appointment.services.reduce((sum, s) => sum + s.durationMin, 0);
   const payCopy = appointmentPayCopy(appointment.status, totalCents);
+
+  let availableSlots: string[] = [];
+  if (rescheduleEligibility.allowed) {
+    const slots = await getRescheduleSlotsByManagementToken(token, 14);
+    availableSlots = slots.map((s) => s.toISOString());
+  }
 
   return (
     <>
@@ -121,7 +135,36 @@ export default async function AppointmentManagementPage({
           </section>
         ) : null}
 
-        {isJustBooked && appointment.status !== "CANCELLED" ? (
+        {isJustRescheduled && appointment.status !== "CANCELLED" ? (
+          <section
+            data-testid="reschedule-success-state"
+            className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-6 text-center shadow-xs sm:p-8 mb-6"
+          >
+            <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 sm:size-14">
+              <svg
+                className="size-7 sm:size-8"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+                aria-hidden="true"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </div>
+            <h2 className="mt-4 text-xl font-bold tracking-tight text-zinc-900 sm:text-2xl">
+              Appointment rescheduled!
+            </h2>
+            <p className="mt-2 text-sm font-medium text-emerald-900 sm:text-base">
+              Your appointment has been updated to {formatDay(appointment.startsAt)} at{" "}
+              {formatTime(appointment.startsAt)}.
+            </p>
+          </section>
+        ) : null}
+
+        {isJustBooked && !isJustRescheduled && appointment.status !== "CANCELLED" ? (
           <section
             data-testid="booking-success-state"
             className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-6 text-center shadow-xs sm:p-8"
@@ -270,7 +313,7 @@ export default async function AppointmentManagementPage({
                     data-testid="cancellation-cutoff-notice"
                     className="text-xs text-amber-700 font-medium"
                   >
-                    Online cancellation is closed (cancellations must be made at least 24 hours in advance).
+                    Online changes are closed (cancellations and rescheduling must be made at least 24 hours in advance).
                   </p>
                 ) : null}
               </div>
@@ -279,7 +322,15 @@ export default async function AppointmentManagementPage({
                 {cancelEligibility.allowed ? (
                   <CancelDialog token={token} />
                 ) : null}
-                {!isJustBooked ? (
+                {rescheduleEligibility.allowed ? (
+                  <RescheduleDialog
+                    token={token}
+                    specialistName={appointment.staff.name}
+                    slots={availableSlots}
+                    currentStartsAt={appointment.startsAt.toISOString()}
+                  />
+                ) : null}
+                {!isJustBooked && !isJustRescheduled ? (
                   <Link
                     href={`/s/${appointment.organization.slug}`}
                     className={secondaryButtonClass}

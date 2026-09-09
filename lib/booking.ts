@@ -4,7 +4,12 @@ import {
   MAX_BOOKING_SERVICES,
   MAX_COMBINED_DURATION_MIN,
 } from "@/lib/booking-limits";
-import { generateAppointmentManagementToken } from "@/lib/appointment-management-token";
+import {
+  canCustomerRescheduleAppointment,
+  generateAppointmentManagementToken,
+  hashManagementToken,
+  isValidManagementTokenFormat,
+} from "@/lib/appointment-management-token";
 import {
   addSalonDays,
   salonDayBounds,
@@ -27,6 +32,7 @@ type SlotQuery = {
   rangeStart: Date;
   rangeEnd: Date;
   dayCount: number;
+  excludeAppointmentId?: string;
 };
 
 async function collectAvailableSlots(input: SlotQuery) {
@@ -42,6 +48,7 @@ async function collectAvailableSlots(input: SlotQuery) {
         status: { not: AppointmentStatus.CANCELLED },
         startsAt: { lt: input.rangeEnd },
         endsAt: { gt: input.rangeStart },
+        ...(input.excludeAppointmentId ? { id: { not: input.excludeAppointmentId } } : {}),
       },
       select: { startsAt: true, endsAt: true },
     }),
@@ -91,6 +98,7 @@ export async function getAvailableSlots(input: {
   staffId: string;
   durationMin: number;
   days?: number;
+  excludeAppointmentId?: string;
 }) {
   const days = input.days ?? 7;
   const { start: rangeStart } = salonDayBounds();
@@ -101,6 +109,7 @@ export async function getAvailableSlots(input: {
     rangeStart,
     rangeEnd: addSalonDays(rangeStart, days),
     dayCount: days,
+    excludeAppointmentId: input.excludeAppointmentId,
   });
 }
 
@@ -109,6 +118,7 @@ export async function getAvailableSlotsForDay(input: {
   staffId: string;
   durationMin: number;
   date: Date;
+  excludeAppointmentId?: string;
 }) {
   const { start: rangeStart, end: rangeEnd } = salonDayBounds(input.date);
   return collectAvailableSlots({
@@ -118,12 +128,61 @@ export async function getAvailableSlotsForDay(input: {
     rangeStart,
     rangeEnd,
     dayCount: 1,
+    excludeAppointmentId: input.excludeAppointmentId,
   });
+}
+
+export async function getRescheduleSlotsByManagementToken(
+  rawToken: unknown,
+  days = 14,
+): Promise<Date[]> {
+  if (!isValidManagementTokenFormat(rawToken)) {
+    return [];
+  }
+
+  const tokenHash = hashManagementToken(rawToken);
+  const appointment = await prisma.appointment.findUnique({
+    where: { managementTokenHash: tokenHash },
+    select: {
+      id: true,
+      organizationId: true,
+      staffId: true,
+      startsAt: true,
+      status: true,
+      services: {
+        select: { durationMin: true },
+      },
+    },
+  });
+
+  if (!appointment) {
+    return [];
+  }
+
+  const check = canCustomerRescheduleAppointment(appointment);
+  if (!check.allowed) {
+    return [];
+  }
+
+  const durationMin = appointment.services.reduce(
+    (sum, s) => sum + s.durationMin,
+    0,
+  );
+
+  const slots = await getAvailableSlots({
+    organizationId: appointment.organizationId,
+    staffId: appointment.staffId,
+    durationMin,
+    days,
+    excludeAppointmentId: appointment.id,
+  });
+
+  return slots.filter((slot) => slot.getTime() !== appointment.startsAt.getTime());
 }
 
 export { staffOffersAllServices } from "@/lib/booking-limits";
 
-function isAppointmentOverlapError(error: unknown) {
+export function isAppointmentOverlapError(error: unknown) {
   if (error instanceof Error) {
     return (
       error.message.includes("Appointment_staff_no_overlap") ||
