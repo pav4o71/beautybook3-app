@@ -221,9 +221,90 @@ async function main() {
   });
   assert(reusedSlot.id !== created.id, "New appointment created in released GiST slot");
 
+  // 11. Concurrency test: simultaneous cancellations must have first-writer-wins semantics
+  const futureStart2 = salonDateAtTime(addSalonDays(futureDay, 1), 14, 0);
+  const futureEnd2 = new Date(futureStart2.getTime() + 30 * 60 * 1000);
+  await prisma.appointment.deleteMany({
+    where: {
+      organizationId: organization.id,
+      staffId: specialist.id,
+      startsAt: { lt: futureEnd2 },
+      endsAt: { gt: futureStart2 },
+    },
+  });
+
+  const concurrentAppt = await createAppointment({
+    organizationId: organization.id,
+    locationId: location.id,
+    customerId: null,
+    staffId: specialist.id,
+    serviceIds: [service.id],
+    startsAt: futureStart2,
+    customerName: "Concurrent Test Guest",
+    customerPhone: "+639179998888",
+    customerEmail: "concurrent@beautybook.local",
+  });
+
+  const [res1, res2] = await Promise.allSettled([
+    cancelAppointmentByManagementToken({
+      rawToken: concurrentAppt.rawToken,
+      reason: "schedule_conflict",
+      note: "Attempt 1 note",
+    }),
+    cancelAppointmentByManagementToken({
+      rawToken: concurrentAppt.rawToken,
+      reason: "illness",
+      note: "Attempt 2 note",
+    }),
+  ]);
+
+  if (res1.status !== "fulfilled" || res2.status !== "fulfilled") {
+    throw new Error("Both concurrent cancellation attempts must settle successfully");
+  }
+  assert(
+    res1.value.success && res2.value.success,
+    "Both concurrent cancellation attempts must report success: true",
+  );
+  assert(
+    Number(res1.value.alreadyCancelled) + Number(res2.value.alreadyCancelled) === 1,
+    "Exactly one concurrent cancellation must win first-write and the other must report alreadyCancelled",
+  );
+
+  const winner = !res1.value.alreadyCancelled ? "attempt1" : "attempt2";
+  const dbConcurrent = await prisma.appointment.findUniqueOrThrow({
+    where: { id: concurrentAppt.id },
+  });
+
+  assert(dbConcurrent.status === AppointmentStatus.CANCELLED, "Concurrent appt status must be CANCELLED");
+  assert(dbConcurrent.cancelledAt !== null, "Concurrent appt cancelledAt must be populated");
+  if (winner === "attempt1") {
+    assert(dbConcurrent.cancelReason === "schedule_conflict", "Attempt 1 reason preserved");
+    assert(dbConcurrent.cancelNote === "Attempt 1 note", "Attempt 1 note preserved");
+  } else {
+    assert(dbConcurrent.cancelReason === "illness", "Attempt 2 reason preserved");
+    assert(dbConcurrent.cancelNote === "Attempt 2 note", "Attempt 2 note preserved");
+  }
+  assert(dbConcurrent.id === concurrentAppt.id, "Appointment ID unchanged");
+  assert(dbConcurrent.managementTokenHash === concurrentAppt.managementTokenHash, "Token hash unchanged");
+  assert(dbConcurrent.customerName === "Concurrent Test Guest", "Customer name snapshot unchanged");
+  assert(dbConcurrent.customerPhone === "+639179998888", "Customer phone snapshot unchanged");
+
+  // GiST slot release after concurrent cancellation
+  const reusedConcurrentSlot = await createAppointment({
+    organizationId: organization.id,
+    locationId: location.id,
+    customerId: null,
+    staffId: specialist.id,
+    serviceIds: [service.id],
+    startsAt: futureStart2,
+    customerName: "Post-Concurrent Booker",
+  });
+  assert(reusedConcurrentSlot.id !== concurrentAppt.id, "Slot successfully claimed through GiST after concurrent cancellation");
+
   console.log("verify-cancellation: ok", {
     cancelledId: created.id,
     reusedSlotId: reusedSlot.id,
+    concurrentWinner: winner,
     cancellationReason: updatedDb.cancelReason,
     cancelledAt: updatedDb.cancelledAt?.toISOString(),
   });

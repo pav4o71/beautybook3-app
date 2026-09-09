@@ -40,10 +40,14 @@ async function main() {
     organization.cancellationCutoffHours === DEFAULT_CUTOFF_HOURS,
     `Default cutoff hours must be ${DEFAULT_CUTOFF_HOURS}, got ${organization.cancellationCutoffHours}`,
   );
-  assert(MIN_CUTOFF_HOURS === 1, "MIN_CUTOFF_HOURS must be 1");
+  assert(MIN_CUTOFF_HOURS === 0, "MIN_CUTOFF_HOURS must be 0");
   assert(MAX_CUTOFF_HOURS === 168, "MAX_CUTOFF_HOURS must be 168");
 
   // 2. Verify bounds validator helper
+  const valid0 = validateCutoffHours(0);
+  assert(valid0.ok && valid0.hours === 0, "0 hours cutoff must be valid");
+  const valid0Str = validateCutoffHours("0");
+  assert(valid0Str.ok && valid0Str.hours === 0, "'0' string cutoff must be valid");
   const valid1 = validateCutoffHours(1);
   assert(valid1.ok && valid1.hours === 1, "1 hour cutoff must be valid");
   const valid48 = validateCutoffHours("48");
@@ -51,10 +55,10 @@ async function main() {
   const valid168 = validateCutoffHours(168);
   assert(valid168.ok && valid168.hours === 168, "168 hours cutoff must be valid");
 
-  const invalidZero = validateCutoffHours(0);
-  assert(!invalidZero.ok, "0 hours cutoff must be invalid");
-  const invalidNegative = validateCutoffHours(-5);
-  assert(!invalidNegative.ok, "Negative hours cutoff must be invalid");
+  const invalidNegative1 = validateCutoffHours(-1);
+  assert(!invalidNegative1.ok, "-1 hours cutoff must be invalid");
+  const invalidNegative5 = validateCutoffHours(-5);
+  assert(!invalidNegative5.ok, "Negative hours cutoff must be invalid");
   const invalidTooHigh = validateCutoffHours(169);
   assert(!invalidTooHigh.ok, "> 168 hours cutoff must be invalid");
   const invalidDecimal = validateCutoffHours(12.5);
@@ -168,9 +172,69 @@ async function main() {
     const rescheduleAllowed12h = canCustomerRescheduleAppointment(apptWith12h, now);
     assert(rescheduleAllowed12h.allowed, "Appointment 36h ahead must be allowed for reschedule when cutoff is 12h");
 
+    // 8. Lower cutoff to 0 hours and verify zero-hour semantics
+    await prisma.organization.update({
+      where: { id: organizationId },
+      data: { cancellationCutoffHours: 0 },
+    });
+    const updatedZeroOrg = await prisma.organization.findUniqueOrThrow({
+      where: { id: organizationId },
+    });
+    assert(updatedZeroOrg.cancellationCutoffHours === 0, "Organization cutoff should update to 0");
+
+    const apptWith0h = await prisma.appointment.findUniqueOrThrow({
+      where: { id: appt.id },
+      include: {
+        organization: { select: { cancellationCutoffHours: true } },
+      },
+    });
+
+    // Future appointment with cutoff 0: allowed for cancel and reschedule
+    const cancelAllowed0h = canCustomerCancelAppointment(apptWith0h, now);
+    assert(cancelAllowed0h.allowed, "Future appointment with cutoff 0 must be cancellable");
+    assert(cancelAllowed0h.cutoffHours === 0, "Reported cutoff hours must be 0");
+
+    const rescheduleAllowed0h = canCustomerRescheduleAppointment(apptWith0h, now);
+    assert(rescheduleAllowed0h.allowed, "Future appointment with cutoff 0 must be reschedulable");
+    assert(rescheduleAllowed0h.cutoffHours === 0, "Reported cutoff hours must be 0");
+
+    // Near future appointment (e.g. 15 minutes ahead) with cutoff 0: STILL ALLOWED
+    const near15m = new Date(now.getTime() + 15 * 60 * 1000);
+    const nearAppt = {
+      startsAt: near15m,
+      status: AppointmentStatus.CONFIRMED,
+      organization: { cancellationCutoffHours: 0 },
+    };
+    const cancelAllowedNear = canCustomerCancelAppointment(nearAppt, now);
+    assert(cancelAllowedNear.allowed, "Appointment 15m ahead with cutoff 0 must be allowed");
+    const rescheduleAllowedNear = canCustomerRescheduleAppointment(nearAppt, now);
+    assert(rescheduleAllowedNear.allowed, "Appointment 15m ahead with cutoff 0 must be allowed for reschedule");
+
+    // Appointment exactly at start time with cutoff 0: FORBIDDEN
+    const atStartAppt = {
+      startsAt: now,
+      status: AppointmentStatus.CONFIRMED,
+      organization: { cancellationCutoffHours: 0 },
+    };
+    const cancelAtStart = canCustomerCancelAppointment(atStartAppt, now);
+    assert(!cancelAtStart.allowed, "Appointment at start time with cutoff 0 must be forbidden");
+    const rescheduleAtStart = canCustomerRescheduleAppointment(atStartAppt, now);
+    assert(!rescheduleAtStart.allowed, "Appointment at start time with cutoff 0 must be forbidden for reschedule");
+
+    // Appointment in the past with cutoff 0: FORBIDDEN
+    const pastAppt = {
+      startsAt: new Date(now.getTime() - 10 * 60 * 1000),
+      status: AppointmentStatus.CONFIRMED,
+      organization: { cancellationCutoffHours: 0 },
+    };
+    const cancelPast = canCustomerCancelAppointment(pastAppt, now);
+    assert(!cancelPast.allowed, "Appointment in past with cutoff 0 must be forbidden");
+    const reschedulePast = canCustomerRescheduleAppointment(pastAppt, now);
+    assert(!reschedulePast.allowed, "Appointment in past with cutoff 0 must be forbidden for reschedule");
+
     console.log("verify:cutoff-settings passed");
   } finally {
-    // 8. Restore organization cutoff back to default 24
+    // 9. Restore organization cutoff back to default 24
     await prisma.organization.update({
       where: { id: organizationId },
       data: { cancellationCutoffHours: DEFAULT_CUTOFF_HOURS },

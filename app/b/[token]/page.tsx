@@ -306,6 +306,13 @@ export default async function AppointmentManagementPage({
               <div className="space-y-0.5">
                 <p className="text-xs text-zinc-500">
                   Save this private management receipt link for your appointment.
+                  {cancelEligibility.allowed ? (
+                    <span className="block mt-0.5 text-zinc-400">
+                      {(appointment.organization.cancellationCutoffHours ?? 24) === 0
+                        ? "You can cancel or reschedule until the appointment starts."
+                        : `You can cancel or reschedule up to ${appointment.organization.cancellationCutoffHours ?? 24} hours before the appointment.`}
+                    </span>
+                  ) : null}
                 </p>
                 {!cancelEligibility.allowed &&
                 (appointment.status === "CONFIRMED" || appointment.status === "PENDING") ? (
@@ -313,8 +320,9 @@ export default async function AppointmentManagementPage({
                     data-testid="cancellation-cutoff-notice"
                     className="text-xs text-amber-700 font-medium"
                   >
-                    Online changes are closed (cancellations and rescheduling must be made at least{" "}
-                    {appointment.organization.cancellationCutoffHours ?? 24} hours in advance).
+                    {(appointment.organization.cancellationCutoffHours ?? 24) === 0
+                      ? "Online changes are closed (appointments cannot be changed once started)."
+                      : `Online changes are closed (cancellations and rescheduling must be made at least ${appointment.organization.cancellationCutoffHours ?? 24} hours in advance).`}
                   </p>
                 ) : null}
               </div>

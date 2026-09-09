@@ -21,7 +21,7 @@ export function ActionForm({
   const [state, formAction, pending] = useActionState(action, {});
 
   return (
-    <form action={formAction} className={className}>
+    <form action={formAction} className={className} noValidate>
       {state.error ? (
         <p className={`mb-4 ${errorAlertClass}`}>{state.error}</p>
       ) : null}
