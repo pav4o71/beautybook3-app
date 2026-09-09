@@ -115,12 +115,24 @@ async function main() {
     dbAppt.managementTokenHash === hashManagementToken(created.rawToken),
     "DB must store deterministic SHA-256 hash",
   );
+  assert(
+    dbAppt.customerPhone === "+639171234567",
+    "customerPhone snapshot preserved in DB record",
+  );
+  assert(
+    dbAppt.customerEmail === "token-guest@beautybook.local",
+    "customerEmail snapshot preserved in DB record",
+  );
 
-  // Raw token must never appear in any DB column
-  const rawQuery = await prisma.$queryRaw<unknown[]>`
+  // Verify the raw token itself is not stored in managementTokenHash,
+  // while the column stores SHA-256(rawToken).
+  const rawMatch = await prisma.$queryRaw<unknown[]>`
     SELECT id FROM "Appointment" WHERE "managementTokenHash" = ${created.rawToken};
   `;
-  assert(rawQuery.length === 0, "Raw token must not match hash column in DB");
+  assert(
+    rawMatch.length === 0,
+    "Raw token must not be stored in managementTokenHash column",
+  );
 
   // Verify lookup via getAppointmentByManagementToken
   const resolved = await getAppointmentByManagementToken(created.rawToken);
@@ -140,12 +152,35 @@ async function main() {
   );
   assert(
     resolved?.customerName === "Token Verification Guest",
-    "customerName snapshot preserved",
+    "customerName snapshot preserved in resolved view",
   );
-  assert(
-    resolved?.customerPhone === "+639171234567",
-    "customerPhone snapshot preserved",
-  );
+
+  // Defense-in-depth: Ensure least-privilege projection does not expose sensitive fields
+  const resolvedRecord = resolved as unknown as Record<string, unknown>;
+  assert(resolvedRecord.customerPhone === undefined, "resolved appointment must not expose customerPhone");
+  assert(resolvedRecord.customerEmail === undefined, "resolved appointment must not expose customerEmail");
+  assert(resolvedRecord.customerId === undefined, "resolved appointment must not expose customerId");
+  assert(resolvedRecord.managementTokenHash === undefined, "resolved appointment must not expose managementTokenHash");
+  assert(resolvedRecord.notes === undefined, "resolved appointment must not expose notes");
+  assert(resolvedRecord.organizationId === undefined, "resolved appointment must not expose organizationId");
+  assert(resolvedRecord.locationId === undefined, "resolved appointment must not expose locationId");
+  assert(resolvedRecord.staffId === undefined, "resolved appointment must not expose staffId");
+
+  const orgRecord = resolved?.organization as unknown as Record<string, unknown>;
+  assert(orgRecord.phone === undefined, "resolved organization must not expose phone");
+  assert(orgRecord.id === undefined, "resolved organization must not expose id");
+
+  const locRecord = resolved?.location as unknown as Record<string, unknown>;
+  assert(locRecord.phone === undefined, "resolved location must not expose phone");
+  assert(locRecord.id === undefined, "resolved location must not expose id");
+
+  const staffRecord = resolved?.staff as unknown as Record<string, unknown>;
+  assert(staffRecord.bio === undefined, "resolved staff must not expose bio");
+  assert(staffRecord.id === undefined, "resolved staff must not expose id");
+
+  const serviceRecord = resolved?.services[0]?.service as unknown as Record<string, unknown>;
+  assert(serviceRecord.description === undefined, "resolved service must not expose description");
+  assert(serviceRecord.id === undefined, "resolved service must not expose id");
 
   // Negative lookups
   const nonExistentRaw = generateAppointmentManagementToken().rawToken;

@@ -51,40 +51,38 @@ export async function getAppointmentByManagementToken(rawToken: unknown) {
     where: {
       managementTokenHash: tokenHash,
     },
-    include: {
+    select: {
+      id: true,
+      startsAt: true,
+      endsAt: true,
+      status: true,
+      customerName: true,
       organization: {
         select: {
-          id: true,
           name: true,
           slug: true,
-          timezone: true,
-          currency: true,
-          phone: true,
         },
       },
       location: {
         select: {
-          id: true,
           name: true,
           address: true,
           area: true,
-          phone: true,
         },
       },
       staff: {
         select: {
-          id: true,
           name: true,
-          bio: true,
         },
       },
       services: {
-        include: {
+        select: {
+          serviceId: true,
+          durationMin: true,
+          priceCents: true,
           service: {
             select: {
-              id: true,
               name: true,
-              description: true,
             },
           },
         },
