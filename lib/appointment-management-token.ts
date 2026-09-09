@@ -1,5 +1,12 @@
 import { createHash, randomBytes } from "node:crypto";
 import { prisma } from "@/lib/prisma";
+import {
+  getStaffSchedules,
+  getStaffTimeOffInRange,
+  slotBlockedByTimeOff,
+  slotFitsStaffSchedule,
+  slotOnBookingGrid,
+} from "@/lib/schedule";
 
 /**
  * Expected token format: 32 cryptographically random bytes (256 bits of entropy)
@@ -200,4 +207,170 @@ export async function cancelAppointmentByManagementToken(input: {
 
     return { success: true, alreadyCancelled: false };
   });
+}
+
+export function canCustomerRescheduleAppointment(
+  appointment: {
+    startsAt: Date;
+    status: string;
+  },
+  now: Date = new Date(),
+): { allowed: boolean; reason?: string } {
+  if (appointment.status === "CANCELLED") {
+    return { allowed: false, reason: "Cancelled appointments cannot be rescheduled." };
+  }
+  if (appointment.status !== "CONFIRMED" && appointment.status !== "PENDING") {
+    return { allowed: false, reason: "This appointment can no longer be rescheduled." };
+  }
+  if (now >= appointment.startsAt) {
+    return { allowed: false, reason: "Past appointments cannot be rescheduled." };
+  }
+  const hoursUntilStart =
+    (appointment.startsAt.getTime() - now.getTime()) / (1000 * 60 * 60);
+  if (hoursUntilStart < CANCELLATION_CUTOFF_HOURS) {
+    return {
+      allowed: false,
+      reason: `Appointments cannot be rescheduled within ${CANCELLATION_CUTOFF_HOURS} hours of the scheduled time.`,
+    };
+  }
+  return { allowed: true };
+}
+
+function isAppointmentOverlapError(error: unknown): boolean {
+  if (error instanceof Error) {
+    return (
+      error.message.includes("Appointment_staff_no_overlap") ||
+      error.message.includes("exclusion constraint") ||
+      error.message.includes("23P01")
+    );
+  }
+  return false;
+}
+
+export async function rescheduleAppointmentByManagementToken(input: {
+  rawToken: unknown;
+  targetStartsAt: Date | string;
+}): Promise<{
+  success: boolean;
+  appointment: {
+    id: string;
+    startsAt: Date;
+    endsAt: Date;
+    managementTokenHash: string | null;
+  };
+}> {
+  if (!isValidManagementTokenFormat(input.rawToken)) {
+    throw new Error("Invalid management token.");
+  }
+
+  const targetStartsAt =
+    input.targetStartsAt instanceof Date
+      ? input.targetStartsAt
+      : new Date(input.targetStartsAt);
+
+  if (Number.isNaN(targetStartsAt.getTime())) {
+    throw new Error("Invalid time selected.");
+  }
+
+  const now = new Date();
+  if (targetStartsAt.getTime() <= now.getTime()) {
+    throw new Error("That time is not available.");
+  }
+
+  if (!slotOnBookingGrid(targetStartsAt)) {
+    throw new Error("That time is not available.");
+  }
+
+  const tokenHash = hashManagementToken(input.rawToken);
+
+  try {
+    return await prisma.$transaction(async (tx) => {
+      const appointment = await tx.appointment.findUnique({
+        where: { managementTokenHash: tokenHash },
+        include: {
+          services: true,
+        },
+      });
+
+      if (!appointment) {
+        throw new Error("Appointment not found.");
+      }
+
+      const check = canCustomerRescheduleAppointment(appointment, now);
+      if (!check.allowed) {
+        throw new Error(check.reason || "Appointment cannot be rescheduled.");
+      }
+
+      if (appointment.startsAt.getTime() === targetStartsAt.getTime()) {
+        throw new Error("Please select a different time.");
+      }
+
+      const totalDurationMin = appointment.services.reduce(
+        (sum, s) => sum + s.durationMin,
+        0,
+      );
+      const targetEndsAt = new Date(
+        targetStartsAt.getTime() + totalDurationMin * 60_000,
+      );
+
+      const schedules = await getStaffSchedules(
+        appointment.organizationId,
+        appointment.staffId,
+      );
+      if (!slotFitsStaffSchedule(schedules, targetStartsAt, totalDurationMin)) {
+        throw new Error("That time is not available.");
+      }
+
+      const timeOff = await getStaffTimeOffInRange(
+        appointment.organizationId,
+        appointment.staffId,
+        targetStartsAt,
+        targetEndsAt,
+        tx,
+      );
+      if (slotBlockedByTimeOff(targetStartsAt, targetEndsAt, timeOff)) {
+        throw new Error("That time is not available.");
+      }
+
+      const clash = await tx.appointment.findFirst({
+        where: {
+          organizationId: appointment.organizationId,
+          staffId: appointment.staffId,
+          status: { not: "CANCELLED" },
+          id: { not: appointment.id },
+          startsAt: { lt: targetEndsAt },
+          endsAt: { gt: targetStartsAt },
+        },
+      });
+
+      if (clash) {
+        throw new Error("That time is no longer available.");
+      }
+
+      const updated = await tx.appointment.update({
+        where: { id: appointment.id },
+        data: {
+          startsAt: targetStartsAt,
+          endsAt: targetEndsAt,
+          updatedAt: now,
+        },
+        select: {
+          id: true,
+          startsAt: true,
+          endsAt: true,
+          managementTokenHash: true,
+        },
+      });
+
+      return {
+        success: true,
+        appointment: updated,
+      };
+    });
+  } catch (error) {
+    if (isAppointmentOverlapError(error)) {
+      throw new Error("That time is no longer available.");
+    }
+    throw error;
+  }
 }

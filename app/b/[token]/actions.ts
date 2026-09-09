@@ -1,6 +1,9 @@
 "use server";
 
-import { cancelAppointmentByManagementToken } from "@/lib/appointment-management-token";
+import {
+  cancelAppointmentByManagementToken,
+  rescheduleAppointmentByManagementToken,
+} from "@/lib/appointment-management-token";
 import { revalidatePath } from "next/cache";
 
 export async function cancelAppointmentAction(
@@ -23,6 +26,30 @@ export async function cancelAppointmentAction(
     return {
       success: false,
       error: error instanceof Error ? error.message : "Failed to cancel appointment.",
+    };
+  }
+}
+
+export async function rescheduleAppointmentAction(
+  token: string,
+  targetStartsAt: string,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    if (!targetStartsAt || typeof targetStartsAt !== "string") {
+      return { success: false, error: "Please select a valid time." };
+    }
+
+    await rescheduleAppointmentByManagementToken({
+      rawToken: token,
+      targetStartsAt,
+    });
+
+    revalidatePath(`/b/${token}`);
+    return { success: true };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to reschedule appointment.",
     };
   }
 }
