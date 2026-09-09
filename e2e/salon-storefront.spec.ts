@@ -32,7 +32,7 @@ test.describe("salon storefront", () => {
     await page.getByTestId("customer-phone-input").fill("0917 123 4567");
 
     await Promise.all([
-      page.waitForURL(new RegExp(`/s/${DEMO_ORG_SLUG}/book\\?booked=1`), { timeout: 45_000 }),
+      page.waitForURL(new RegExp(`/b/.*\\?booked=1`), { timeout: 45_000 }),
       slot.click(),
     ]);
 
