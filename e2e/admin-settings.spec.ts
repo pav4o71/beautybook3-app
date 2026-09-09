@@ -14,7 +14,7 @@ test.describe("admin settings & ActionForm runtime checks", () => {
     await signInAdmin(page);
   });
 
-  test("settings page renders without React encType/method error and saves text fields", async ({ page }) => {
+  test("settings page renders without React encType/method error and saves text fields, checkbox, and cover URL", async ({ page }) => {
     const consoleErrors: string[] = [];
     page.on("console", (msg) => {
       if (msg.type() === "error" || msg.type() === "warning") {
@@ -33,15 +33,23 @@ test.describe("admin settings & ActionForm runtime checks", () => {
     );
     expect(problematicErrors).toEqual([]);
 
-    // Fill settings
+    // Fill settings text fields, cover image URL, and checkbox
     await page.locator('input[name="name"]').fill("BeautyBook Demo Salon");
     await page.locator('textarea[name="description"]').fill("Makati salon for cuts, colour, and nails. Book online and pay at the salon when you arrive.");
     await page.locator('input[name="phone"]').fill("+63 2 8888 0100");
+    await page.locator('input[name="coverImageUrl"]').fill("/images/salons/beautybook-demo.jpg");
+    
+    // Test checkbox submission
+    const publishedCheckbox = page.locator('input[name="published"]');
+    await publishedCheckbox.setChecked(true);
+
     await page.getByRole("button", { name: "Save settings" }).click();
 
     await page.waitForURL(/\/dashboard\/admin\/settings\?saved=1/);
     await expect(page.getByText("Settings saved.")).toBeVisible();
     await expect(page.locator('input[name="name"]')).toHaveValue("BeautyBook Demo Salon");
+    await expect(publishedCheckbox).toBeChecked();
+    await expect(page.locator('img[src="/images/salons/beautybook-demo.jpg"]')).toBeVisible();
   });
 
   test("settings page handles cover image file upload correctly via Server Action", async ({ page }) => {
@@ -89,6 +97,7 @@ test.describe("admin settings & ActionForm runtime checks", () => {
 
   test("all other admin ActionForm routes render cleanly without runtime errors", async ({ page }) => {
     const adminRoutes = [
+      "/dashboard/admin/appointments",
       "/dashboard/admin/locations",
       "/dashboard/admin/categories",
       "/dashboard/admin/services",
@@ -97,11 +106,12 @@ test.describe("admin settings & ActionForm runtime checks", () => {
 
     for (const route of adminRoutes) {
       const routeErrors: string[] = [];
-      page.on("console", (msg) => {
-        if (msg.type() === "error") {
+      const listener = (msg: import("@playwright/test").ConsoleMessage) => {
+        if (msg.type() === "error" || msg.type() === "warning") {
           routeErrors.push(msg.text());
         }
-      });
+      };
+      page.on("console", listener);
 
       await page.goto(route);
       await page.waitForLoadState("networkidle");
@@ -110,6 +120,7 @@ test.describe("admin settings & ActionForm runtime checks", () => {
         err.includes("Cannot specify a encType or method")
       );
       expect(encTypeErrors).toEqual([]);
+      page.off("console", listener);
     }
   });
 });
