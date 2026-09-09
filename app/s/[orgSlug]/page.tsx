@@ -90,7 +90,7 @@ export default async function SalonLandingPage({
               Salon
             </span>
           </div>
-          <h1 className="text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
+          <h1 className="break-words text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
             {salon.name}
           </h1>
           {salon.phone ? (
@@ -273,6 +273,11 @@ export default async function SalonLandingPage({
             ))}
             {unassignedStaff.length > 0 ? (
               <div className="space-y-2">
+                {salon.locations.length > 1 ? (
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
+                    All locations
+                  </h3>
+                ) : null}
                 <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   {unassignedStaff.map((person) => (
                     <li
@@ -297,6 +302,10 @@ export default async function SalonLandingPage({
                       <div className="min-w-0">
                         <p className="truncate text-sm font-medium text-zinc-900">
                           {person.name}
+                        </p>
+                        <p className="truncate text-xs text-zinc-500">
+                          {person.serviceIds.length}{" "}
+                          {person.serviceIds.length === 1 ? "service" : "services"}
                         </p>
                       </div>
                     </li>

@@ -402,7 +402,11 @@ export function BookingForm({
       ) : null}
 
       {message ? (
-        <div className="flex items-center gap-2.5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900 shadow-xs">
+        <div
+          role="alert"
+          aria-live="polite"
+          className="flex items-center gap-2.5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900 shadow-xs"
+        >
           <svg
             className="size-4 shrink-0 text-amber-600"
             viewBox="0 0 20 20"

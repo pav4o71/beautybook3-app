@@ -131,6 +131,7 @@ export function SearchFilters({
               date: undefined,
               time: undefined,
             })}
+            aria-current={!activeSlug ? "page" : undefined}
             className={`${filterLinkClass(!activeSlug)} shrink-0`}
             data-testid="category-all"
           >
@@ -144,6 +145,7 @@ export function SearchFilters({
                 category: category.slug,
                 service: undefined,
               })}
+              aria-current={activeSlug === category.slug ? "page" : undefined}
               className={`${filterLinkClass(activeSlug === category.slug)} shrink-0`}
               data-testid={`category-${category.slug}`}
             >
@@ -167,6 +169,7 @@ export function SearchFilters({
                       ...current,
                       service: active ? undefined : service.name,
                     })}
+                    aria-current={active ? "page" : undefined}
                     className={`${filterLinkClass(active)} shrink-0`}
                     data-testid={`service-chip-${serviceKey(service.name)}`}
                   >
@@ -205,6 +208,7 @@ export function SearchFilters({
                           ...params,
                         })
                   }
+                  aria-current={active ? "page" : undefined}
                   className={`${filterLinkClass(active)} shrink-0`}
                   data-testid={`avail-${option.key}`}
                 >
