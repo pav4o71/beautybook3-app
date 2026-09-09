@@ -176,7 +176,8 @@ async function main() {
       where: {
         organizationId: organization.id,
         staffId: specialist.id,
-        startsAt: nearStart,
+        startsAt: { lt: nearEnd },
+        endsAt: { gt: nearStart },
       },
     });
 

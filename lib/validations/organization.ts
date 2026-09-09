@@ -1,4 +1,9 @@
 import { z } from "zod";
+import {
+  DEFAULT_CUTOFF_HOURS,
+  MIN_CUTOFF_HOURS,
+  MAX_CUTOFF_HOURS,
+} from "@/lib/cancellation-constants";
 
 export const onboardingSchema = z.object({
   name: z.string().trim().min(2, "Business name is required."),
@@ -19,6 +24,18 @@ export const organizationSettingsSchema = z.object({
   published: z.boolean(),
   description: optionalProfileText(2000, "Description must be 2000 characters or fewer."),
   phone: optionalProfileText(40, "Phone must be 40 characters or fewer."),
+  cancellationCutoffHours: z.coerce
+    .number({ message: "Cutoff must be a whole number of hours." })
+    .int("Cutoff must be a whole number of hours.")
+    .min(
+      MIN_CUTOFF_HOURS,
+      `Cutoff must be between ${MIN_CUTOFF_HOURS} and ${MAX_CUTOFF_HOURS} hours.`,
+    )
+    .max(
+      MAX_CUTOFF_HOURS,
+      `Cutoff must be between ${MIN_CUTOFF_HOURS} and ${MAX_CUTOFF_HOURS} hours.`,
+    )
+    .default(DEFAULT_CUTOFF_HOURS),
 });
 
 export function formatZodError(error: z.ZodError) {

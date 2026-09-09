@@ -71,6 +71,7 @@ export async function getAppointmentByManagementToken(rawToken: unknown) {
         select: {
           name: true,
           slug: true,
+          cancellationCutoffHours: true,
         },
       },
       location: {
@@ -106,38 +107,49 @@ export {
   CANCELLATION_REASONS,
   type CancellationReasonValue,
   ALLOWED_CANCELLATION_REASONS,
+  DEFAULT_CUTOFF_HOURS,
   CANCELLATION_CUTOFF_HOURS,
 } from "@/lib/cancellation-constants";
 import {
   ALLOWED_CANCELLATION_REASONS,
-  CANCELLATION_CUTOFF_HOURS,
+  DEFAULT_CUTOFF_HOURS,
 } from "@/lib/cancellation-constants";
 
 export function canCustomerCancelAppointment(
   appointment: {
     startsAt: Date;
     status: string;
+    organization?: {
+      cancellationCutoffHours?: number | null;
+    } | null;
   },
   now: Date = new Date(),
-): { allowed: boolean; reason?: string } {
+  customCutoffHours?: number | null,
+): { allowed: boolean; cutoffHours: number; reason?: string } {
+  const cutoffHours =
+    customCutoffHours ??
+    appointment.organization?.cancellationCutoffHours ??
+    DEFAULT_CUTOFF_HOURS;
+
   if (appointment.status === "CANCELLED") {
-    return { allowed: false, reason: "Appointment is already cancelled." };
+    return { allowed: false, cutoffHours, reason: "Appointment is already cancelled." };
   }
   if (appointment.status !== "CONFIRMED" && appointment.status !== "PENDING") {
-    return { allowed: false, reason: "This appointment can no longer be cancelled." };
+    return { allowed: false, cutoffHours, reason: "This appointment can no longer be cancelled." };
   }
   if (now >= appointment.startsAt) {
-    return { allowed: false, reason: "Past appointments cannot be cancelled." };
+    return { allowed: false, cutoffHours, reason: "Past appointments cannot be cancelled." };
   }
   const hoursUntilStart =
     (appointment.startsAt.getTime() - now.getTime()) / (1000 * 60 * 60);
-  if (hoursUntilStart < CANCELLATION_CUTOFF_HOURS) {
+  if (hoursUntilStart < cutoffHours) {
     return {
       allowed: false,
-      reason: `Appointments cannot be cancelled within ${CANCELLATION_CUTOFF_HOURS} hours of the scheduled time.`,
+      cutoffHours,
+      reason: `Appointments cannot be cancelled within ${cutoffHours} hours of the scheduled time.`,
     };
   }
-  return { allowed: true };
+  return { allowed: true, cutoffHours };
 }
 
 export async function cancelAppointmentByManagementToken(input: {
@@ -179,6 +191,11 @@ export async function cancelAppointmentByManagementToken(input: {
         id: true,
         startsAt: true,
         status: true,
+        organization: {
+          select: {
+            cancellationCutoffHours: true,
+          },
+        },
       },
     });
 
@@ -213,27 +230,37 @@ export function canCustomerRescheduleAppointment(
   appointment: {
     startsAt: Date;
     status: string;
+    organization?: {
+      cancellationCutoffHours?: number | null;
+    } | null;
   },
   now: Date = new Date(),
-): { allowed: boolean; reason?: string } {
+  customCutoffHours?: number | null,
+): { allowed: boolean; cutoffHours: number; reason?: string } {
+  const cutoffHours =
+    customCutoffHours ??
+    appointment.organization?.cancellationCutoffHours ??
+    DEFAULT_CUTOFF_HOURS;
+
   if (appointment.status === "CANCELLED") {
-    return { allowed: false, reason: "Cancelled appointments cannot be rescheduled." };
+    return { allowed: false, cutoffHours, reason: "Cancelled appointments cannot be rescheduled." };
   }
   if (appointment.status !== "CONFIRMED" && appointment.status !== "PENDING") {
-    return { allowed: false, reason: "This appointment can no longer be rescheduled." };
+    return { allowed: false, cutoffHours, reason: "This appointment can no longer be rescheduled." };
   }
   if (now >= appointment.startsAt) {
-    return { allowed: false, reason: "Past appointments cannot be rescheduled." };
+    return { allowed: false, cutoffHours, reason: "Past appointments cannot be rescheduled." };
   }
   const hoursUntilStart =
     (appointment.startsAt.getTime() - now.getTime()) / (1000 * 60 * 60);
-  if (hoursUntilStart < CANCELLATION_CUTOFF_HOURS) {
+  if (hoursUntilStart < cutoffHours) {
     return {
       allowed: false,
-      reason: `Appointments cannot be rescheduled within ${CANCELLATION_CUTOFF_HOURS} hours of the scheduled time.`,
+      cutoffHours,
+      reason: `Appointments cannot be rescheduled within ${cutoffHours} hours of the scheduled time.`,
     };
   }
-  return { allowed: true };
+  return { allowed: true, cutoffHours };
 }
 
 function isAppointmentOverlapError(error: unknown): boolean {
@@ -289,6 +316,11 @@ export async function rescheduleAppointmentByManagementToken(input: {
         where: { managementTokenHash: tokenHash },
         include: {
           services: true,
+          organization: {
+            select: {
+              cancellationCutoffHours: true,
+            },
+          },
         },
       });
 
