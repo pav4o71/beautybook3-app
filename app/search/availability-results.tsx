@@ -2,7 +2,7 @@ import Link from "next/link";
 import { EmptyState } from "@/components/empty-state";
 import { formatDay, formatPrice, formatTime } from "@/lib/format";
 import type { MarketplaceAvailabilityResult } from "@/lib/marketplace";
-import { primaryButtonClass, secondaryButtonClass, surfaceInteractiveClass } from "@/lib/ui";
+import { focusRingClass, secondaryButtonClass } from "@/lib/ui";
 
 export function AvailabilityResults({
   results,
@@ -38,10 +38,10 @@ export function AvailabilityResults({
         return (
           <li key={key}>
             <article
-              className={`${surfaceInteractiveClass} flex h-full flex-col p-4`}
+              className="flex h-full flex-col rounded-xl border border-emerald-100/90 bg-white p-4 shadow-xs transition hover:border-emerald-300 hover:shadow-md hover:shadow-emerald-950/5"
               data-testid="availability-result"
             >
-              <h2 className="text-lg font-semibold tracking-tight text-zinc-900">
+              <h2 className="text-lg font-semibold tracking-tight text-emerald-950">
                 {result.service.name}
               </h2>
               <p className="mt-1 text-sm text-zinc-600">
@@ -51,14 +51,14 @@ export function AvailabilityResults({
               <p className="mt-1 text-sm text-zinc-600">
                 {result.staff.name} · {result.location.name}
               </p>
-              <p className="mt-2 text-sm font-medium text-zinc-900">
+              <p className="mt-2 text-sm font-medium text-emerald-950">
                 {formatDay(result.startsAt)} · {formatTime(result.startsAt)} ·{" "}
                 {formatPrice(result.priceCents)}
               </p>
-              <div className="mt-4">
+              <div className="mt-auto pt-4">
                 <Link
                   href={`/s/${result.organization.slug}/book?${params.toString()}`}
-                  className={`${primaryButtonClass} w-full sm:w-auto`}
+                  className={`inline-flex items-center justify-center rounded-md bg-emerald-800 px-4 py-2 text-sm font-medium text-white shadow-xs hover:bg-emerald-700 w-full sm:w-auto ${focusRingClass}`}
                   data-testid="book-availability"
                 >
                   Book
