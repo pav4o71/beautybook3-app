@@ -111,10 +111,10 @@ export function ServicePicker({
               return (
                 <li key={service.id}>
                   <label
-                    className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 ${
+                    className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3.5 transition ${
                       checked
-                        ? "border-zinc-900 bg-zinc-50"
-                        : "border-zinc-200 bg-white"
+                        ? "border-emerald-600 bg-emerald-50/40 shadow-xs"
+                        : "border-zinc-200 bg-white hover:border-zinc-300 hover:bg-zinc-50/30"
                     } ${atCap ? "cursor-not-allowed opacity-60" : ""}`}
                   >
                     <input
@@ -127,8 +127,8 @@ export function ServicePicker({
                     />
                     <span className="flex-1">
                       <span className="flex flex-wrap items-baseline justify-between gap-2">
-                        <span className="font-medium text-zinc-900">{service.name}</span>
-                        <span className="text-sm text-zinc-700">
+                        <span className="font-semibold text-zinc-900">{service.name}</span>
+                        <span className="text-sm font-medium text-zinc-700">
                           {formatPrice(service.priceCents)} · {service.durationMin} min
                         </span>
                       </span>
@@ -146,35 +146,36 @@ export function ServicePicker({
         </section>
       ))}
 
-      <div className="sticky bottom-0 z-30 -mx-4 border-t border-zinc-200 bg-white/95 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur">
+      <div className="sticky bottom-0 z-30 -mx-4 border-t border-zinc-200/80 bg-white/95 px-4 py-3.5 pb-[max(0.875rem,env(safe-area-inset-bottom))] shadow-lg backdrop-blur">
         <div className="mx-auto flex w-full max-w-5xl flex-wrap items-center justify-between gap-3">
-          <p className="text-sm text-zinc-700">
+          <p className="text-sm font-medium text-zinc-700">
             {selected.length === 0 ? (
-              "Select at least one service"
+              <span className="text-zinc-500">Select at least one service to continue</span>
             ) : (
-              <>
-                {selected.length} service{selected.length === 1 ? "" : "s"} · {totalMinutes}{" "}
-                min · {formatPrice(totalCents)}
-              </>
+              <span>
+                <strong className="text-zinc-900">{selected.length}</strong> service{selected.length === 1 ? "" : "s"} ·{" "}
+                <span className="text-zinc-600">{totalMinutes} min</span> ·{" "}
+                <strong className="font-semibold text-zinc-900">{formatPrice(totalCents)}</strong>
+              </span>
             )}
           </p>
           <button
             type="button"
             onClick={continueToBook}
             disabled={continueDisabled}
-            className={`${primaryButtonClass} focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900`}
+            className={`${primaryButtonClass} shadow-xs focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900`}
             data-testid="continue-booking"
           >
             Book now
           </button>
         </div>
         {selectedIds.length > 0 && !hasCapableStaff ? (
-          <p className="mx-auto mt-2 w-full max-w-5xl text-sm text-red-700">
+          <p className="mx-auto mt-2 w-full max-w-5xl text-sm font-medium text-red-700">
             {NO_STAFF_FOR_COMBINATION}
           </p>
         ) : null}
         {overDurationCap ? (
-          <p className="mx-auto mt-2 w-full max-w-5xl text-sm text-red-700">
+          <p className="mx-auto mt-2 w-full max-w-5xl text-sm font-medium text-red-700">
             Combined duration cannot exceed {MAX_COMBINED_DURATION_MIN} minutes.
           </p>
         ) : null}
