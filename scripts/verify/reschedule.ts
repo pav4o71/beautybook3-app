@@ -117,12 +117,30 @@ async function main() {
     assert(res.success, "Reschedule should succeed");
     assert(res.appointment.id === created.id, "Appointment ID must be preserved");
     assert(
-      res.appointment.managementTokenHash === created.managementTokenHash,
-      "Management token hash must be preserved",
+      !("managementTokenHash" in res.appointment),
+      "Management token hash must not be returned by reschedule mutation",
     );
     assert(
       new Date(res.appointment.startsAt).getTime() === slot2.getTime(),
       "startsAt must match new target slot",
+    );
+
+    // Verify token-hash and contact preservation directly from DB
+    const dbApptAfterReschedule = await prisma.appointment.findUniqueOrThrow({
+      where: { id: created.id },
+      select: { managementTokenHash: true, customerName: true, customerPhone: true },
+    });
+    assert(
+      dbApptAfterReschedule.managementTokenHash === created.managementTokenHash,
+      "Management token hash must be preserved in DB",
+    );
+    assert(
+      dbApptAfterReschedule.customerName === "Reschedule Verification Guest",
+      "Customer name preserved in DB",
+    );
+    assert(
+      dbApptAfterReschedule.customerPhone === "+639171234567",
+      "Customer phone preserved in DB",
     );
 
     // 6. Verify via getAppointmentByManagementToken

@@ -142,7 +142,7 @@ export function canCustomerCancelAppointment(
   }
   const hoursUntilStart =
     (appointment.startsAt.getTime() - now.getTime()) / (1000 * 60 * 60);
-  if (hoursUntilStart < cutoffHours) {
+  if (cutoffHours > 0 && hoursUntilStart < cutoffHours) {
     return {
       allowed: false,
       cutoffHours,
@@ -212,8 +212,12 @@ export async function cancelAppointmentByManagementToken(input: {
       throw new Error(check.reason || "Appointment cannot be cancelled.");
     }
 
-    await tx.appointment.update({
-      where: { id: appointment.id },
+    // Conditional atomic update: first writer wins
+    const result = await tx.appointment.updateMany({
+      where: {
+        id: appointment.id,
+        status: { in: ["PENDING", "CONFIRMED"] },
+      },
       data: {
         status: "CANCELLED",
         cancelledAt: now,
@@ -222,7 +226,21 @@ export async function cancelAppointmentByManagementToken(input: {
       },
     });
 
-    return { success: true, alreadyCancelled: false };
+    if (result.count === 1) {
+      return { success: true, alreadyCancelled: false };
+    }
+
+    // If affected rows = 0, re-read minimal current state
+    const current = await tx.appointment.findUnique({
+      where: { id: appointment.id },
+      select: { status: true },
+    });
+
+    if (current?.status === "CANCELLED") {
+      return { success: true, alreadyCancelled: true };
+    }
+
+    throw new Error("This appointment can no longer be cancelled.");
   });
 }
 
@@ -253,7 +271,7 @@ export function canCustomerRescheduleAppointment(
   }
   const hoursUntilStart =
     (appointment.startsAt.getTime() - now.getTime()) / (1000 * 60 * 60);
-  if (hoursUntilStart < cutoffHours) {
+  if (cutoffHours > 0 && hoursUntilStart < cutoffHours) {
     return {
       allowed: false,
       cutoffHours,
@@ -283,7 +301,6 @@ export async function rescheduleAppointmentByManagementToken(input: {
     id: string;
     startsAt: Date;
     endsAt: Date;
-    managementTokenHash: string | null;
   };
 }> {
   if (!isValidManagementTokenFormat(input.rawToken)) {
@@ -390,7 +407,6 @@ export async function rescheduleAppointmentByManagementToken(input: {
           id: true,
           startsAt: true,
           endsAt: true,
-          managementTokenHash: true,
         },
       });
 

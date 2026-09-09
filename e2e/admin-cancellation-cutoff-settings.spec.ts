@@ -27,49 +27,86 @@ test.describe("organization cancellation cutoff settings", () => {
     await expect(cutoffInput).toBeVisible();
     await expect(cutoffInput).toHaveValue("24");
 
-    // 3. Test invalid cutoff bounds (< 1 or > 168)
+    // 3. Test invalid cutoff bounds (< 0 or > 168)
+    await cutoffInput.fill("-1");
+    await page.getByRole("button", { name: "Save settings" }).click();
+    await expect(
+      page.getByText(/Cutoff must be between 0 and 168 hours/i),
+    ).toBeVisible();
+
     await cutoffInput.fill("200");
     await page.getByRole("button", { name: "Save settings" }).click();
     await expect(
-      page.getByText(/Cutoff must be between 1 and 168 hours/i),
+      page.getByText(/Cutoff must be between 0 and 168 hours/i),
     ).toBeVisible();
 
-    // 4. Update cutoff to 48 hours
-    await cutoffInput.fill("48");
+    // 4. Update cutoff to 0 hours and verify persistence
+    await cutoffInput.fill("0");
     await page.getByRole("button", { name: "Save settings" }).click();
-
     await page.waitForURL(/\/dashboard\/admin\/settings\?saved=1/);
     await expect(page.getByText("Settings saved.")).toBeVisible();
-    await expect(cutoffInput).toHaveValue("48");
+    await expect(cutoffInput).toHaveValue("0");
+
+    await page.reload();
+    await expect(cutoffInput).toHaveValue("0");
 
     // 5. Clear cookies to simulate unauthenticated guest customer
     await page.context().clearCookies();
 
-    // Open public booking page as guest
+    // Open public booking page as guest and book a future slot
     await page.goto(`/s/${DEMO_ORG_SLUG}/book`);
     await page.getByRole("button", { name: /Haircut/i }).click();
     await page.getByRole("button", { name: /Maya Petrova/i }).click();
     await page.waitForLoadState("networkidle");
 
-    await page.getByTestId("customer-name-input").fill("Cutoff E2E Guest");
-    await page.getByTestId("customer-phone-input").fill("0917 555 4444");
+    await page.getByTestId("customer-name-input").fill("Zero Cutoff Guest");
+    await page.getByTestId("customer-phone-input").fill("0917 555 0000");
 
-    // Pick a slot on the second day or today (~under 48h)
-    // The first slot is today (< 24h), so it's definitely < 48h
-    const slot = page.getByTestId("book-slot").first();
-    await expect(slot).toBeVisible({ timeout: 15_000 });
+    const zeroSlot = page.getByTestId("book-slot").first();
+    await expect(zeroSlot).toBeVisible({ timeout: 15_000 });
 
     await Promise.all([
       page.waitForURL(new RegExp(`/b/([A-Za-z0-9_-]{43})\\?booked=1`), { timeout: 45_000 }),
-      slot.click(),
+      zeroSlot.click(),
     ]);
 
-    // 6. On receipt, dynamic cutoff notice displays "48 hours"
+    // Under 0h cutoff, future appointment has cancel and reschedule buttons visible!
+    await expect(page.getByText("You can cancel or reschedule until the appointment starts.")).toBeVisible();
+    await expect(page.getByTestId("cancel-appointment-button")).toBeVisible();
+    await expect(page.getByTestId("reschedule-appointment-button")).toBeVisible();
+    await expect(page.getByTestId("cancellation-cutoff-notice")).toHaveCount(0);
+
+    // 6. Sign back in and update cutoff to 48 hours to verify dynamic restriction
+    await signInAdmin(page);
+    await page.goto("/dashboard/admin/settings");
+    await expect(page.getByTestId("cancellation-cutoff-hours-input")).toBeVisible();
+    await page.getByTestId("cancellation-cutoff-hours-input").fill("48");
+    await page.getByRole("button", { name: "Save settings" }).click();
+    await page.waitForURL(/\/dashboard\/admin\/settings\?saved=1/);
+    await expect(page.getByText("Settings saved.")).toBeVisible();
+
+    // 7. Re-check the previously booked appointment under 48h cutoff
+    // It is < 48 hours away, so online changes must now be blocked
+    await page.context().clearCookies();
+    await page.goto(`/s/${DEMO_ORG_SLUG}/book`);
+    await page.getByRole("button", { name: /Haircut/i }).click();
+    await page.getByRole("button", { name: /Maya Petrova/i }).click();
+    await page.waitForLoadState("networkidle");
+
+    await page.getByTestId("customer-name-input").fill("Cutoff E2E Guest 48h");
+    await page.getByTestId("customer-phone-input").fill("0917 555 4444");
+
+    const slot48 = page.getByTestId("book-slot").first();
+    await expect(slot48).toBeVisible({ timeout: 15_000 });
+
+    await Promise.all([
+      page.waitForURL(new RegExp(`/b/([A-Za-z0-9_-]{43})\\?booked=1`), { timeout: 45_000 }),
+      slot48.click(),
+    ]);
+
     const cutoffNotice = page.getByTestId("cancellation-cutoff-notice");
     await expect(cutoffNotice).toBeVisible();
     await expect(cutoffNotice).toContainText("48 hours");
-
-    // 7. Cancel and reschedule buttons must NOT be rendered
     await expect(page.getByTestId("cancel-appointment-button")).toHaveCount(0);
     await expect(page.getByTestId("reschedule-appointment-button")).toHaveCount(0);
 

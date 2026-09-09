@@ -12,7 +12,7 @@ export const ALLOWED_CANCELLATION_REASONS: Set<string> = new Set(
 );
 
 export const DEFAULT_CUTOFF_HOURS = 24;
-export const MIN_CUTOFF_HOURS = 1;
+export const MIN_CUTOFF_HOURS = 0;
 export const MAX_CUTOFF_HOURS = 168; // 7 days
 
 /** @deprecated Use DEFAULT_CUTOFF_HOURS or organization.cancellationCutoffHours */
