@@ -314,6 +314,11 @@ model Appointment {
   // Secure management capability token hash (Foundation A2.1)
   managementTokenHash String? @unique
 
+  // Cancellation metadata (Foundation A2.2)
+  cancelledAt         DateTime?
+  cancelReason        String?
+  cancelNote          String?
+
   createdAt      DateTime          @default(now())
   updatedAt      DateTime          @updatedAt
 

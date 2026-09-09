@@ -87,7 +87,10 @@ export async function updateAppointmentStatus(input: {
 
   return prisma.appointment.update({
     where: { id: input.appointmentId },
-    data: { status: input.status },
+    data: {
+      status: input.status,
+      ...(input.status === AppointmentStatus.CANCELLED ? { cancelledAt: new Date() } : {}),
+    },
   });
 }
 

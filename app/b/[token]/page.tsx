@@ -17,6 +17,11 @@ import {
 } from "@/lib/ui";
 import { firstQueryValue } from "@/lib/validations/booking";
 import { CopyLinkButton } from "./copy-link-button";
+import { CancelDialog } from "./cancel-dialog";
+import {
+  CANCELLATION_REASONS,
+  canCustomerCancelAppointment,
+} from "@/lib/appointment-management-token";
 
 export const metadata: Metadata = {
   title: "Appointment Details | BeautyBook",
@@ -47,6 +52,7 @@ export default async function AppointmentManagementPage({
   }
 
   const isJustBooked = firstQueryValue(query.booked) === "1";
+  const cancelEligibility = canCustomerCancelAppointment(appointment);
   const totalCents = appointment.services.reduce((sum, s) => sum + s.priceCents, 0);
   const totalDurationMin = appointment.services.reduce((sum, s) => sum + s.durationMin, 0);
   const payCopy = appointmentPayCopy(appointment.status, totalCents);
@@ -55,7 +61,67 @@ export default async function AppointmentManagementPage({
     <>
       <SiteHeader />
       <main className={pageMainClass}>
-        {isJustBooked ? (
+        {appointment.status === "CANCELLED" ? (
+          <section
+            data-testid="cancellation-notice"
+            className="rounded-2xl border border-rose-200 bg-rose-50/70 p-6 text-center shadow-xs sm:p-8 mb-6"
+          >
+            <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-rose-100 text-rose-700 sm:size-14">
+              <svg
+                className="size-7 sm:size-8"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+                aria-hidden="true"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </div>
+            <h2 className="mt-4 text-xl font-bold tracking-tight text-rose-900 sm:text-2xl">
+              Appointment cancelled
+            </h2>
+            <p className="mt-2 text-sm font-medium text-rose-800">
+              This appointment was cancelled
+              {appointment.cancelledAt
+                ? ` on ${formatDay(appointment.cancelledAt)} at ${formatTime(appointment.cancelledAt)}`
+                : ""}
+              . Your reserved slot has been released.
+            </p>
+            {appointment.cancelReason ? (
+              <p className="mt-2 text-xs text-zinc-600">
+                Reason:{" "}
+                <span className="font-semibold text-zinc-800">
+                  {CANCELLATION_REASONS.find((r) => r.value === appointment.cancelReason)?.label ||
+                    appointment.cancelReason}
+                </span>
+              </p>
+            ) : null}
+            {appointment.cancelNote ? (
+              <p className="mt-1 text-xs text-zinc-600 italic">
+                &ldquo;{appointment.cancelNote}&rdquo;
+              </p>
+            ) : null}
+            <div className="mt-5 flex items-center justify-center gap-3">
+              <Link
+                href={`/s/${appointment.organization.slug}/book`}
+                className={secondaryButtonClass}
+              >
+                Book new appointment
+              </Link>
+              <Link
+                href={`/s/${appointment.organization.slug}`}
+                className={secondaryButtonClass}
+              >
+                View salon
+              </Link>
+            </div>
+          </section>
+        ) : null}
+
+        {isJustBooked && appointment.status !== "CANCELLED" ? (
           <section
             data-testid="booking-success-state"
             className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-6 text-center shadow-xs sm:p-8"
@@ -198,9 +264,21 @@ export default async function AppointmentManagementPage({
                 <p className="text-xs text-zinc-500">
                   Save this private management receipt link for your appointment.
                 </p>
+                {!cancelEligibility.allowed &&
+                (appointment.status === "CONFIRMED" || appointment.status === "PENDING") ? (
+                  <p
+                    data-testid="cancellation-cutoff-notice"
+                    className="text-xs text-amber-700 font-medium"
+                  >
+                    Online cancellation is closed (cancellations must be made at least 24 hours in advance).
+                  </p>
+                ) : null}
               </div>
               <div className="flex items-center gap-3">
                 <CopyLinkButton />
+                {cancelEligibility.allowed ? (
+                  <CancelDialog token={token} />
+                ) : null}
                 {!isJustBooked ? (
                   <Link
                     href={`/s/${appointment.organization.slug}`}
