@@ -4,6 +4,7 @@ import {
   MAX_BOOKING_SERVICES,
   MAX_COMBINED_DURATION_MIN,
 } from "@/lib/booking-limits";
+import { generateAppointmentManagementToken } from "@/lib/appointment-management-token";
 import {
   addSalonDays,
   salonDayBounds,
@@ -214,6 +215,7 @@ export async function createAppointment(input: {
 
   const endsAt = new Date(startsAt.getTime() + durationMin * 60_000);
   const servicesById = new Map(services.map((service) => [service.id, service]));
+  const { rawToken, tokenHash } = generateAppointmentManagementToken();
 
   try {
     return await prisma.$transaction(async (tx) => {
@@ -243,7 +245,7 @@ export async function createAppointment(input: {
         throw new Error("That time is not available.");
       }
 
-      return tx.appointment.create({
+      const appointment = await tx.appointment.create({
         data: {
           organizationId: input.organizationId,
           locationId: input.locationId,
@@ -255,6 +257,7 @@ export async function createAppointment(input: {
           customerName: input.customerName?.trim() || null,
           customerPhone: input.customerPhone || null,
           customerEmail: input.customerEmail?.trim().toLowerCase() || null,
+          managementTokenHash: tokenHash,
           services: {
             create: uniqueIds.map((serviceId) => {
               const service = servicesById.get(serviceId);
@@ -270,6 +273,11 @@ export async function createAppointment(input: {
           },
         },
       });
+
+      return {
+        ...appointment,
+        rawToken,
+      };
     });
   } catch (error) {
     if (isAppointmentOverlapError(error)) {
