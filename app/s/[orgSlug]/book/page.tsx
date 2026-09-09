@@ -7,7 +7,7 @@ import { listBookingServices, listBookingStaff } from "@/lib/catalog";
 import { getPublishedOrganizationBySlug } from "@/lib/tenant";
 import { getSession } from "@/lib/session";
 import { resolveSelectedServiceIds, firstQueryValue } from "@/lib/validations/booking";
-import { pageMainClass, secondaryButtonClass, successAlertClass } from "@/lib/ui";
+import { pageMainClass, secondaryButtonClass } from "@/lib/ui";
 import { BookingForm } from "@/app/dashboard/book/booking-form";
 import { bookPublicSlot } from "./actions";
 
@@ -105,21 +105,50 @@ export default async function PublicBookPage({
 
   return (
     <main className={pageMainClass}>
-      <div className="space-y-1">
-        <p className="text-sm text-zinc-600">
-          <Link href={`/s/${orgSlug}`} className="hover:text-zinc-900">
-            {organization.name}
-          </Link>
-        </p>
-        <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">Book online</h1>
-        <p className="text-sm text-zinc-600">
-          Choose a location and one or more services, then pick staff and a time. Pay at the
-          salon when you arrive.
+      <nav aria-label="Breadcrumb">
+        <Link
+          href={`/s/${orgSlug}`}
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-zinc-600 transition-colors hover:text-zinc-900"
+        >
+          <span aria-hidden="true">←</span> Back to {organization.name}
+        </Link>
+      </nav>
+
+      <div className="space-y-2 border-b border-zinc-200/80 pb-5">
+        <div className="flex items-center gap-2">
+          <span className="inline-flex items-center rounded-full border border-emerald-200/60 bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wider text-emerald-800">
+            Booking
+          </span>
+          <span className="text-xs text-zinc-400">·</span>
+          <span className="text-xs font-medium text-zinc-500">{organization.name}</span>
+        </div>
+        <h1 className="text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
+          Book online
+        </h1>
+        <p className="max-w-2xl text-sm leading-relaxed text-zinc-600">
+          Choose a location and one or more services, then pick staff and a time. Pay at
+          the salon when you arrive.
         </p>
       </div>
 
       {firstQueryValue(query.booked) === "1" ? (
-        <p className={successAlertClass}>Booked! Pay at the salon when you arrive.</p>
+        <div className="flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-medium text-emerald-900 shadow-xs">
+          <svg
+            className="size-5 shrink-0 text-emerald-600"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+            aria-hidden="true"
+          >
+            <path
+              fillRule="evenodd"
+              d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z"
+              clipRule="evenodd"
+            />
+          </svg>
+          <p className="text-sm font-medium text-emerald-900">
+            Booked! Pay at the salon when you arrive.
+          </p>
+        </div>
       ) : null}
 
       {services.length === 0 ? (
