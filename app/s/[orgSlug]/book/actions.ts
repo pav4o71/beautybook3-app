@@ -51,8 +51,9 @@ export async function bookPublicSlot(
 
   const session = await getSession();
 
+  let rawToken: string;
   try {
-    await createAppointment({
+    const created = await createAppointment({
       organizationId: organization.id,
       locationId: location.id,
       customerId: session?.user?.id ?? null,
@@ -63,6 +64,7 @@ export async function bookPublicSlot(
       customerPhone: parsed.data.customerPhone,
       customerEmail: parsed.data.customerEmail,
     });
+    rawToken = created.rawToken;
   } catch (error) {
     return actionError(error);
   }
@@ -73,5 +75,5 @@ export async function bookPublicSlot(
     redirect("/dashboard/appointments?booked=1");
   }
 
-  redirect(`/s/${orgSlug}/book?booked=1`);
+  redirect(`/b/${rawToken}?booked=1`);
 }

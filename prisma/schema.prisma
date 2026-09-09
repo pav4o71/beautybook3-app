@@ -311,6 +311,9 @@ model Appointment {
   customerPhone  String?
   customerEmail  String?
 
+  // Secure management capability token hash (Foundation A2.1)
+  managementTokenHash String? @unique
+
   createdAt      DateTime          @default(now())
   updatedAt      DateTime          @updatedAt
 

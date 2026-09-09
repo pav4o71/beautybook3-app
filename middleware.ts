@@ -62,6 +62,17 @@ export function middleware(request: NextRequest) {
     }
   }
 
+  if (pathname.startsWith("/b/")) {
+    const response = applySecurityHeaders(NextResponse.next());
+    response.headers.set(
+      "Cache-Control",
+      "private, no-store, max-age=0, must-revalidate",
+    );
+    response.headers.set("Referrer-Policy", "no-referrer");
+    response.headers.set("X-Robots-Tag", "noindex, nofollow");
+    return response;
+  }
+
   return applySecurityHeaders(NextResponse.next());
 }
 

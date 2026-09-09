@@ -56,7 +56,7 @@ test.describe("guest contact capture", () => {
     await expect(slot).toBeVisible({ timeout: 15_000 });
 
     await Promise.all([
-      page.waitForURL(new RegExp(`/s/${DEMO_ORG_SLUG}/book\\?booked=1`), { timeout: 45_000 }),
+      page.waitForURL(new RegExp(`/b/.*\\?booked=1`), { timeout: 45_000 }),
       slot.click(),
     ]);
 
