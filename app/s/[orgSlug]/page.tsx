@@ -233,7 +233,7 @@ export default async function SalonLandingPage({
               <div key={location.id} className="space-y-2">
                 {salon.locations.length > 1 ? (
                   <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
-                    {location.name} {location.area ? `(${location.area})` : ""}
+                    {location.area ?? location.name}
                   </h3>
                 ) : null}
                 <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
