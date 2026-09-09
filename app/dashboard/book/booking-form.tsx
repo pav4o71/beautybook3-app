@@ -15,7 +15,6 @@ import {
   cardButtonClass,
   cardButtonSelectedClass,
   controlClass,
-  infoAlertClass,
   labelClass,
   labelTextClass,
   slotButtonClass,
@@ -183,15 +182,29 @@ export function BookingForm({
 
   return (
     <div className="space-y-6">
-      <p className={infoAlertClass}>
-        Your slot is held when you book. Pay at the salon when you arrive.
-      </p>
+      <div className="flex items-center gap-2.5 rounded-xl border border-zinc-200/80 bg-zinc-50/80 px-4 py-3 text-sm text-zinc-700 shadow-xs">
+        <svg
+          className="size-4 shrink-0 text-emerald-600"
+          viewBox="0 0 20 20"
+          fill="currentColor"
+          aria-hidden="true"
+        >
+          <path
+            fillRule="evenodd"
+            d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-11.25a.75.75 0 00-1.5 0v4.5a.75.75 0 001.5 0v-4.5zm0 6a.75.75 0 10-1.5 0 .75.75 0 001.5 0z"
+            clipRule="evenodd"
+          />
+        </svg>
+        <span>Your slot is held when you book. Pay at the salon when you arrive.</span>
+      </div>
 
-      <div className="space-y-4">
+      <div className="space-y-6">
         {locations.length > 1 ? (
-          <div className="space-y-2">
-            <p className="text-sm font-medium text-zinc-900">Location</p>
-            <div className="grid gap-2 sm:grid-cols-2">
+          <div className="space-y-2.5">
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
+              Location
+            </h2>
+            <div className="grid gap-3 sm:grid-cols-2">
               {locations.map((location) => {
                 const selected = location.id === locationId;
                 const capable = locationCanServe(location.id, selectedIds);
@@ -206,13 +219,13 @@ export function BookingForm({
                     onClick={() => selectLocation(location.id)}
                     className={
                       selected
-                        ? cardButtonSelectedClass
-                        : `${cardButtonClass} disabled:cursor-not-allowed disabled:opacity-50`
+                        ? `${cardButtonSelectedClass} shadow-xs`
+                        : `${cardButtonClass} shadow-xs disabled:cursor-not-allowed disabled:opacity-50`
                     }
                   >
                     <span className="block font-medium">{location.name}</span>
                     {capable ? null : (
-                      <span className="mt-1 block text-xs text-zinc-500">
+                      <span className="mt-1 block text-xs text-zinc-400">
                         No staff for this combination
                       </span>
                     )}
@@ -223,9 +236,16 @@ export function BookingForm({
           </div>
         ) : null}
 
-        <div className="space-y-2">
-          <p className="text-sm font-medium text-zinc-900">Services</p>
-          <div className="grid gap-2 sm:grid-cols-2">
+        <div className="space-y-2.5">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
+              Services
+            </h2>
+            <span className="text-xs text-zinc-500">
+              Up to {MAX_BOOKING_SERVICES} services
+            </span>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
             {services.map((service) => {
               const selected = selectedIds.includes(service.id);
               return (
@@ -233,10 +253,20 @@ export function BookingForm({
                   key={service.id}
                   type="button"
                   onClick={() => toggleService(service.id)}
-                  className={selected ? cardButtonSelectedClass : cardButtonClass}
+                  className={
+                    selected
+                      ? `${cardButtonSelectedClass} shadow-xs`
+                      : `${cardButtonClass} shadow-xs`
+                  }
                 >
                   <span className="block font-medium">{service.name}</span>
-                  <span className={selected ? "text-zinc-200" : "text-zinc-600"}>
+                  <span
+                    className={
+                      selected
+                        ? "mt-0.5 block text-xs text-zinc-200"
+                        : "mt-0.5 block text-xs text-zinc-500"
+                    }
+                  >
                     {service.categoryName} · {service.durationMin} min ·{" "}
                     {formatPrice(service.priceCents)}
                   </span>
@@ -246,16 +276,18 @@ export function BookingForm({
           </div>
         </div>
 
-        <div className="space-y-2">
-          <p className="text-sm font-medium text-zinc-900">Staff</p>
+        <div className="space-y-2.5">
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
+            Specialist
+          </h2>
           {availableStaff.length === 0 ? (
             <p className="text-sm text-zinc-600">
               {selectedIds.length === 0
-                ? "Choose at least one service."
+                ? "Choose a service to see available specialists."
                 : NO_STAFF_FOR_COMBINATION}
             </p>
           ) : (
-            <div className="grid gap-2 sm:grid-cols-2">
+            <div className="grid gap-3 sm:grid-cols-2">
               {availableStaff.map((person) => {
                 const selected = person.id === staffId;
                 return (
@@ -263,7 +295,11 @@ export function BookingForm({
                     key={person.id}
                     type="button"
                     onClick={() => selectStaff(person.id)}
-                    className={selected ? cardButtonSelectedClass : cardButtonClass}
+                    className={
+                      selected
+                        ? `${cardButtonSelectedClass} shadow-xs`
+                        : `${cardButtonClass} shadow-xs`
+                    }
                   >
                     <span className="block font-medium">{person.name}</span>
                   </button>
@@ -275,24 +311,35 @@ export function BookingForm({
       </div>
 
       {selectedServices.length > 0 ? (
-        <p className="text-sm text-zinc-700">
-          Total at salon:{" "}
-          <span className="font-medium text-zinc-900">{formatPrice(totalCents)}</span>
-          {" · "}
-          {totalMinutes} min
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-zinc-200/80 bg-zinc-50/70 p-4 text-sm shadow-xs">
+          <div className="text-zinc-700">
+            Total at salon:{" "}
+            <span className="text-base font-bold text-zinc-900">
+              {formatPrice(totalCents)}
+            </span>
+            <span className="text-zinc-500">
+              {" "}· {totalMinutes} min ({selectedServices.length}{" "}
+              {selectedServices.length === 1 ? "service" : "services"})
+            </span>
+          </div>
           {overDurationCap ? (
-            <span className="block text-red-700">
+            <span className="w-full text-xs font-medium text-red-700">
               Combined duration cannot exceed {MAX_COMBINED_DURATION_MIN} minutes.
             </span>
           ) : null}
-        </p>
+        </div>
       ) : null}
 
       {requireContactInfo ? (
-        <section className="space-y-4 rounded-lg border border-zinc-200 bg-white p-4" data-testid="contact-details-section">
-          <div>
-            <h2 className="text-sm font-semibold text-zinc-900">Your contact details</h2>
-            <p className="text-xs text-zinc-500">
+        <section
+          className="space-y-4 rounded-xl border border-zinc-200/80 bg-white p-5 shadow-xs"
+          data-testid="contact-details-section"
+        >
+          <div className="border-b border-zinc-100 pb-3">
+            <h2 className="text-base font-semibold text-zinc-900">
+              Your contact details
+            </h2>
+            <p className="mt-0.5 text-xs text-zinc-500">
               The salon will use this to confirm and identify your appointment.
             </p>
           </div>
@@ -336,7 +383,8 @@ export function BookingForm({
           <div>
             <label className={labelClass}>
               <span className={labelTextClass}>
-                Email Address <span className="text-xs font-normal text-zinc-500">(optional)</span>
+                Email Address{" "}
+                <span className="text-xs font-normal text-zinc-500">(optional)</span>
               </span>
               <input
                 type="email"
@@ -354,75 +402,104 @@ export function BookingForm({
       ) : null}
 
       {message ? (
-        <p className="rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm text-zinc-900">
-          {message}
-        </p>
+        <div
+          role="alert"
+          aria-live="polite"
+          className="flex items-center gap-2.5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900 shadow-xs"
+        >
+          <svg
+            className="size-4 shrink-0 text-amber-600"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+          >
+            <path
+              fillRule="evenodd"
+              d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z"
+              clipRule="evenodd"
+            />
+          </svg>
+          <span>{message}</span>
+        </div>
       ) : null}
 
-      <div className="space-y-4">
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
+            Available Times
+          </h2>
+          <p className="mt-0.5 text-xs text-zinc-500">
+            Select a slot to confirm your booking instantly.
+          </p>
+        </div>
         {groupedSlots.length === 0 ? (
-          <p className="rounded-lg border border-dashed border-zinc-300 bg-zinc-50 px-4 py-8 text-center text-sm text-zinc-600">
+          <p className="rounded-xl border border-dashed border-zinc-300 bg-zinc-50/80 px-4 py-8 text-center text-sm text-zinc-500">
             No open slots in the next 7 days.
           </p>
         ) : (
           groupedSlots.map((group) => (
-            <section key={group.day}>
-              <h2 className="text-sm font-medium text-zinc-900">{group.day}</h2>
-              <div className="mt-2 flex flex-wrap gap-2">
+            <section key={group.day} className="space-y-2.5">
+              <h3 className="text-sm font-semibold text-zinc-900">{group.day}</h3>
+              <div className="flex flex-wrap gap-2">
                 {group.slots.map((iso) => {
                   const selectedSlot =
                     Boolean(initialStartsAt) &&
                     new Date(iso).getTime() === new Date(initialStartsAt).getTime();
                   return (
-                  <form
-                    key={iso}
-                    action={(formData) => {
-                      if (requireContactInfo) {
-                        if (!customerName.trim() || !customerPhone.trim()) {
-                          setMessage("Please enter your name and mobile number before choosing a time.");
-                          return;
-                        }
-                      }
-                      startTransition(async () => {
-                        const result = await action(formData);
-                        if (result.error) {
-                          setMessage(result.error);
-                          if (result.error.includes("Sign in again")) {
-                            router.push("/login");
+                    <form
+                      key={iso}
+                      action={(formData) => {
+                        if (requireContactInfo) {
+                          if (!customerName.trim() || !customerPhone.trim()) {
+                            setMessage(
+                              "Please enter your name and mobile number before choosing a time.",
+                            );
+                            return;
                           }
-                          return;
                         }
-                      });
-                    }}
-                  >
-                    <input type="hidden" name="locationId" value={locationId} />
-                    <input type="hidden" name="serviceIds" value={selectedIds.join(",")} />
-                    <input type="hidden" name="staffId" value={staffId} />
-                    <input type="hidden" name="startsAt" value={iso} />
-                    <input type="hidden" name="customerName" value={customerName} />
-                    <input type="hidden" name="customerPhone" value={customerPhone} />
-                    <input type="hidden" name="customerEmail" value={customerEmail} />
-                    <button
-                      type="submit"
-                      data-testid="book-slot"
-                      data-slot-selected={selectedSlot ? "true" : undefined}
-                      disabled={
-                        pending ||
-                        !locationId ||
-                        selectedIds.length === 0 ||
-                        !staffId ||
-                        overServiceCap ||
-                        overDurationCap
-                      }
-                      className={
-                        selectedSlot
-                          ? `${slotButtonClass} border-zinc-900 bg-zinc-900 text-white hover:bg-zinc-800`
-                          : slotButtonClass
-                      }
+                        startTransition(async () => {
+                          const result = await action(formData);
+                          if (result.error) {
+                            setMessage(result.error);
+                            if (result.error.includes("Sign in again")) {
+                              router.push("/login");
+                            }
+                            return;
+                          }
+                        });
+                      }}
                     >
-                      {formatTime(new Date(iso))}
-                    </button>
-                  </form>
+                      <input type="hidden" name="locationId" value={locationId} />
+                      <input
+                        type="hidden"
+                        name="serviceIds"
+                        value={selectedIds.join(",")}
+                      />
+                      <input type="hidden" name="staffId" value={staffId} />
+                      <input type="hidden" name="startsAt" value={iso} />
+                      <input type="hidden" name="customerName" value={customerName} />
+                      <input type="hidden" name="customerPhone" value={customerPhone} />
+                      <input type="hidden" name="customerEmail" value={customerEmail} />
+                      <button
+                        type="submit"
+                        data-testid="book-slot"
+                        data-slot-selected={selectedSlot ? "true" : undefined}
+                        disabled={
+                          pending ||
+                          !locationId ||
+                          selectedIds.length === 0 ||
+                          !staffId ||
+                          overServiceCap ||
+                          overDurationCap
+                        }
+                        className={
+                          selectedSlot
+                            ? `${slotButtonClass} border-zinc-900 bg-zinc-900 font-medium text-white hover:bg-zinc-800 shadow-xs`
+                            : `${slotButtonClass} shadow-xs transition hover:border-zinc-400`
+                        }
+                      >
+                        {formatTime(new Date(iso))}
+                      </button>
+                    </form>
                   );
                 })}
               </div>

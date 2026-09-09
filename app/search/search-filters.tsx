@@ -6,7 +6,7 @@ import { AreaFilter } from "@/components/booking/AreaFilter";
 import type { QuickAvailabilityKey } from "@/lib/availability/types";
 import { quickFilterHrefParams } from "@/lib/availability/quick-filters";
 import type { MarketplaceCategoryFilter } from "@/lib/marketplace";
-import { controlClass, labelClass, labelTextClass } from "@/lib/ui";
+import { labelClass } from "@/lib/ui";
 
 const TIME_OPTIONS = [
   "09:00",
@@ -66,10 +66,20 @@ function searchHref(input: {
   return query ? `/?${query}` : "/";
 }
 
+const discoveryChipClass =
+  "inline-flex shrink-0 items-center rounded-full border border-emerald-200/90 bg-white/95 px-3.5 py-1.5 text-sm text-emerald-950 shadow-xs transition hover:border-emerald-300 hover:bg-emerald-50/90 outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-emerald-700";
+
+const discoveryChipActiveClass =
+  "inline-flex shrink-0 items-center rounded-full bg-zinc-900 px-3.5 py-1.5 text-sm font-medium text-white shadow-xs outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-zinc-900";
+
+const discoveryControlClass =
+  "w-full rounded-lg border border-emerald-200/90 bg-white/95 px-3 py-2 text-sm text-emerald-950 shadow-xs outline-none focus-visible:ring-2 focus-visible:ring-emerald-700 focus-visible:ring-offset-1 focus:border-emerald-700 disabled:cursor-not-allowed disabled:bg-emerald-50/50 disabled:text-emerald-400";
+
+const discoveryLabelTextClass = "font-medium text-emerald-950";
+const discoveryHelpClass = "text-xs text-emerald-700/80";
+
 function filterLinkClass(active: boolean) {
-  return active
-    ? "rounded-full bg-zinc-900 px-3 py-1 text-sm font-medium text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900"
-    : "rounded-full border border-zinc-300 bg-white px-3 py-1 text-sm text-zinc-700 hover:bg-zinc-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900";
+  return active ? discoveryChipActiveClass : discoveryChipClass;
 }
 
 export function SearchFilters({
@@ -106,11 +116,12 @@ export function SearchFilters({
     avail,
   };
 
+  const chipRowClass = "flex flex-wrap justify-center gap-2 px-1 sm:gap-2.5";
+
   return (
-    <div className="space-y-4">
-      <div className="space-y-1">
-        <p className="text-sm font-medium text-zinc-900">What would you like to book?</p>
-        <nav aria-label="Filter by category" className="flex flex-nowrap gap-2 overflow-x-auto pb-1">
+    <div className="mx-auto w-full max-w-3xl space-y-4">
+      <div className="space-y-3.5 rounded-2xl border border-emerald-200/70 bg-gradient-to-b from-emerald-50/90 via-stone-50/70 to-white p-4 shadow-xs sm:p-5">
+        <nav aria-label="Filter by category" className={chipRowClass}>
           <Link
             href={searchHref({
               ...current,
@@ -120,6 +131,7 @@ export function SearchFilters({
               date: undefined,
               time: undefined,
             })}
+            aria-current={!activeSlug ? "page" : undefined}
             className={`${filterLinkClass(!activeSlug)} shrink-0`}
             data-testid="category-all"
           >
@@ -133,6 +145,7 @@ export function SearchFilters({
                 category: category.slug,
                 service: undefined,
               })}
+              aria-current={activeSlug === category.slug ? "page" : undefined}
               className={`${filterLinkClass(activeSlug === category.slug)} shrink-0`}
               data-testid={`category-${category.slug}`}
             >
@@ -141,69 +154,84 @@ export function SearchFilters({
             </Link>
           ))}
         </nav>
-      </div>
-      {services.length > 0 ? (
-        <nav aria-label="Filter by service" className="flex flex-nowrap gap-2 overflow-x-auto pb-1">
-          {services.map((service) => {
-            const active =
-              activeService != null &&
-              activeService.toLowerCase() === service.name.toLowerCase();
-            return (
-              <Link
-                key={service.name}
-                href={searchHref({
-                  ...current,
-                  service: active ? undefined : service.name,
-                })}
-                className={`${filterLinkClass(active)} shrink-0`}
-                data-testid={`service-chip-${serviceKey(service.name)}`}
-              >
-                {service.name}
-              </Link>
-            );
-          })}
-        </nav>
-      ) : null}
-      <nav aria-label="Quick availability" className="flex flex-nowrap gap-2 overflow-x-auto pb-1">
-        {QUICK_AVAILABILITY.map((option) => {
-          const active = avail === option.key;
-          const params = quickFilterHrefParams(option.key);
-          return (
-            <Link
-              key={option.key}
-              href={
-                active
-                  ? searchHref({
+
+        {services.length > 0 ? (
+          <div className="border-t border-emerald-200/60 pt-3">
+            <nav aria-label="Filter by service" className={chipRowClass}>
+              {services.map((service) => {
+                const active =
+                  activeService != null &&
+                  activeService.toLowerCase() === service.name.toLowerCase();
+                return (
+                  <Link
+                    key={service.name}
+                    href={searchHref({
                       ...current,
-                      avail: undefined,
-                      date: undefined,
-                      time: undefined,
-                    })
-                  : searchHref({
-                      category: current.category,
-                      service: current.service,
-                      serviceId: current.serviceId,
-                      area: current.area,
-                      ...params,
-                    })
-              }
-              className={`${filterLinkClass(active)} shrink-0`}
-              data-testid={`avail-${option.key}`}
-            >
-              {option.label}
-            </Link>
-          );
-        })}
-      </nav>
-      <AreaFilter
-        selectedArea={area ?? ""}
-        onAreaChange={(nextArea) => {
-          router.push(searchHref({ ...current, area: nextArea || undefined }));
-        }}
-      />
-      <div className="grid gap-4 sm:grid-cols-2">
+                      service: active ? undefined : service.name,
+                    })}
+                    aria-current={active ? "page" : undefined}
+                    className={`${filterLinkClass(active)} shrink-0`}
+                    data-testid={`service-chip-${serviceKey(service.name)}`}
+                  >
+                    {service.name}
+                  </Link>
+                );
+              })}
+            </nav>
+          </div>
+        ) : null}
+
+        <div className="border-t border-emerald-200/60 pt-3">
+          <p className="mb-2 text-center text-xs font-medium text-emerald-800/80">
+            Quick availability
+          </p>
+          <nav aria-label="Quick availability" className={chipRowClass}>
+            {QUICK_AVAILABILITY.map((option) => {
+              const active = avail === option.key;
+              const params = quickFilterHrefParams(option.key);
+              return (
+                <Link
+                  key={option.key}
+                  href={
+                    active
+                      ? searchHref({
+                          ...current,
+                          avail: undefined,
+                          date: undefined,
+                          time: undefined,
+                        })
+                      : searchHref({
+                          category: current.category,
+                          service: current.service,
+                          serviceId: current.serviceId,
+                          area: current.area,
+                          ...params,
+                        })
+                  }
+                  aria-current={active ? "page" : undefined}
+                  className={`${filterLinkClass(active)} shrink-0`}
+                  data-testid={`avail-${option.key}`}
+                >
+                  {option.label}
+                </Link>
+              );
+            })}
+          </nav>
+        </div>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-3 sm:gap-4">
+        <AreaFilter
+          selectedArea={area ?? ""}
+          onAreaChange={(nextArea) => {
+            router.push(searchHref({ ...current, area: nextArea || undefined }));
+          }}
+          controlClassName={discoveryControlClass}
+          labelTextClassName={discoveryLabelTextClass}
+          helpClassName={discoveryHelpClass}
+        />
         <label className={labelClass}>
-          <span className={labelTextClass}>Date</span>
+          <span className={discoveryLabelTextClass}>Date</span>
           <input
             type="date"
             min={minDate}
@@ -218,12 +246,12 @@ export function SearchFilters({
                 }),
               );
             }}
-            className={controlClass}
+            className={discoveryControlClass}
             data-testid="date-picker"
           />
         </label>
         <label className={labelClass}>
-          <span className={labelTextClass}>Preferred time</span>
+          <span className={discoveryLabelTextClass}>Preferred time</span>
           <select
             value={time ?? ""}
             disabled={!date && avail !== "open"}
@@ -231,7 +259,7 @@ export function SearchFilters({
             onChange={(event) => {
               router.push(searchHref({ ...current, time: event.target.value || undefined }));
             }}
-            className={controlClass}
+            className={discoveryControlClass}
             data-testid="time-filter"
           >
             <option value="">Any time</option>
@@ -241,7 +269,7 @@ export function SearchFilters({
               </option>
             ))}
           </select>
-          <p id="time-filter-help" className="text-xs text-zinc-500">
+          <p id="time-filter-help" className={discoveryHelpClass}>
             {date || avail === "open"
               ? "Shows slots within 30 minutes of this time."
               : "Choose a date first to filter by time."}

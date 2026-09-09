@@ -4,12 +4,7 @@ import { TrustSignalRow } from "@/components/marketplace/trust-signal-row";
 import { LocationHeading } from "@/components/booking/location-heading";
 import { formatPrice } from "@/lib/format";
 import type { MarketplaceListing } from "@/lib/marketplace";
-import {
-  focusRingClass,
-  primaryButtonClass,
-  secondaryButtonClass,
-  surfaceInteractiveClass,
-} from "@/lib/ui";
+import { focusRingClass } from "@/lib/ui";
 
 export function BusinessCard({
   listing,
@@ -36,7 +31,7 @@ export function BusinessCard({
 
   return (
     <article
-      className={`${surfaceInteractiveClass} group flex h-full flex-col overflow-hidden`}
+      className="group flex h-full flex-col overflow-hidden rounded-xl border border-emerald-100/90 bg-white shadow-xs transition hover:border-emerald-300 hover:shadow-md hover:shadow-emerald-950/5"
       data-testid={`business-${listing.slug}`}
     >
       <Link href={viewHref} className={`block shrink-0 ${focusRingClass}`}>
@@ -52,14 +47,14 @@ export function BusinessCard({
             data-testid={`business-cover-${listing.slug}`}
           />
         ) : (
-          <div className="flex aspect-[2/1] items-end bg-zinc-100 px-4 py-3">
-            <span className="text-sm font-medium text-zinc-500">{listing.name}</span>
+          <div className="flex aspect-[2/1] items-end bg-gradient-to-br from-emerald-50 to-stone-100 px-4 py-3">
+            <span className="text-sm font-medium text-emerald-700/80">{listing.name}</span>
           </div>
         )}
       </Link>
       <div className="flex flex-1 flex-col gap-2 p-4">
         <Link href={viewHref} className={`inline-block rounded-sm ${focusRingClass}`}>
-          <h2 className="line-clamp-2 text-lg font-semibold tracking-tight text-zinc-900 hover:text-zinc-700">
+          <h2 className="line-clamp-2 text-lg font-semibold tracking-tight text-zinc-900 transition-colors group-hover:text-emerald-900">
             {listing.name}
           </h2>
         </Link>
@@ -110,12 +105,15 @@ export function BusinessCard({
         )}
 
         <div className="mt-auto flex flex-wrap gap-2 pt-4">
-          <Link href={viewHref} className={secondaryButtonClass}>
+          <Link
+            href={viewHref}
+            className={`inline-flex items-center justify-center rounded-md border border-emerald-200/90 bg-white px-4 py-2 text-sm font-medium text-emerald-900 hover:bg-emerald-50 ${focusRingClass}`}
+          >
             View salon
           </Link>
           <Link
             href={bookHref}
-            className={primaryButtonClass}
+            className={`inline-flex items-center justify-center rounded-md bg-emerald-800 px-4 py-2 text-sm font-medium text-white shadow-xs hover:bg-emerald-700 ${focusRingClass}`}
             data-testid={`book-now-${listing.slug}`}
           >
             Book now

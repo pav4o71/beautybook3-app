@@ -10,7 +10,6 @@ export function ActionForm({
   action,
   children,
   className,
-  encType,
 }: {
   action: (
     prevState: ActionFormState,
@@ -18,12 +17,11 @@ export function ActionForm({
   ) => Promise<ActionFormState>;
   children: React.ReactNode;
   className?: string;
-  encType?: "multipart/form-data";
 }) {
   const [state, formAction, pending] = useActionState(action, {});
 
   return (
-    <form action={formAction} className={className} encType={encType}>
+    <form action={formAction} className={className}>
       {state.error ? (
         <p className={`mb-4 ${errorAlertClass}`}>{state.error}</p>
       ) : null}
