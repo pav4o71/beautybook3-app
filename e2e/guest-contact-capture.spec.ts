@@ -76,8 +76,15 @@ test.describe("guest contact capture", () => {
       snapshotCard.getByRole("link", { name: "0917 123 4567" }),
     ).toHaveAttribute("href", "tel:+639171234567");
     await expect(snapshotCard.getByText("(maria@example.com)")).toBeVisible();
+    await expect(snapshotCard.getByText("customer@beautybook.local")).not.toBeVisible();
 
-    // 2. Verify appointment without snapshot falls back to account name
+    // 2. Case 1 regression: snapshot has name and phone, but customerEmail = null; linked User email must NOT appear
+    const noEmailSnapshotCard = page.locator("article").filter({ hasText: "Juan Dela Cruz" }).first();
+    await expect(noEmailSnapshotCard).toBeVisible();
+    await expect(noEmailSnapshotCard.getByText("0917 555 6677")).toBeVisible();
+    await expect(noEmailSnapshotCard.getByText("customer@beautybook.local")).not.toBeVisible();
+
+    // 3. Case 2 regression: appointment without snapshot falls back to account name
     const fallbackCard = page.locator("article").filter({ hasText: "Demo Customer" }).first();
     await expect(fallbackCard).toBeVisible();
   });

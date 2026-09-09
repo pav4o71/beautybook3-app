@@ -3,7 +3,10 @@ import {
   statusBadgeClass,
   statusLabel,
 } from "@/lib/appointment-status";
-import { getAppointmentsForDay } from "@/lib/appointments";
+import {
+  getAppointmentsForDay,
+  getAppointmentContactDisplay,
+} from "@/lib/appointments";
 import { formatDay, formatPrice, formatTime } from "@/lib/format";
 import { requireActiveOrgAdmin } from "@/lib/require-org";
 import { secondaryButtonClass } from "@/lib/ui";
@@ -48,18 +51,7 @@ export default async function AdminAppointmentsPage() {
             const serviceNames = appointment.services
               .map((row) => row.service.name)
               .join(", ");
-            const customerName =
-              appointment.customerName ||
-              appointment.customer?.name ||
-              appointment.customer?.email ||
-              "Walk-in";
-            const customerPhone =
-              appointment.customerPhone ||
-              appointment.customer?.phone ||
-              null;
-            const customerEmail =
-              appointment.customerEmail ||
-              (appointment.customerName ? appointment.customer?.email : null);
+            const contact = getAppointmentContactDisplay(appointment);
 
             return (
               <article
@@ -71,21 +63,21 @@ export default async function AdminAppointmentsPage() {
                   <div className="space-y-1">
                     <p className="font-medium text-zinc-900">{serviceNames}</p>
                     <p className="text-sm text-zinc-600">
-                      <span className="font-medium text-zinc-900">{customerName}</span>
-                      {customerPhone ? (
+                      <span className="font-medium text-zinc-900">{contact.customerName}</span>
+                      {contact.customerPhone ? (
                         <>
                           {" · "}
                           <a
-                            href={`tel:${customerPhone}`}
+                            href={`tel:${contact.customerPhone}`}
                             className="text-zinc-700 underline hover:text-zinc-900"
                             data-testid={`admin-appointment-phone-${appointment.id}`}
                           >
-                            {formatPhoneDisplay(customerPhone)}
+                            {formatPhoneDisplay(contact.customerPhone)}
                           </a>
                         </>
                       ) : null}
-                      {customerEmail ? (
-                        <span className="text-xs text-zinc-500"> ({customerEmail})</span>
+                      {contact.customerEmail ? (
+                        <span className="text-xs text-zinc-500"> ({contact.customerEmail})</span>
                       ) : null}
                       {" · with "}{appointment.staff.name}
                     </p>

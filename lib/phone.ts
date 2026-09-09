@@ -31,7 +31,10 @@ export function normalizePhone(input: string): PhoneValidationResult {
   }
 
   try {
-    const parsed = parsePhoneNumberFromString(parseable, "PH");
+    const parsed = parsePhoneNumberFromString(parseable, {
+      defaultCountry: "PH",
+      extract: false,
+    });
     if (!parsed || !parsed.isValid()) {
       return {
         valid: false,

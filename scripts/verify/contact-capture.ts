@@ -1,7 +1,10 @@
 import "dotenv/config";
+import { spawnSync } from "node:child_process";
+import path from "node:path";
 import { normalizePhone, formatPhoneDisplay } from "../../lib/phone";
 import { publicBookSlotSchema } from "../../lib/validations/booking";
 import { createAppointment } from "../../lib/booking";
+import { getAppointmentContactDisplay } from "../../lib/appointments";
 import { prisma } from "../../lib/prisma";
 import { assertSafeVerifyTarget } from "./assert-safe-target";
 import { getDemoTenantContext } from "../../lib/tenant";
@@ -55,6 +58,16 @@ async function main() {
 
   const invalidAlpha = normalizePhone("abcdefghijk");
   assert(!invalidAlpha.valid, "alphabetic string should be rejected");
+
+  // Strict whole-input phone parsing tests (reject surrounding text)
+  const surrounded1 = normalizePhone("Call me 09171234567");
+  assert(!surrounded1.valid, "'Call me 09171234567' should be rejected");
+
+  const surrounded2 = normalizePhone("phone: +639171234567 hello");
+  assert(!surrounded2.valid, "'phone: +639171234567 hello' should be rejected");
+
+  const surrounded3 = normalizePhone("09171234567 text");
+  assert(!surrounded3.valid, "'09171234567 text' should be rejected");
 
   // Display formatting
   assert(formatPhoneDisplay("+639171234567") === "0917 123 4567", "PH number formats as national display");
@@ -231,11 +244,75 @@ async function main() {
   assert(loaded?.customerName === "Multi-Service Client", "Contact snapshot persisted on multi-service appt");
   await prisma.appointment.delete({ where: { id: multiAppt.id } });
 
+  // 4. Contact Snapshot Semantics Regression Tests
+  // CASE 1: linked user email exists, appointment customerName exists, appointment customerPhone exists, appointment customerEmail = null
+  // EXPECTED: linked User email must NOT appear.
+  const case1Display = getAppointmentContactDisplay({
+    customerName: "Maria Santos",
+    customerPhone: "+639171234567",
+    customerEmail: null,
+    customer: {
+      name: "Demo Customer",
+      email: "customer@beautybook.local",
+      phone: "+639170001111",
+    },
+  });
+  assert(case1Display.hasContactSnapshot, "Case 1: hasContactSnapshot must be true");
+  assert(case1Display.customerName === "Maria Santos", "Case 1: customerName must be snapshot value");
+  assert(case1Display.customerPhone === "+639171234567", "Case 1: customerPhone must be snapshot value");
+  assert(case1Display.customerEmail === null, "Case 1: linked User email must NOT appear when snapshot customerEmail is null");
+
+  // CASE 2: all three Appointment snapshot fields null, linked User exists
+  // EXPECTED: legacy fallback continues to work.
+  const case2Display = getAppointmentContactDisplay({
+    customerName: null,
+    customerPhone: null,
+    customerEmail: null,
+    customer: {
+      name: "Demo Customer",
+      email: "customer@beautybook.local",
+      phone: "+639170001111",
+    },
+  });
+  assert(!case2Display.hasContactSnapshot, "Case 2: hasContactSnapshot must be false for legacy data");
+  assert(case2Display.customerName === "Demo Customer", "Case 2: legacy fallback to customer name");
+  assert(case2Display.customerEmail === "customer@beautybook.local", "Case 2: legacy fallback to customer email");
+  assert(case2Display.customerPhone === "+639170001111", "Case 2: legacy fallback to customer phone");
+
+  // CASE 3: all three snapshot fields null, no customer user -> "Walk-in"
+  const case3Display = getAppointmentContactDisplay({
+    customerName: null,
+    customerPhone: null,
+    customerEmail: null,
+    customer: null,
+  });
+  assert(case3Display.customerName === "Walk-in", "Case 3: fallback to Walk-in");
+  assert(case3Display.customerPhone === null && case3Display.customerEmail === null, "Case 3: phone and email null");
+
+  // 5. Playwright Pre-Webserver DB Guard Verification
+  const rootDir = path.resolve(import.meta.dirname, "../..");
+  const testPlaywrightGuard = spawnSync(
+    "npx",
+    ["tsx", "-e", 'require("./playwright.config.ts")'],
+    {
+      cwd: rootDir,
+      env: { ...process.env, DATABASE_URL: "postgresql://beautybook:dummy@remote-danger.example.com:5432/beautybook" },
+      stdio: "pipe",
+    },
+  );
+  assert(testPlaywrightGuard.status !== 0, "playwright.config.ts must fail fast on non-local DATABASE_URL");
+  assert(
+    testPlaywrightGuard.stderr.toString().includes("Refusing: mutating test, seed, and verify commands require a confirmed local test/dev database"),
+    "playwright.config.ts must enforce assertLocalOnlyDatabase before webServer starts",
+  );
+
   console.log("verify-contact-capture: ok", {
     phNormalized: "+639171234567",
     internationalNormalized: "+14155552671",
     snapshotsVerified: true,
     gistExclusionActive: true,
+    snapshotSemanticsVerified: true,
+    playwrightGuardPreWebserverVerified: true,
   });
 }
 

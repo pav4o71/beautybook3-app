@@ -551,6 +551,9 @@ async function seedCatalogAndStaff(tenant: TenantContext, customerId: string) {
     durationMin: cut.durationMin,
     priceCents: cut.priceCents,
     status: AppointmentStatus.CONFIRMED,
+    customerName: "Juan Dela Cruz",
+    customerPhone: "+639175556677",
+    customerEmail: null,
   });
 
   const upcomingTuesday = nextWeekday(2);

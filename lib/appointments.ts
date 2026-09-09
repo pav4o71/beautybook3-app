@@ -90,3 +90,47 @@ export async function updateAppointmentStatus(input: {
     data: { status: input.status },
   });
 }
+
+export interface AppointmentContactDisplay {
+  hasContactSnapshot: boolean;
+  customerName: string;
+  customerPhone: string | null;
+  customerEmail: string | null;
+}
+
+export function getAppointmentContactDisplay(appointment: {
+  customerName?: string | null;
+  customerPhone?: string | null;
+  customerEmail?: string | null;
+  customer?: {
+    name?: string | null;
+    email?: string | null;
+    phone?: string | null;
+  } | null;
+}): AppointmentContactDisplay {
+  const hasContactSnapshot =
+    appointment.customerName != null ||
+    appointment.customerPhone != null ||
+    appointment.customerEmail != null;
+
+  if (hasContactSnapshot) {
+    return {
+      hasContactSnapshot: true,
+      customerName: appointment.customerName || "Walk-in",
+      customerPhone: appointment.customerPhone ?? null,
+      customerEmail: appointment.customerEmail ?? null,
+    };
+  }
+
+  const legacyName = appointment.customer?.name ?? null;
+  const legacyEmail = appointment.customer?.email ?? null;
+  const legacyPhone = appointment.customer?.phone ?? null;
+
+  return {
+    hasContactSnapshot: false,
+    customerName: legacyName || legacyEmail || "Walk-in",
+    customerPhone: legacyPhone,
+    customerEmail: legacyName && legacyEmail ? legacyEmail : null,
+  };
+}
+
