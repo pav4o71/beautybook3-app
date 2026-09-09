@@ -305,6 +305,12 @@ model Appointment {
   endsAt         DateTime
   status         AppointmentStatus @default(PENDING)
   notes          String?
+
+  // Snapshot of customer contact captured at booking time (Foundation A1)
+  customerName   String?
+  customerPhone  String?
+  customerEmail  String?
+
   createdAt      DateTime          @default(now())
   updatedAt      DateTime          @updatedAt
 

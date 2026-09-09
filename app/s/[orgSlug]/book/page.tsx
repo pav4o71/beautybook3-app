@@ -5,6 +5,7 @@ import { getAvailableSlots, getAvailableSlotsForDay } from "@/lib/booking";
 import { MAX_COMBINED_DURATION_MIN, staffOffersAllServices } from "@/lib/booking-limits";
 import { listBookingServices, listBookingStaff } from "@/lib/catalog";
 import { getPublishedOrganizationBySlug } from "@/lib/tenant";
+import { getSession } from "@/lib/session";
 import { resolveSelectedServiceIds, firstQueryValue } from "@/lib/validations/booking";
 import { pageMainClass, secondaryButtonClass, successAlertClass } from "@/lib/ui";
 import { BookingForm } from "@/app/dashboard/book/booking-form";
@@ -26,7 +27,10 @@ export default async function PublicBookPage({
 }) {
   const { orgSlug } = await params;
   const query = await searchParams;
-  const organization = await getPublishedOrganizationBySlug(orgSlug);
+  const [organization, session] = await Promise.all([
+    getPublishedOrganizationBySlug(orgSlug),
+    getSession(),
+  ]);
 
   if (!organization) {
     notFound();
@@ -161,6 +165,10 @@ export default async function PublicBookPage({
               : ""
           }
           slots={slots.map((slot) => slot.toISOString())}
+          requireContactInfo={true}
+          defaultCustomerName={session?.user?.name ?? ""}
+          defaultCustomerEmail={session?.user?.email ?? ""}
+          defaultCustomerPhone={(session?.user && "phone" in session.user ? (session.user as { phone?: string | null }).phone ?? "" : "")}
         />
       )}
     </main>

@@ -22,15 +22,16 @@
 | **Organization-Scoped Booking Safety** | PR #25 | Scoped staff time-off queries in `lib/booking.ts` and `lib/schedule.ts` strictly by `organizationId`. |
 | **Default Location Integrity & Index** | PR #26 | Enforced partial unique index `Location_one_default_per_org` (**at most one default location per organization**) and index on `Organization(published)`. |
 | **Marketplace Conversion Foundations** | PR #27 | Service-first discovery; quick availability filters (`today`, `tomorrow`, `weekend`, `open`, `earliest`); next-available badges; trust signals; card deep-link booking CTA; sticky mobile CTA. |
+| **Foundation A1: Guest Contact Capture** | PR #29 | Nullable contact snapshot columns (`customerName`, `customerPhone`, `customerEmail`) on `Appointment`; server-side `libphonenumber-js` E.164 normalization; public booking requires name and phone; admin board displays real customer info with clickable `tel:` links; 100% backward compatible with historical null rows. |
 
 ---
 
 ## 2. Current Canonical Test Baseline
 
-- **Verify Suite (`npm run verify`):** **11 scripts** executed by `scripts/verify/run-all.ts`:
-  `format.ts`, `local-db-guard.ts`, `seed-counts.ts`, `areas.ts`, `marketplace-search.ts`, `marketplace-availability.ts`, `org-scope.ts`, `org-roles.ts`, `slots.ts`, `booking.ts`, `appointments.ts`.
-- **Playwright E2E Suite (`npm run test:e2e`):** **34 tests** across 11 spec files:
-  `admin-appointments.spec.ts` (4), `auth.spec.ts` (5), `booking.spec.ts` (4), `catalog.spec.ts` (3), `isolation.spec.ts` (3), `location-booking.spec.ts` (1), `locations.spec.ts` (2), `onboarding.spec.ts` (1), `salon-storefront.spec.ts` (3), `search-availability.spec.ts` (2), `search.spec.ts` (6).
+- **Verify Suite (`npm run verify`):** **12 scripts** executed by `scripts/verify/run-all.ts`:
+  `format.ts`, `local-db-guard.ts`, `seed-counts.ts`, `areas.ts`, `marketplace-search.ts`, `marketplace-availability.ts`, `org-scope.ts`, `org-roles.ts`, `slots.ts`, `booking.ts`, `contact-capture.ts`, `appointments.ts`.
+- **Playwright E2E Suite (`npm run test:e2e`):** **37 tests** across 12 spec files:
+  `admin-appointments.spec.ts` (4), `auth.spec.ts` (5), `booking.spec.ts` (4), `catalog.spec.ts` (3), `guest-contact-capture.spec.ts` (3), `isolation.spec.ts` (3), `location-booking.spec.ts` (1), `locations.spec.ts` (2), `onboarding.spec.ts` (1), `salon-storefront.spec.ts` (3), `search-availability.spec.ts` (2), `search.spec.ts` (6).
 
 ---
 

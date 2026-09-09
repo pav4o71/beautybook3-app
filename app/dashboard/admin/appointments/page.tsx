@@ -3,12 +3,16 @@ import {
   statusBadgeClass,
   statusLabel,
 } from "@/lib/appointment-status";
-import { getAppointmentsForDay } from "@/lib/appointments";
+import {
+  getAppointmentsForDay,
+  getAppointmentContactDisplay,
+} from "@/lib/appointments";
 import { formatDay, formatPrice, formatTime } from "@/lib/format";
 import { requireActiveOrgAdmin } from "@/lib/require-org";
 import { secondaryButtonClass } from "@/lib/ui";
 import Link from "next/link";
 import { AdminNav } from "../admin-nav";
+import { formatPhoneDisplay } from "@/lib/phone";
 import { AppointmentStatusActions } from "./appointment-status-actions";
 
 export default async function AdminAppointmentsPage() {
@@ -47,10 +51,7 @@ export default async function AdminAppointmentsPage() {
             const serviceNames = appointment.services
               .map((row) => row.service.name)
               .join(", ");
-            const customerLabel =
-              appointment.customer?.name ??
-              appointment.customer?.email ??
-              "Walk-in";
+            const contact = getAppointmentContactDisplay(appointment);
 
             return (
               <article
@@ -62,7 +63,23 @@ export default async function AdminAppointmentsPage() {
                   <div className="space-y-1">
                     <p className="font-medium text-zinc-900">{serviceNames}</p>
                     <p className="text-sm text-zinc-600">
-                      {customerLabel} · with {appointment.staff.name}
+                      <span className="font-medium text-zinc-900">{contact.customerName}</span>
+                      {contact.customerPhone ? (
+                        <>
+                          {" · "}
+                          <a
+                            href={`tel:${contact.customerPhone}`}
+                            className="text-zinc-700 underline hover:text-zinc-900"
+                            data-testid={`admin-appointment-phone-${appointment.id}`}
+                          >
+                            {formatPhoneDisplay(contact.customerPhone)}
+                          </a>
+                        </>
+                      ) : null}
+                      {contact.customerEmail ? (
+                        <span className="text-xs text-zinc-500"> ({contact.customerEmail})</span>
+                      ) : null}
+                      {" · with "}{appointment.staff.name}
                     </p>
                     <p className="text-sm text-zinc-700">
                       {formatTime(appointment.startsAt)} – {formatTime(appointment.endsAt)}

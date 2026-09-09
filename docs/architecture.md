@@ -92,7 +92,10 @@ The canonical schema is defined in [`prisma/schema.prisma`](../prisma/schema.pri
 5. **Organization-Scoped Time-Off (PR #25):**
    Staff time-off queries in `lib/booking.ts` and `lib/schedule.ts` strictly filter by `organizationId` and `staffId`.
 
-### Migration Inventory (9 Migrations)
+6. **Appointment Contact Snapshots (Foundation A1):**
+   Public guest bookings require `customerName` and valid `customerPhone` (with optional `customerEmail`). Values are persisted as immutable point-in-time snapshots on `Appointment` (`customerName`, `customerPhone`, `customerEmail`), preserving historical records even if customer accounts or profiles change later. Phone numbers are normalized strictly server-side to canonical E.164 (`+639171234567`). Columns remain nullable in the database for backward compatibility with historical records.
+
+### Migration Inventory (10 Migrations)
 1. `20260829224926_init_auth_and_booking` — Core auth, user, and initial booking tables
 2. `20260830034500_appointment_staff_no_overlap` — Enables `btree_gist` and creates exclusion constraint
 3. `20260830100000_add_tenancy_tables` — Adds `Organization`, `Location`, `OrganizationMember`, `OrgRole`
@@ -102,6 +105,7 @@ The canonical schema is defined in [`prisma/schema.prisma`](../prisma/schema.pri
 7. `20260830172000_add_organization_cover_image` — Adds `Organization.coverImageUrl`
 8. `20260830183000_salon_profile_and_appointment_service_unique` — Adds salon storefront profile fields and `AppointmentService` uniqueness
 9. `20260903120000_location_one_default_and_org_published_idx` — Enforces partial unique default location index and published index
+10. `20260906163000_add_appointment_contact_snapshot` — Adds nullable `customerName`, `customerPhone`, and `customerEmail` snapshot columns to `Appointment`
 
 ---
 

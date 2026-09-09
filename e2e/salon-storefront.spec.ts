@@ -28,6 +28,9 @@ test.describe("salon storefront", () => {
     const slot = page.getByTestId("book-slot").first();
     await expect(slot).toBeVisible({ timeout: 15_000 });
 
+    await page.getByTestId("customer-name-input").fill("Storefront Guest");
+    await page.getByTestId("customer-phone-input").fill("0917 123 4567");
+
     await Promise.all([
       page.waitForURL(new RegExp(`/s/${DEMO_ORG_SLUG}/book\\?booked=1`), { timeout: 45_000 }),
       slot.click(),

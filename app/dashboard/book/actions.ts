@@ -28,6 +28,10 @@ export async function bookSlot(formData: FormData): Promise<ActionFormState> {
     return { error: "Choose a valid location." };
   }
 
+  const formCustomerName = formData.get("customerName");
+  const formCustomerPhone = formData.get("customerPhone");
+  const formCustomerEmail = formData.get("customerEmail");
+
   const parsed = bookSlotSchema.safeParse({
     organizationId,
     locationId,
@@ -35,6 +39,9 @@ export async function bookSlot(formData: FormData): Promise<ActionFormState> {
     serviceIds: parseServiceIdsFromForm(formData),
     staffId: formData.get("staffId"),
     startsAt: formData.get("startsAt"),
+    customerName: formCustomerName ? String(formCustomerName) : session.user.name,
+    customerPhone: formCustomerPhone ? String(formCustomerPhone) : ("phone" in session.user ? (session.user as { phone?: string | null }).phone ?? null : null),
+    customerEmail: formCustomerEmail ? String(formCustomerEmail) : session.user.email,
   });
 
   if (!parsed.success) {
@@ -49,6 +56,9 @@ export async function bookSlot(formData: FormData): Promise<ActionFormState> {
       serviceIds: parsed.data.serviceIds,
       staffId: parsed.data.staffId,
       startsAt: parsed.data.startsAt,
+      customerName: parsed.data.customerName ?? session.user.name,
+      customerPhone: parsed.data.customerPhone ?? null,
+      customerEmail: parsed.data.customerEmail ?? session.user.email,
     });
   } catch (error) {
     return actionError(error);

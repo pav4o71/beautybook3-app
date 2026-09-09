@@ -14,7 +14,10 @@ import { formatDay, formatPrice, formatTime } from "@/lib/format";
 import {
   cardButtonClass,
   cardButtonSelectedClass,
+  controlClass,
   infoAlertClass,
+  labelClass,
+  labelTextClass,
   slotButtonClass,
 } from "@/lib/ui";
 import { bookSlot } from "./actions";
@@ -55,6 +58,10 @@ export function BookingForm({
   slots,
   action = bookSlot,
   bookPath = "/dashboard/book",
+  requireContactInfo = false,
+  defaultCustomerName = "",
+  defaultCustomerPhone = "",
+  defaultCustomerEmail = "",
 }: {
   services: ServiceOption[];
   staff: StaffOption[];
@@ -66,11 +73,18 @@ export function BookingForm({
   slots: string[];
   action?: (formData: FormData) => Promise<ActionFormState>;
   bookPath?: string;
+  requireContactInfo?: boolean;
+  defaultCustomerName?: string;
+  defaultCustomerPhone?: string;
+  defaultCustomerEmail?: string;
 }) {
   const router = useRouter();
   const [locationId, setLocationId] = useState(initialLocationId);
   const [selectedIds, setSelectedIds] = useState(initialServiceIds);
   const [staffId, setStaffId] = useState(initialStaffId);
+  const [customerName, setCustomerName] = useState(defaultCustomerName);
+  const [customerPhone, setCustomerPhone] = useState(defaultCustomerPhone);
+  const [customerEmail, setCustomerEmail] = useState(defaultCustomerEmail);
   const [message, setMessage] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -274,6 +288,71 @@ export function BookingForm({
         </p>
       ) : null}
 
+      {requireContactInfo ? (
+        <section className="space-y-4 rounded-lg border border-zinc-200 bg-white p-4" data-testid="contact-details-section">
+          <div>
+            <h2 className="text-sm font-semibold text-zinc-900">Your contact details</h2>
+            <p className="text-xs text-zinc-500">
+              The salon will use this to confirm and identify your appointment.
+            </p>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label className={labelClass}>
+              <span className={labelTextClass}>
+                Full Name <span className="text-red-500">*</span>
+              </span>
+              <input
+                type="text"
+                name="customerNameInput"
+                required
+                value={customerName}
+                onChange={(e) => setCustomerName(e.target.value)}
+                placeholder="e.g. Maria Santos"
+                maxLength={100}
+                className={controlClass}
+                data-testid="customer-name-input"
+              />
+            </label>
+
+            <label className={labelClass}>
+              <span className={labelTextClass}>
+                Mobile Number <span className="text-red-500">*</span>
+              </span>
+              <input
+                type="tel"
+                name="customerPhoneInput"
+                required
+                value={customerPhone}
+                onChange={(e) => setCustomerPhone(e.target.value)}
+                placeholder="e.g. 0917 123 4567"
+                maxLength={40}
+                className={controlClass}
+                data-testid="customer-phone-input"
+              />
+            </label>
+          </div>
+
+          <div>
+            <label className={labelClass}>
+              <span className={labelTextClass}>
+                Email Address <span className="text-xs font-normal text-zinc-500">(optional)</span>
+              </span>
+              <input
+                type="email"
+                name="customerEmailInput"
+                value={customerEmail}
+                onChange={(e) => setCustomerEmail(e.target.value)}
+                placeholder="name@example.com (optional)"
+                maxLength={254}
+                className={controlClass}
+                data-testid="customer-email-input"
+              />
+            </label>
+          </div>
+        </section>
+      ) : null}
+
       {message ? (
         <p className="rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm text-zinc-900">
           {message}
@@ -298,6 +377,12 @@ export function BookingForm({
                   <form
                     key={iso}
                     action={(formData) => {
+                      if (requireContactInfo) {
+                        if (!customerName.trim() || !customerPhone.trim()) {
+                          setMessage("Please enter your name and mobile number before choosing a time.");
+                          return;
+                        }
+                      }
                       startTransition(async () => {
                         const result = await action(formData);
                         if (result.error) {
@@ -314,6 +399,9 @@ export function BookingForm({
                     <input type="hidden" name="serviceIds" value={selectedIds.join(",")} />
                     <input type="hidden" name="staffId" value={staffId} />
                     <input type="hidden" name="startsAt" value={iso} />
+                    <input type="hidden" name="customerName" value={customerName} />
+                    <input type="hidden" name="customerPhone" value={customerPhone} />
+                    <input type="hidden" name="customerEmail" value={customerEmail} />
                     <button
                       type="submit"
                       data-testid="book-slot"

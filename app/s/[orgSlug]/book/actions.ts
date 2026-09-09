@@ -28,6 +28,9 @@ export async function bookPublicSlot(
     serviceIds: parseServiceIdsFromForm(formData),
     staffId: formData.get("staffId"),
     startsAt: formData.get("startsAt"),
+    customerName: formData.get("customerName"),
+    customerPhone: formData.get("customerPhone"),
+    customerEmail: formData.get("customerEmail"),
   });
 
   if (!parsed.success) {
@@ -56,6 +59,9 @@ export async function bookPublicSlot(
       serviceIds: parsed.data.serviceIds,
       staffId: parsed.data.staffId,
       startsAt: parsed.data.startsAt,
+      customerName: parsed.data.customerName,
+      customerPhone: parsed.data.customerPhone,
+      customerEmail: parsed.data.customerEmail,
     });
   } catch (error) {
     return actionError(error);

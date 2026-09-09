@@ -1,4 +1,8 @@
+import "dotenv/config";
 import { defineConfig, devices } from "@playwright/test";
+import { assertLocalOnlyDatabase } from "./lib/test-only-local-db";
+
+assertLocalOnlyDatabase();
 
 const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3000";
 
@@ -28,7 +32,7 @@ export default defineConfig({
     env: {
       DATABASE_URL: process.env.DATABASE_URL ?? "",
       BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET ?? "",
-      BETTER_AUTH_URL: process.env.BETTER_AUTH_URL ?? baseURL,
+      BETTER_AUTH_URL: baseURL,
     },
   },
 });

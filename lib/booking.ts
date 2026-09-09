@@ -140,6 +140,9 @@ export async function createAppointment(input: {
   staffId: string;
   serviceIds: string[];
   startsAt: Date;
+  customerName?: string | null;
+  customerPhone?: string | null;
+  customerEmail?: string | null;
 }) {
   const startsAt = input.startsAt;
   if (Number.isNaN(startsAt.getTime())) {
@@ -249,6 +252,9 @@ export async function createAppointment(input: {
           startsAt,
           endsAt,
           status: AppointmentStatus.CONFIRMED,
+          customerName: input.customerName?.trim() || null,
+          customerPhone: input.customerPhone || null,
+          customerEmail: input.customerEmail?.trim().toLowerCase() || null,
           services: {
             create: uniqueIds.map((serviceId) => {
               const service = servicesById.get(serviceId);
