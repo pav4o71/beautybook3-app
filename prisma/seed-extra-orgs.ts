@@ -1,7 +1,6 @@
 import { OrgRole, Role, Weekday } from "@/app/generated/prisma/enums";
 import { auth } from "@/lib/auth";
 import {
-  DEMO_ACCOUNT,
   GLOW_OWNER,
   LUXE_OWNER,
 } from "@/lib/demo-account";
