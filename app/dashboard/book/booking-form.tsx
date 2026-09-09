@@ -283,7 +283,7 @@ export function BookingForm({
           {availableStaff.length === 0 ? (
             <p className="text-sm text-zinc-600">
               {selectedIds.length === 0
-                ? "Choose at least one service."
+                ? "Choose a service to see available specialists."
                 : NO_STAFF_FOR_COMBINATION}
             </p>
           ) : (

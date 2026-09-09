@@ -37,6 +37,17 @@ test.describe("salon storefront", () => {
     ]);
 
     await expect(page.getByText(/Booked! Pay at the salon/i)).toBeVisible();
+    await expect(page.getByTestId("booking-success-state")).toBeVisible();
+    await expect(page.getByRole("link", { name: "View salon" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Book another appointment" })).toBeVisible();
+    await expect(page.getByTestId("book-slot")).toHaveCount(0);
+  });
+
+  test("shows clear specialist empty-state copy when no service is selected", async ({ page }) => {
+    await page.goto(`/s/${DEMO_ORG_SLUG}/book`);
+    await expect(
+      page.getByText("Choose a service to see available specialists."),
+    ).toBeVisible();
   });
 
   test("homepage Book now deep-links into booking with the service", async ({ page }) => {

@@ -7,7 +7,7 @@ import { listBookingServices, listBookingStaff } from "@/lib/catalog";
 import { getPublishedOrganizationBySlug } from "@/lib/tenant";
 import { getSession } from "@/lib/session";
 import { resolveSelectedServiceIds, firstQueryValue } from "@/lib/validations/booking";
-import { pageMainClass, secondaryButtonClass } from "@/lib/ui";
+import { pageMainClass, primaryButtonClass, secondaryButtonClass } from "@/lib/ui";
 import { BookingForm } from "@/app/dashboard/book/booking-form";
 import { bookPublicSlot } from "./actions";
 
@@ -132,26 +132,49 @@ export default async function PublicBookPage({
       </div>
 
       {firstQueryValue(query.booked) === "1" ? (
-        <div className="flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-medium text-emerald-900 shadow-xs">
-          <svg
-            className="size-5 shrink-0 text-emerald-600"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-            aria-hidden="true"
-          >
-            <path
-              fillRule="evenodd"
-              d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z"
-              clipRule="evenodd"
-            />
-          </svg>
-          <p className="text-sm font-medium text-emerald-900">
+        <section
+          data-testid="booking-success-state"
+          className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-6 text-center shadow-xs sm:p-10"
+        >
+          <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 sm:size-14">
+            <svg
+              className="size-7 sm:size-8"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+              aria-hidden="true"
+            >
+              <path
+                fillRule="evenodd"
+                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z"
+                clipRule="evenodd"
+              />
+            </svg>
+          </div>
+          <h2 className="mt-4 text-xl font-bold tracking-tight text-zinc-900 sm:text-2xl">
+            Booking confirmed!
+          </h2>
+          <p className="mt-2 text-sm leading-relaxed font-medium text-emerald-900 sm:text-base">
             Booked! Pay at the salon when you arrive.
           </p>
-        </div>
-      ) : null}
-
-      {services.length === 0 ? (
+          <p className="mt-1 text-sm text-zinc-600">
+            We look forward to seeing you at {organization.name}.
+          </p>
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+            <Link
+              href={`/s/${orgSlug}`}
+              className={primaryButtonClass}
+            >
+              View salon
+            </Link>
+            <Link
+              href={`/s/${orgSlug}/book`}
+              className={secondaryButtonClass}
+            >
+              Book another appointment
+            </Link>
+          </div>
+        </section>
+      ) : services.length === 0 ? (
         <EmptyState
           title="Nothing to book yet"
           description="This salon has not published bookable services."

@@ -50,7 +50,6 @@ export default async function BusinessSettingsPage({
 
       <ActionForm
         action={updateOrganizationSettings}
-        encType="multipart/form-data"
         className="mt-6 space-y-4 rounded-lg border border-zinc-200 bg-white p-4"
       >
         <label className={labelClass}>
