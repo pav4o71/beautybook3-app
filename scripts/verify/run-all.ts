@@ -22,6 +22,7 @@ const scripts = [
   "reschedule.ts",
   "cutoff-settings.ts",
   "notification-foundation.ts",
+  "notification-lifecycle.ts",
 ];
 
 assertSafeVerifyTarget();

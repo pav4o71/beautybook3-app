@@ -7,6 +7,7 @@ import {
   parseAdminSettableStatus,
   updateAppointmentStatus,
 } from "@/lib/appointments";
+import { sendAdminCancellationNotification } from "@/lib/email/notification-service";
 import { requireActiveOrgAdmin } from "@/lib/require-org";
 
 function revalidateAppointmentPaths() {
@@ -30,6 +31,14 @@ export async function setAppointmentStatus(
   try {
     const status = parseAdminSettableStatus(statusRaw);
     await updateAppointmentStatus({ organizationId, appointmentId: id, status });
+
+    if (status === "CANCELLED") {
+      try {
+        await sendAdminCancellationNotification({ appointmentId: id });
+      } catch {
+        // Non-blocking
+      }
+    }
   } catch (error) {
     return actionError(error);
   }

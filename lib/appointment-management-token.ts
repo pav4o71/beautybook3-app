@@ -156,7 +156,7 @@ export async function cancelAppointmentByManagementToken(input: {
   rawToken: unknown;
   reason?: string | null;
   note?: string | null;
-}): Promise<{ success: boolean; alreadyCancelled: boolean }> {
+}): Promise<{ success: boolean; alreadyCancelled: boolean; appointmentId: string }> {
   if (!isValidManagementTokenFormat(input.rawToken)) {
     throw new Error("Invalid management token.");
   }
@@ -204,7 +204,7 @@ export async function cancelAppointmentByManagementToken(input: {
     }
 
     if (appointment.status === "CANCELLED") {
-      return { success: true, alreadyCancelled: true };
+      return { success: true, alreadyCancelled: true, appointmentId: appointment.id };
     }
 
     const check = canCustomerCancelAppointment(appointment, now);
@@ -227,7 +227,7 @@ export async function cancelAppointmentByManagementToken(input: {
     });
 
     if (result.count === 1) {
-      return { success: true, alreadyCancelled: false };
+      return { success: true, alreadyCancelled: false, appointmentId: appointment.id };
     }
 
     // If affected rows = 0, re-read minimal current state
@@ -237,7 +237,7 @@ export async function cancelAppointmentByManagementToken(input: {
     });
 
     if (current?.status === "CANCELLED") {
-      return { success: true, alreadyCancelled: true };
+      return { success: true, alreadyCancelled: true, appointmentId: appointment.id };
     }
 
     throw new Error("This appointment can no longer be cancelled.");
@@ -302,6 +302,7 @@ export async function rescheduleAppointmentByManagementToken(input: {
     startsAt: Date;
     endsAt: Date;
   };
+  previousStartsAt: Date;
 }> {
   if (!isValidManagementTokenFormat(input.rawToken)) {
     throw new Error("Invalid management token.");
@@ -413,6 +414,7 @@ export async function rescheduleAppointmentByManagementToken(input: {
       return {
         success: true,
         appointment: updated,
+        previousStartsAt: appointment.startsAt,
       };
     });
   } catch (error) {
