@@ -25,8 +25,8 @@ async function ensureUser(
 ) {
   const existing = await prisma.user.findUnique({ where: { email: account.email } });
   if (existing) {
-    if (existing.role !== role) {
-      await prisma.user.update({ where: { email: account.email }, data: { role } });
+    if (existing.role !== role || !existing.emailVerified) {
+      await prisma.user.update({ where: { email: account.email }, data: { role, emailVerified: true } });
     }
     return existing;
   }
@@ -45,7 +45,7 @@ async function ensureUser(
 
   return prisma.user.update({
     where: { email: account.email },
-    data: { role },
+    data: { role, emailVerified: true },
   });
 }
 

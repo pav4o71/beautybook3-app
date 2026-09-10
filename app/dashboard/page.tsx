@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/page-header";
 import { resolveActiveOrganization } from "@/lib/org-context";
 import { isOrgAdminRole } from "@/lib/org-roles";
@@ -8,13 +9,20 @@ import { focusRingClass, pageMainClass, surfaceInteractiveClass } from "@/lib/ui
 export default async function DashboardPage() {
   const session = await requireUser();
   const active = await resolveActiveOrganization(session.user.id);
-  const isOrgAdmin = active ? isOrgAdminRole(active.membership.role) : false;
+
+  // Customers with no organization membership belong on the customer account page.
+  // Redirecting here avoids the /onboarding loop for pure customers.
+  if (!active) {
+    redirect("/account");
+  }
+
+  const isOrgAdmin = isOrgAdminRole(active.membership.role);
 
   return (
     <main className={pageMainClass}>
       <PageHeader
         title="Dashboard"
-        lead={`Signed in as ${session.user.name}${active ? ` · ${active.organization.name} (${active.membership.role})` : ""}.`}
+        lead={`Signed in as ${session.user.name} · ${active.organization.name} (${active.membership.role}).`}
       />
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Link

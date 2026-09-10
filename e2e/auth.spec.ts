@@ -6,7 +6,7 @@ async function signIn(page: import("@playwright/test").Page, email: string, pass
   await page.locator('input[name="email"]').fill(email);
   await page.locator('input[name="password"]').fill(password);
   await page.getByRole("button", { name: "Sign in" }).click();
-  await page.waitForURL("/dashboard");
+  await page.waitForURL(/\/(dashboard|account)/);
   await page.waitForLoadState("networkidle");
 }
 
@@ -26,7 +26,7 @@ test.describe("authentication", () => {
   test("customer is redirected from admin", async ({ page }) => {
     await signIn(page, DEMO_CUSTOMER.email, DEMO_CUSTOMER.password);
     await page.goto("/dashboard/admin");
-    await page.waitForURL("/dashboard");
+    await page.waitForURL(/\/(dashboard|account|onboarding)/);
   });
 
   test("wrong password shows an error", async ({ page }) => {
@@ -44,5 +44,24 @@ test.describe("authentication", () => {
     await page.waitForURL("/login");
     await page.goto("/dashboard");
     await page.waitForURL("/login");
+  });
+
+  test("customer signup shows check-email page", async ({ page }) => {
+    await page.goto("/signup");
+    const uniqueEmail = `playwright.${Date.now()}@example.com`;
+    await page.locator('input[name="name"]').fill("Playwright Customer");
+    await page.locator('input[name="email"]').fill(uniqueEmail);
+    await page.locator('input[name="password"]').fill("Password123!");
+    await page.locator('input[name="confirmPassword"]').fill("Password123!");
+    await page.getByRole("button", { name: "Create account" }).click();
+    await page.waitForURL(/\/verify-email/);
+    await expect(page.getByText(/check your email/i)).toBeVisible();
+  });
+
+  test("forgot password form submits generic response", async ({ page }) => {
+    await page.goto("/forgot-password");
+    await page.locator('input[name="email"]').fill("anyemail@example.com");
+    await page.getByRole("button", { name: "Send reset instructions" }).click();
+    await expect(page.getByText(/if an account exists/i)).toBeVisible();
   });
 });

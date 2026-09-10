@@ -187,10 +187,10 @@ async function seedDemoUser() {
   });
 
   if (existing) {
-    if (existing.role !== Role.ADMIN) {
+    if (existing.role !== Role.ADMIN || !existing.emailVerified) {
       await prisma.user.update({
         where: { email: DEMO_ACCOUNT.email },
-        data: { role: Role.ADMIN },
+        data: { role: Role.ADMIN, emailVerified: true },
       });
     }
 
@@ -212,7 +212,7 @@ async function seedDemoUser() {
 
   return prisma.user.update({
     where: { email: DEMO_ACCOUNT.email },
-    data: { role: Role.ADMIN },
+    data: { role: Role.ADMIN, emailVerified: true },
   });
 }
 
@@ -222,10 +222,10 @@ async function seedDemoCustomer() {
   });
 
   if (existing) {
-    if (existing.role !== Role.CUSTOMER) {
+    if (existing.role !== Role.CUSTOMER || !existing.emailVerified) {
       await prisma.user.update({
         where: { email: DEMO_CUSTOMER.email },
-        data: { role: Role.CUSTOMER },
+        data: { role: Role.CUSTOMER, emailVerified: true },
       });
     }
 
@@ -247,7 +247,7 @@ async function seedDemoCustomer() {
 
   return prisma.user.update({
     where: { email: DEMO_CUSTOMER.email },
-    data: { role: Role.CUSTOMER },
+    data: { role: Role.CUSTOMER, emailVerified: true },
   });
 }
 

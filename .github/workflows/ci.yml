@@ -27,6 +27,7 @@ jobs:
       DATABASE_URL: postgresql://ci:ci@localhost:5432/ci?sslmode=disable
       BETTER_AUTH_SECRET: ci-better-auth-secret-min-32-chars
       BETTER_AUTH_URL: http://localhost:3000
+      APP_BASE_URL: http://localhost:3000
       CI: "1"
     steps:
       - uses: actions/checkout@v4
@@ -69,6 +70,7 @@ jobs:
       DATABASE_URL: postgresql://ci:ci@localhost:5432/ci?sslmode=disable
       BETTER_AUTH_SECRET: ci-better-auth-secret-min-32-chars
       BETTER_AUTH_URL: http://localhost:3000
+      APP_BASE_URL: http://localhost:3000
       CI: "1"
     steps:
       - uses: actions/checkout@v4
