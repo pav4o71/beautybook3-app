@@ -59,7 +59,6 @@ export async function bookPublicSlot(
   // Abuse protection: durable rate limiting on booking attempts per customer phone & salon
   const bookingSubjectHash = deriveBookingSubjectHash(
     organization.id,
-    location.id,
     parsed.data.customerPhone,
   );
   const rateLimit = await checkRateLimit({

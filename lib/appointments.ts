@@ -74,28 +74,33 @@ export async function updateAppointmentStatus(input: {
   appointmentId: string;
   status: AdminSettableStatus;
 }) {
-  const appointment = await prisma.appointment.findFirst({
-    where: { id: input.appointmentId, organizationId: input.organizationId },
-    select: { id: true, status: true },
-  });
-
-  if (!appointment) {
-    throw new Error("Appointment not found.");
-  }
-
-  if (
-    appointment.status !== AppointmentStatus.CONFIRMED &&
-    appointment.status !== AppointmentStatus.PENDING
-  ) {
-    throw new Error("This appointment can no longer be updated.");
-  }
-
-  return prisma.appointment.update({
-    where: { id: input.appointmentId },
+  const result = await prisma.appointment.updateMany({
+    where: {
+      id: input.appointmentId,
+      organizationId: input.organizationId,
+      status: { in: [AppointmentStatus.CONFIRMED, AppointmentStatus.PENDING] },
+    },
     data: {
       status: input.status,
       ...(input.status === AppointmentStatus.CANCELLED ? { cancelledAt: new Date() } : {}),
     },
+  });
+
+  if (result.count === 0) {
+    const existing = await prisma.appointment.findFirst({
+      where: { id: input.appointmentId, organizationId: input.organizationId },
+      select: { id: true, status: true },
+    });
+
+    if (!existing) {
+      throw new Error("Appointment not found.");
+    }
+
+    throw new Error("This appointment can no longer be updated.");
+  }
+
+  return prisma.appointment.findUniqueOrThrow({
+    where: { id: input.appointmentId },
   });
 }
 

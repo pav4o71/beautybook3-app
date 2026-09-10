@@ -397,13 +397,24 @@ export async function rescheduleAppointmentByManagementToken(input: {
         throw new Error("That time is no longer available.");
       }
 
-      const updated = await tx.appointment.update({
-        where: { id: appointment.id },
+      const updateResult = await tx.appointment.updateMany({
+        where: {
+          id: appointment.id,
+          status: { in: ["PENDING", "CONFIRMED"] },
+        },
         data: {
           startsAt: targetStartsAt,
           endsAt: targetEndsAt,
           updatedAt: now,
         },
+      });
+
+      if (updateResult.count !== 1) {
+        throw new Error("This appointment can no longer be rescheduled.");
+      }
+
+      const updated = await tx.appointment.findUniqueOrThrow({
+        where: { id: appointment.id },
         select: {
           id: true,
           startsAt: true,

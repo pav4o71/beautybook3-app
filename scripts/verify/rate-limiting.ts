@@ -21,21 +21,25 @@ async function main() {
   // 1. Deterministic Subject Hashing
   const orgId1 = "org_11111111-1111-4111-8111-111111111111";
   const orgId2 = "org_22222222-2222-4222-8222-222222222222";
-  const locId = "loc_11111111-1111-4111-8111-111111111111";
   const phone1 = "+359888123456";
   const phone2 = "+359888654321";
 
-  const hash1 = deriveBookingSubjectHash(orgId1, locId, phone1);
-  const hash1Repeat = deriveBookingSubjectHash(orgId1, locId, phone1);
+  const hash1 = deriveBookingSubjectHash(orgId1, phone1);
+  const hash1Repeat = deriveBookingSubjectHash(orgId1, phone1);
   assert.equal(hash1, hash1Repeat, "HMAC-SHA256 must be deterministic for same input");
   assert.notEqual(hash1, phone1, "Raw phone must never match subject hash");
   assert.equal(hash1.length, 64, "Subject hash must be 64-char hex string (SHA256)");
 
-  const hashDiffPhone = deriveBookingSubjectHash(orgId1, locId, phone2);
+  const hashDiffPhone = deriveBookingSubjectHash(orgId1, phone2);
   assert.notEqual(hash1, hashDiffPhone, "Different phones must produce different hashes");
 
-  const hashDiffOrg = deriveBookingSubjectHash(orgId2, locId, phone1);
+  const hashDiffOrg = deriveBookingSubjectHash(orgId2, phone1);
   assert.notEqual(hash1, hashDiffOrg, "Different orgs must produce different hashes");
+
+  // Cross-branch isolation: Same org + same phone must produce same hash across different locations
+  const hashBranchA = deriveBookingSubjectHash(orgId1, phone1);
+  const hashBranchB = deriveBookingSubjectHash(orgId1, phone1);
+  assert.equal(hashBranchA, hashBranchB, "Same phone in same org must share quota across branches (H4 fix)");
 
   const token1 = "tok_test_abc123";
   const tokenHash1 = deriveManagementTokenSubjectHash(token1);
@@ -147,7 +151,8 @@ async function main() {
     where: { organizationId, active: true },
   });
 
-  const testMgmtToken = `tok_ratelimit_test_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+  const { generateAppointmentManagementToken } = await import("../../lib/appointment-management-token");
+  const { rawToken: testMgmtToken } = generateAppointmentManagementToken();
 
   // Test Customer Reschedule Rate Limiting (max 10)
   const rescheduleMgmtHash = deriveManagementTokenSubjectHash(testMgmtToken);
@@ -201,7 +206,7 @@ async function main() {
 
   // Test Public Booking Rate Limiting (max 5)
   const phoneToLimit = "+359888777666";
-  const bookingHash = deriveBookingSubjectHash(org.id, locationId, phoneToLimit);
+  const bookingHash = deriveBookingSubjectHash(org.id, phoneToLimit);
   await prisma.rateLimitBucket.upsert({
     where: {
       scope_subjectHash_windowStart: {
@@ -231,6 +236,24 @@ async function main() {
 
   const bookRes = await bookPublicSlot(org.slug, bookFormData);
   assert.equal(bookRes.error, RATE_LIMIT_ERROR_MESSAGE, "Public booking must be blocked with rate limit error");
+
+  // 6. Malformed Management Token Handling (Hypothesis H5 verification)
+  const malformedToken = "invalid_short_token";
+  const malformedSubjectHash = deriveManagementTokenSubjectHash(malformedToken);
+
+  const malformedCancelRes = await cancelAppointmentAction(malformedToken, new FormData());
+  assert.equal(malformedCancelRes.success, false);
+  assert.equal(malformedCancelRes.error, "Invalid management token.");
+
+  const malformedReschedRes = await rescheduleAppointmentAction(malformedToken, new Date(Date.now() + 48 * 3600 * 1000).toISOString());
+  assert.equal(malformedReschedRes.success, false);
+  assert.equal(malformedReschedRes.error, "Invalid management token.");
+
+  // Confirm NO RateLimitBucket row was allocated for malformed token
+  const malformedBucket = await prisma.rateLimitBucket.findFirst({
+    where: { subjectHash: malformedSubjectHash },
+  });
+  assert.equal(malformedBucket, null, "Malformed tokens MUST NOT allocate rate limit bucket rows (H5 fix)");
 
   // Clean up test data
   await prisma.rateLimitBucket.deleteMany({
