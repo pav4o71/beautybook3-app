@@ -110,7 +110,7 @@ async function main() {
     where: { id: tenant.organizationId },
   });
   const staff = await prisma.staff.findFirstOrThrow({
-    where: { organizationId: tenant.organizationId, active: true },
+    where: { organizationId: tenant.organizationId, locationId: tenant.locationId, active: true },
   });
   const service = await prisma.service.findFirstOrThrow({
     where: { organizationId: tenant.organizationId, active: true },

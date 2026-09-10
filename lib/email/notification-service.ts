@@ -1,8 +1,10 @@
+import crypto from "node:crypto";
 import { prisma } from "@/lib/prisma";
 import { formatDay, formatPrice, formatTime } from "@/lib/format";
 import { CANCELLATION_REASONS } from "@/lib/cancellation-constants";
 import { getAppBaseUrl, getEmailFrom } from "./config";
 import { getEmailSender } from "./sender";
+import type { EmailSender, SendEmailPayload, SendEmailResult } from "./types";
 import { renderBookingConfirmationEmail } from "./templates/booking-confirmation";
 import { renderCancellationEmail } from "./templates/cancellation-confirmation";
 import { renderRescheduleEmail } from "./templates/reschedule-confirmation";
@@ -18,15 +20,17 @@ function getCancellationReasonLabel(reason?: string | null): string | null {
   return match?.label ?? reason;
 }
 
-interface DeliveryClaim {
+export interface DeliveryClaim {
   deliveryId: string;
+  claimToken: string;
   claimed: boolean;
   alreadySent: boolean;
 }
 
-const CLAIM_LEASE_MS = 30_000;
+export const CLAIM_LEASE_MS = 60_000;
+export const PROVIDER_TIMEOUT_MS = 15_000;
 
-async function claimOrAcquireDelivery(
+export async function claimOrAcquireDelivery(
   appointmentId: string,
   eventKey: string,
   type: "BOOKING_CONFIRMATION" | "CANCELLATION_CONFIRMATION" | "RESCHEDULE_CONFIRMATION",
@@ -37,11 +41,12 @@ async function claimOrAcquireDelivery(
   });
 
   if (existing?.status === "SENT") {
-    return { deliveryId: existing.id, claimed: false, alreadySent: true };
+    return { deliveryId: existing.id, claimToken: "", claimed: false, alreadySent: true };
   }
 
+  const claimToken = crypto.randomUUID();
   const now = new Date();
-  const leaseCutoff = new Date(now.getTime() - CLAIM_LEASE_MS);
+  const claimExpiresAt = new Date(now.getTime() + CLAIM_LEASE_MS);
 
   if (!existing) {
     try {
@@ -50,33 +55,37 @@ async function claimOrAcquireDelivery(
           appointmentId,
           eventKey,
           type,
-          status: "PENDING",
+          status: "SENDING",
+          claimToken,
+          claimExpiresAt,
           provider,
           lastAttemptAt: now,
           attemptCount: 1,
         },
       });
-      return { deliveryId: created.id, claimed: true, alreadySent: false };
+      return { deliveryId: created.id, claimToken, claimed: true, alreadySent: false };
     } catch {
       // Caught unique constraint race, fall through to update claim below
     }
   }
 
-  // Attempt atomic update claim on existing record (retry of FAILED or stale PENDING)
+  // Attempt atomic lease acquisition on existing record (retry of FAILED or stale SENDING/PENDING)
   const updateResult = await prisma.notificationDelivery.updateMany({
     where: {
       eventKey,
-      status: { in: ["PENDING", "FAILED"] },
+      status: { in: ["PENDING", "SENDING", "FAILED"] },
       OR: [
-        { status: "FAILED" },
-        { lastAttemptAt: null },
-        { lastAttemptAt: { lt: leaseCutoff } },
+        { status: { in: ["PENDING", "FAILED"] } },
+        { claimExpiresAt: null },
+        { claimExpiresAt: { lt: now } },
       ],
     },
     data: {
+      status: "SENDING",
+      claimToken,
+      claimExpiresAt,
       attemptCount: { increment: 1 },
       lastAttemptAt: now,
-      status: "PENDING",
       provider,
     },
   });
@@ -86,44 +95,76 @@ async function claimOrAcquireDelivery(
       where: { eventKey },
       select: { id: true },
     });
-    return { deliveryId: updated!.id, claimed: true, alreadySent: false };
+    return { deliveryId: updated!.id, claimToken, claimed: true, alreadySent: false };
   }
 
   const current = await prisma.notificationDelivery.findUnique({
     where: { eventKey },
+    select: { id: true, status: true },
   });
 
   return {
     deliveryId: current?.id || "",
+    claimToken: "",
     claimed: false,
     alreadySent: current?.status === "SENT",
   };
 }
 
-async function recordDeliveryResult(
+export async function recordDeliveryResult(
   deliveryId: string,
+  claimToken: string,
   result: { success: boolean; messageId?: string; error?: string },
-): Promise<void> {
-  if (!deliveryId) return;
+): Promise<{ updated: boolean }> {
+  if (!deliveryId || !claimToken) return { updated: false };
 
   if (result.success) {
-    await prisma.notificationDelivery.updateMany({
-      where: { id: deliveryId, status: "PENDING" },
+    const res = await prisma.notificationDelivery.updateMany({
+      where: { id: deliveryId, claimToken, status: "SENDING" },
       data: {
         status: "SENT",
         sentAt: new Date(),
         providerMessageId: result.messageId ?? null,
         lastErrorCode: null,
+        claimToken: null,
+        claimExpiresAt: null,
       },
     });
+    return { updated: res.count > 0 };
   } else {
-    await prisma.notificationDelivery.updateMany({
-      where: { id: deliveryId, status: "PENDING" },
+    const res = await prisma.notificationDelivery.updateMany({
+      where: { id: deliveryId, claimToken, status: "SENDING" },
       data: {
         status: "FAILED",
         lastErrorCode: sanitizeErrorCode(result.error),
+        claimToken: null,
+        claimExpiresAt: null,
       },
     });
+    return { updated: res.count > 0 };
+  }
+}
+
+async function sendWithProviderTimeout(
+  sender: EmailSender,
+  payload: SendEmailPayload,
+  timeoutMs = PROVIDER_TIMEOUT_MS,
+): Promise<SendEmailResult> {
+  let timer: NodeJS.Timeout | null = null;
+  const timeoutPromise = new Promise<SendEmailResult>((resolve) => {
+    timer = setTimeout(() => {
+      resolve({
+        success: false,
+        error: `Email provider request timed out after ${timeoutMs}ms`,
+      });
+    }, timeoutMs);
+  });
+
+  try {
+    const result = await Promise.race([sender.send(payload), timeoutPromise]);
+    return result;
+  } finally {
+    if (timer) clearTimeout(timer);
   }
 }
 
@@ -187,7 +228,7 @@ export async function sendBookingConfirmationNotification(input: {
       managementUrl,
     });
 
-    const result = await sender.send({
+    const result = await sendWithProviderTimeout(sender, {
       to: appointment.customerEmail,
       from: getEmailFrom(),
       subject,
@@ -196,7 +237,7 @@ export async function sendBookingConfirmationNotification(input: {
       idempotencyKey: eventKey,
     });
 
-    await recordDeliveryResult(claim.deliveryId, result);
+    await recordDeliveryResult(claim.deliveryId, claim.claimToken, result);
 
     if (result.success) {
       return { success: true };
@@ -261,7 +302,7 @@ export async function sendCustomerCancellationNotification(input: {
       managementUrl,
     });
 
-    const result = await sender.send({
+    const result = await sendWithProviderTimeout(sender, {
       to: appointment.customerEmail,
       from: getEmailFrom(),
       subject,
@@ -270,7 +311,7 @@ export async function sendCustomerCancellationNotification(input: {
       idempotencyKey: eventKey,
     });
 
-    await recordDeliveryResult(claim.deliveryId, result);
+    await recordDeliveryResult(claim.deliveryId, claim.claimToken, result);
 
     if (result.success) {
       return { success: true };
@@ -334,7 +375,7 @@ export async function sendAdminCancellationNotification(input: {
       managementUrl: null, // STRICTLY ABSENT
     });
 
-    const result = await sender.send({
+    const result = await sendWithProviderTimeout(sender, {
       to: appointment.customerEmail,
       from: getEmailFrom(),
       subject,
@@ -343,7 +384,7 @@ export async function sendAdminCancellationNotification(input: {
       idempotencyKey: eventKey,
     });
 
-    await recordDeliveryResult(claim.deliveryId, result);
+    await recordDeliveryResult(claim.deliveryId, claim.claimToken, result);
 
     if (result.success) {
       return { success: true };
@@ -421,7 +462,7 @@ export async function sendCustomerRescheduleNotification(input: {
       managementUrl,
     });
 
-    const result = await sender.send({
+    const result = await sendWithProviderTimeout(sender, {
       to: appointment.customerEmail,
       from: getEmailFrom(),
       subject,
@@ -430,7 +471,7 @@ export async function sendCustomerRescheduleNotification(input: {
       idempotencyKey: eventKey,
     });
 
-    await recordDeliveryResult(claim.deliveryId, result);
+    await recordDeliveryResult(claim.deliveryId, claim.claimToken, result);
 
     if (result.success) {
       return { success: true };

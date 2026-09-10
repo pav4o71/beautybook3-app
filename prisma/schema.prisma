@@ -50,6 +50,7 @@ enum NotificationType {
 
 enum NotificationDeliveryStatus {
   PENDING
+  SENDING
   SENT
   FAILED
 }
@@ -369,6 +370,8 @@ model NotificationDelivery {
   eventKey          String                     @unique
   type              NotificationType
   status            NotificationDeliveryStatus @default(PENDING)
+  claimToken        String?
+  claimExpiresAt    DateTime?
   attemptCount      Int                        @default(1)
   provider          String
   providerMessageId String?
@@ -380,6 +383,7 @@ model NotificationDelivery {
 
   @@index([appointmentId])
   @@index([status])
+  @@index([claimExpiresAt])
 }
 
 model RateLimitBucket {
