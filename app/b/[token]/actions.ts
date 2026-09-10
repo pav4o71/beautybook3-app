@@ -4,6 +4,10 @@ import {
   cancelAppointmentByManagementToken,
   rescheduleAppointmentByManagementToken,
 } from "@/lib/appointment-management-token";
+import {
+  sendCustomerCancellationNotification,
+  sendCustomerRescheduleNotification,
+} from "@/lib/email/notification-service";
 import { revalidatePath } from "next/cache";
 
 export async function cancelAppointmentAction(
@@ -14,11 +18,23 @@ export async function cancelAppointmentAction(
     const reason = formData.get("reason") as string | null;
     const note = formData.get("note") as string | null;
 
-    await cancelAppointmentByManagementToken({
+    const result = await cancelAppointmentByManagementToken({
       rawToken: token,
       reason,
       note,
     });
+
+    // Post-commit notification dispatch (non-blocking)
+    if (result.success && !result.alreadyCancelled) {
+      try {
+        await sendCustomerCancellationNotification({
+          appointmentId: result.appointmentId,
+          rawToken: token,
+        });
+      } catch {
+        // Non-blocking
+      }
+    }
 
     revalidatePath(`/b/${token}`);
     return { success: true };
@@ -39,10 +55,23 @@ export async function rescheduleAppointmentAction(
       return { success: false, error: "Please select a valid time." };
     }
 
-    await rescheduleAppointmentByManagementToken({
+    const result = await rescheduleAppointmentByManagementToken({
       rawToken: token,
       targetStartsAt,
     });
+
+    // Post-commit notification dispatch (non-blocking)
+    if (result.success) {
+      try {
+        await sendCustomerRescheduleNotification({
+          appointmentId: result.appointment.id,
+          rawToken: token,
+          previousStartsAt: result.previousStartsAt,
+        });
+      } catch {
+        // Non-blocking
+      }
+    }
 
     revalidatePath(`/b/${token}`);
     return { success: true };
