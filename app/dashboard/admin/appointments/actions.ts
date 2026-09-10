@@ -19,6 +19,8 @@ import {
   walkInBookingSchema,
 } from "@/lib/validations/booking";
 
+import { parseSalonIsoDate } from "@/lib/timezone";
+
 function revalidateAppointmentPaths() {
   revalidatePath("/dashboard/admin/appointments");
   revalidatePath("/dashboard/appointments");
@@ -32,6 +34,7 @@ export async function setAppointmentStatus(
 
   const id = String(formData.get("id") ?? "");
   const statusRaw = String(formData.get("status") ?? "");
+  const returnDateRaw = String(formData.get("returnDate") ?? "").trim();
 
   if (!id) {
     return actionError(new Error("Appointment id is required."));
@@ -53,6 +56,10 @@ export async function setAppointmentStatus(
   }
 
   revalidateAppointmentPaths();
+  const validReturnDate = returnDateRaw && parseSalonIsoDate(returnDateRaw) ? returnDateRaw : null;
+  if (validReturnDate) {
+    redirect(`/dashboard/admin/appointments?date=${encodeURIComponent(validReturnDate)}`);
+  }
   redirect("/dashboard/admin/appointments");
 }
 

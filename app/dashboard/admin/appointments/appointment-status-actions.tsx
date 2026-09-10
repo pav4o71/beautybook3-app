@@ -26,9 +26,15 @@ const statusActions = [
   },
 ] as const;
 
-export function AppointmentStatusActions({ appointmentId }: { appointmentId: string }) {
+export function AppointmentStatusActions({
+  appointmentId,
+  selectedDateIso,
+}: {
+  appointmentId: string;
+  selectedDateIso?: string;
+}) {
   return (
-    <div className="mt-4 flex flex-wrap gap-2">
+    <div className="mt-3 flex flex-wrap gap-2">
       {statusActions.map((item) => (
         <ActionForm
           key={item.status}
@@ -37,6 +43,9 @@ export function AppointmentStatusActions({ appointmentId }: { appointmentId: str
         >
           <input type="hidden" name="id" value={appointmentId} />
           <input type="hidden" name="status" value={item.status} />
+          {selectedDateIso ? (
+            <input type="hidden" name="returnDate" value={selectedDateIso} />
+          ) : null}
           <button
             type="submit"
             className={item.className}
