@@ -32,6 +32,26 @@ async function main() {
   assert(currentBase.startsWith("http"), "getAppBaseUrl returns valid HTTP/HTTPS URL");
   assert(!currentBase.endsWith("/"), "getAppBaseUrl strips trailing slash");
 
+  // Verify production APP_BASE_URL requirement (fail-closed)
+  const envMap = process.env as Record<string, string | undefined>;
+  const origNodeEnv = envMap.NODE_ENV;
+  const origAppBaseUrl = envMap.APP_BASE_URL;
+  try {
+    envMap.NODE_ENV = "production";
+    delete envMap.APP_BASE_URL;
+    let threw = false;
+    try {
+      getAppBaseUrl();
+    } catch {
+      threw = true;
+    }
+    assert(threw, "getAppBaseUrl must throw in production if APP_BASE_URL is missing");
+  } finally {
+    envMap.NODE_ENV = origNodeEnv;
+    if (origAppBaseUrl) envMap.APP_BASE_URL = origAppBaseUrl;
+    else delete envMap.APP_BASE_URL;
+  }
+
   // 3. Provider Abstraction / Memory Sender
   const memorySender = new MemoryEmailSender();
   setTestEmailSender(memorySender);
@@ -51,6 +71,38 @@ async function main() {
 
   memorySender.clear();
   assert(memorySender.sentEmails.length === 0, "Clear resets memory sender");
+
+  // 3b. Resend SDK Idempotency Option Test (H1 verification)
+  const { ResendEmailSender } = await import("../../lib/email/resend-sender");
+  const resendSender = new ResendEmailSender("re_test_mock_key_123");
+  let capturedPayload: { headers?: Record<string, string> } | null = null;
+  let capturedOptions: { idempotencyKey?: string } | null = null;
+  Object.assign(resendSender, {
+    resend: {
+      emails: {
+        send: async (
+          payload: { headers?: Record<string, string> },
+          options?: { idempotencyKey?: string },
+        ) => {
+          capturedPayload = payload;
+          capturedOptions = options || null;
+          return { data: { id: "resend_123" }, error: null };
+        },
+      },
+    },
+  });
+  const resendRes = await resendSender.send({
+    to: "guest@example.com",
+    subject: "Resend Test",
+    text: "Body",
+    html: "<p>Body</p>",
+    idempotencyKey: "test-event-key-123",
+  });
+  assert(resendRes.success === true, "Resend send mock succeeds");
+  const payloadHeaders = capturedPayload ? (capturedPayload as { headers?: Record<string, string> }).headers : undefined;
+  assert(payloadHeaders === undefined, "Resend payload must NOT include Idempotency-Key in MIME headers");
+  const optKey = capturedOptions ? (capturedOptions as { idempotencyKey?: string }).idempotencyKey : undefined;
+  assert(optKey === "test-event-key-123", "Resend send must pass idempotencyKey in 2nd argument options");
 
   // 4. Booking Notification Integration
   const tenant = await getDemoTenantContext();
@@ -78,13 +130,14 @@ async function main() {
       )
     ) {
       selectedSlots.push(s);
-      if (selectedSlots.length === 3) break;
+      if (selectedSlots.length === 4) break;
     }
   }
-  assert(selectedSlots.length === 3, "Expected at least 3 non-overlapping slots for testing");
+  assert(selectedSlots.length === 4, "Expected at least 4 non-overlapping slots for testing");
   const startsAt = selectedSlots[0];
   const startsAt2 = selectedSlots[1];
   const startsAt3 = selectedSlots[2];
+  const startsAt4 = selectedSlots[3];
 
   // 4a. Booking with NO customerEmail -> should skip email safely
   const noEmailBooking = await createAppointment({
@@ -197,10 +250,42 @@ async function main() {
   assert(failedDelivery.status === "FAILED", "NotificationDelivery status is FAILED");
   assert(failedDelivery.lastErrorCode !== null, "lastErrorCode is recorded");
 
+  // 4f. Concurrency Claim Race Test (Hypothesis H2 verification)
+  memorySender.clear();
+  memorySender.shouldFail = false;
+
+  const concurrentAppt = await createAppointment({
+    organizationId: tenant.organizationId,
+    locationId: tenant.locationId,
+    customerId: null,
+    staffId: staff.id,
+    serviceIds: [service.id],
+    startsAt: startsAt4,
+    customerName: "Concurrent Test Guest",
+    customerPhone: "+639175558899",
+    customerEmail: "concurrent.test@example.com",
+  });
+
+  const [res1, res2] = await Promise.all([
+    sendBookingConfirmationNotification({
+      appointmentId: concurrentAppt.id,
+      rawToken: concurrentAppt.rawToken,
+    }),
+    sendBookingConfirmationNotification({
+      appointmentId: concurrentAppt.id,
+      rawToken: concurrentAppt.rawToken,
+    }),
+  ]);
+
+  assert(res1.success === true && res2.success === true, "Both concurrent callers complete successfully");
+  assert(memorySender.sentEmails.length === 1, "Exactly ONE email dispatched across concurrent callers (H2 prevented)");
+  const oneSkipped = (res1.skipped === true && !res2.skipped) || (res2.skipped === true && !res1.skipped);
+  assert(oneSkipped, "One concurrent caller claimed delivery and the other was safely skipped");
+
   // Cleanup test appointments
   await prisma.appointment.deleteMany({
     where: {
-      id: { in: [noEmailBooking.id, emailBooking.id, failingBooking.id] },
+      id: { in: [noEmailBooking.id, emailBooking.id, failingBooking.id, concurrentAppt.id] },
     },
   });
 

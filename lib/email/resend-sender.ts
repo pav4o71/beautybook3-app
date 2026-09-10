@@ -16,14 +16,16 @@ export class ResendEmailSender implements EmailSender {
 
   async send(payload: SendEmailPayload): Promise<SendEmailResult> {
     try {
-      const { data, error } = await this.resend.emails.send({
-        from: payload.from || getEmailFrom(),
-        to: payload.to,
-        subject: payload.subject,
-        text: payload.text,
-        html: payload.html,
-        headers: payload.idempotencyKey ? { "Idempotency-Key": payload.idempotencyKey } : undefined,
-      });
+      const { data, error } = await this.resend.emails.send(
+        {
+          from: payload.from || getEmailFrom(),
+          to: payload.to,
+          subject: payload.subject,
+          text: payload.text,
+          html: payload.html,
+        },
+        payload.idempotencyKey ? { idempotencyKey: payload.idempotencyKey } : undefined,
+      );
 
       if (error) {
         return {
