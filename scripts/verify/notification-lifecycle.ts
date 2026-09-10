@@ -33,7 +33,7 @@ async function main() {
 
   const tenant = await getDemoTenantContext();
   const staff = await prisma.staff.findFirstOrThrow({
-    where: { organizationId: tenant.organizationId, active: true },
+    where: { organizationId: tenant.organizationId, locationId: tenant.locationId, active: true },
   });
   const service = await prisma.service.findFirstOrThrow({
     where: { organizationId: tenant.organizationId, active: true },
@@ -268,6 +268,167 @@ async function main() {
   });
   assert(failedDelivery.status === "FAILED", "Notification delivery marked FAILED");
 
+  // ==========================================
+  // 5. LEASE OWNERSHIP & RACE-SAFETY TESTS
+  // ==========================================
+  memorySender.clear();
+  memorySender.shouldFail = false;
+
+  const leaseAppt = await createAppointment({
+    organizationId: tenant.organizationId,
+    locationId: tenant.locationId,
+    customerId: null,
+    staffId: staff.id,
+    serviceIds: [service.id],
+    startsAt: selectedSlots[0],
+    customerName: "Lease Concurrency Guest",
+    customerPhone: "+639175558800",
+    customerEmail: "lease.guest@example.com",
+  });
+
+  const leaseEventKey = `booking-confirmation:${leaseAppt.id}:${Date.now()}`;
+
+  // 5.1 Two simultaneous initial dispatches -> exactly one caller claims
+  const { claimOrAcquireDelivery, recordDeliveryResult } = await import(
+    "../../lib/email/notification-service"
+  );
+
+  const [claimA, claimB] = await Promise.all([
+    claimOrAcquireDelivery(leaseAppt.id, leaseEventKey, "BOOKING_CONFIRMATION", "test-provider"),
+    claimOrAcquireDelivery(leaseAppt.id, leaseEventKey, "BOOKING_CONFIRMATION", "test-provider"),
+  ]);
+
+  assert(
+    (claimA.claimed && !claimB.claimed) || (!claimA.claimed && claimB.claimed),
+    "Exactly one claimant must acquire initial lease under concurrent dispatch",
+  );
+  const winningClaim = claimA.claimed ? claimA : claimB;
+  const losingClaim = claimA.claimed ? claimB : claimA;
+  assert(winningClaim.claimToken.length > 0, "Winning claimant must receive a claimToken");
+  assert(losingClaim.claimToken === "", "Losing claimant must not receive a claimToken");
+
+  // Verify DB state is SENDING with claimToken & claimExpiresAt
+  const sendingRecord = await prisma.notificationDelivery.findUniqueOrThrow({
+    where: { eventKey: leaseEventKey },
+  });
+  assert(sendingRecord.status === "SENDING", "Delivery record status is SENDING");
+  assert(sendingRecord.claimToken === winningClaim.claimToken, "DB claimToken matches winning claimant");
+  assert(sendingRecord.claimExpiresAt !== null, "DB claimExpiresAt is set");
+
+  // 5.2 Recent active claim -> second caller cannot acquire
+  const immediateReclaim = await claimOrAcquireDelivery(
+    leaseAppt.id,
+    leaseEventKey,
+    "BOOKING_CONFIRMATION",
+    "test-provider",
+  );
+  assert(!immediateReclaim.claimed, "Active unexpired lease cannot be reclaimed");
+
+  // 5.3 Stale claim recovery: simulate expiry by setting claimExpiresAt to the past
+  await prisma.notificationDelivery.update({
+    where: { eventKey: leaseEventKey },
+    data: {
+      claimExpiresAt: new Date(Date.now() - 10_000), // 10s in the past
+    },
+  });
+
+  const recoveredClaim = await claimOrAcquireDelivery(
+    leaseAppt.id,
+    leaseEventKey,
+    "BOOKING_CONFIRMATION",
+    "test-provider",
+  );
+  assert(recoveredClaim.claimed === true, "Expired lease is recovered by new claimant");
+  assert(
+    recoveredClaim.claimToken !== winningClaim.claimToken,
+    "Recovered claim receives fresh unique claimToken",
+  );
+
+  // 5.4 Stale claimant cannot finalize: OLD claimant tries to record delivery result
+  const oldClaimantRecord = await recordDeliveryResult(
+    winningClaim.deliveryId,
+    winningClaim.claimToken, // Stale token
+    { success: true, messageId: "msg-from-old-claimant" },
+  );
+  assert(
+    oldClaimantRecord.updated === false,
+    "Old claimant update MUST affect 0 rows and return updated: false",
+  );
+
+  // Verify DB record is STILL owned by recovered claimant and not modified by old claimant
+  const postOldAttemptRecord = await prisma.notificationDelivery.findUniqueOrThrow({
+    where: { eventKey: leaseEventKey },
+  });
+  assert(
+    postOldAttemptRecord.status === "SENDING",
+    "Delivery record remains in SENDING owned by new claimant",
+  );
+  assert(
+    postOldAttemptRecord.claimToken === recoveredClaim.claimToken,
+    "DB claimToken is still owned by recovered claimant",
+  );
+  assert(
+    postOldAttemptRecord.providerMessageId !== "msg-from-old-claimant",
+    "Old claimant messageId was not written to DB",
+  );
+
+  // 5.5 New claimant finalizes with success
+  const newClaimantRecord = await recordDeliveryResult(
+    recoveredClaim.deliveryId,
+    recoveredClaim.claimToken,
+    { success: true, messageId: "msg-from-new-claimant" },
+  );
+  assert(newClaimantRecord.updated === true, "New claimant successfully finalizes delivery");
+
+  const finalizedRecord = await prisma.notificationDelivery.findUniqueOrThrow({
+    where: { eventKey: leaseEventKey },
+  });
+  assert(finalizedRecord.status === "SENT", "Status transitioned to SENT");
+  assert(finalizedRecord.claimToken === null, "claimToken cleared upon finalization");
+  assert(finalizedRecord.claimExpiresAt === null, "claimExpiresAt cleared upon finalization");
+  assert(
+    finalizedRecord.providerMessageId === "msg-from-new-claimant",
+    "Provider messageId recorded from new claimant",
+  );
+
+  // 5.6 Old claimant tries delayed failure on SENT record -> cannot overwrite
+  const delayedFailAttempt = await recordDeliveryResult(
+    winningClaim.deliveryId,
+    winningClaim.claimToken,
+    { success: false, error: "Delayed network error" },
+  );
+  assert(delayedFailAttempt.updated === false, "Delayed failure cannot overwrite SENT record");
+
+  // 5.7 FAILED retry claimed by exactly one caller
+  const failRetryEventKey = `booking-confirmation:${leaseAppt.id}:fail-retry`;
+  const failClaim1 = await claimOrAcquireDelivery(
+    leaseAppt.id,
+    failRetryEventKey,
+    "BOOKING_CONFIRMATION",
+    "test-provider",
+  );
+  assert(failClaim1.claimed, "Initial claim for fail-retry succeeds");
+
+  await recordDeliveryResult(failClaim1.deliveryId, failClaim1.claimToken, {
+    success: false,
+    error: "Temporary provider failure",
+  });
+
+  const failedState = await prisma.notificationDelivery.findUniqueOrThrow({
+    where: { eventKey: failRetryEventKey },
+  });
+  assert(failedState.status === "FAILED", "Record is in FAILED status");
+
+  // Concurrent retry of FAILED record
+  const [retryA, retryB] = await Promise.all([
+    claimOrAcquireDelivery(leaseAppt.id, failRetryEventKey, "BOOKING_CONFIRMATION", "test-provider"),
+    claimOrAcquireDelivery(leaseAppt.id, failRetryEventKey, "BOOKING_CONFIRMATION", "test-provider"),
+  ]);
+  assert(
+    (retryA.claimed && !retryB.claimed) || (!retryA.claimed && retryB.claimed),
+    "Exactly one caller acquires retry claim on FAILED record",
+  );
+
   // Cleanup test appointments
   await prisma.appointment.deleteMany({
     where: {
@@ -277,6 +438,7 @@ async function main() {
           adminCancelAppt.id,
           rescheduleAppt.id,
           failCancelAppt.id,
+          leaseAppt.id,
         ],
       },
     },
