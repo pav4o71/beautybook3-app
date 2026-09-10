@@ -136,12 +136,27 @@ export const auth = betterAuth({
     window: 10,
     max: 100,
     customRules: {
-      // Tighter limits for sensitive auth endpoints
-      "/sign-up/email": { window: 60 * 60, max: 10 },
-      "/sign-in/email": { window: 60, max: 10 },
-      "/send-verification-email": { window: 60 * 10, max: 5 },
-      "/forget-password": { window: 60 * 10, max: 5 },
-      "/reset-password": { window: 60 * 10, max: 5 },
+      // Tighter limits for sensitive auth endpoints in production; relaxed for CI/test suites
+      "/sign-up/email": {
+        window: 60 * 60,
+        max: process.env.NODE_ENV === "production" && !process.env.CI ? 10 : 1000,
+      },
+      "/sign-in/email": {
+        window: 60,
+        max: process.env.NODE_ENV === "production" && !process.env.CI ? 10 : 1000,
+      },
+      "/send-verification-email": {
+        window: 60 * 10,
+        max: process.env.NODE_ENV === "production" && !process.env.CI ? 5 : 1000,
+      },
+      "/forget-password": {
+        window: 60 * 10,
+        max: process.env.NODE_ENV === "production" && !process.env.CI ? 5 : 1000,
+      },
+      "/reset-password": {
+        window: 60 * 10,
+        max: process.env.NODE_ENV === "production" && !process.env.CI ? 5 : 1000,
+      },
     },
   },
 

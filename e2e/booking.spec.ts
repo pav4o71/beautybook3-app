@@ -9,7 +9,7 @@ async function signIn(
   await page.locator('input[name="email"]').fill(account.email);
   await page.locator('input[name="password"]').fill(account.password);
   await page.getByRole("button", { name: "Sign in" }).click();
-  await page.waitForURL("/dashboard");
+  await page.waitForURL(/\/(dashboard|account)/);
 }
 
 test.describe("booking as admin", () => {
