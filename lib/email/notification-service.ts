@@ -18,6 +18,115 @@ function getCancellationReasonLabel(reason?: string | null): string | null {
   return match?.label ?? reason;
 }
 
+interface DeliveryClaim {
+  deliveryId: string;
+  claimed: boolean;
+  alreadySent: boolean;
+}
+
+const CLAIM_LEASE_MS = 30_000;
+
+async function claimOrAcquireDelivery(
+  appointmentId: string,
+  eventKey: string,
+  type: "BOOKING_CONFIRMATION" | "CANCELLATION_CONFIRMATION" | "RESCHEDULE_CONFIRMATION",
+  provider: string,
+): Promise<DeliveryClaim> {
+  const existing = await prisma.notificationDelivery.findUnique({
+    where: { eventKey },
+  });
+
+  if (existing?.status === "SENT") {
+    return { deliveryId: existing.id, claimed: false, alreadySent: true };
+  }
+
+  const now = new Date();
+  const leaseCutoff = new Date(now.getTime() - CLAIM_LEASE_MS);
+
+  if (!existing) {
+    try {
+      const created = await prisma.notificationDelivery.create({
+        data: {
+          appointmentId,
+          eventKey,
+          type,
+          status: "PENDING",
+          provider,
+          lastAttemptAt: now,
+          attemptCount: 1,
+        },
+      });
+      return { deliveryId: created.id, claimed: true, alreadySent: false };
+    } catch {
+      // Caught unique constraint race, fall through to update claim below
+    }
+  }
+
+  // Attempt atomic update claim on existing record (retry of FAILED or stale PENDING)
+  const updateResult = await prisma.notificationDelivery.updateMany({
+    where: {
+      eventKey,
+      status: { in: ["PENDING", "FAILED"] },
+      OR: [
+        { status: "FAILED" },
+        { lastAttemptAt: null },
+        { lastAttemptAt: { lt: leaseCutoff } },
+      ],
+    },
+    data: {
+      attemptCount: { increment: 1 },
+      lastAttemptAt: now,
+      status: "PENDING",
+      provider,
+    },
+  });
+
+  if (updateResult.count > 0) {
+    const updated = await prisma.notificationDelivery.findUnique({
+      where: { eventKey },
+      select: { id: true },
+    });
+    return { deliveryId: updated!.id, claimed: true, alreadySent: false };
+  }
+
+  const current = await prisma.notificationDelivery.findUnique({
+    where: { eventKey },
+  });
+
+  return {
+    deliveryId: current?.id || "",
+    claimed: false,
+    alreadySent: current?.status === "SENT",
+  };
+}
+
+async function recordDeliveryResult(
+  deliveryId: string,
+  result: { success: boolean; messageId?: string; error?: string },
+): Promise<void> {
+  if (!deliveryId) return;
+
+  if (result.success) {
+    await prisma.notificationDelivery.updateMany({
+      where: { id: deliveryId, status: "PENDING" },
+      data: {
+        status: "SENT",
+        sentAt: new Date(),
+        providerMessageId: result.messageId ?? null,
+        lastErrorCode: null,
+      },
+    });
+  } else {
+    await prisma.notificationDelivery.updateMany({
+      where: { id: deliveryId, status: "PENDING" },
+      data: {
+        status: "FAILED",
+        lastErrorCode: sanitizeErrorCode(result.error),
+      },
+    });
+  }
+}
+
 export async function sendBookingConfirmationNotification(input: {
   appointmentId: string;
   rawToken: string;
@@ -47,39 +156,15 @@ export async function sendBookingConfirmationNotification(input: {
     const eventKey = `booking-confirmation:${appointment.id}:${appointment.createdAt.getTime()}`;
     const sender = getEmailSender();
 
-    const existing = await prisma.notificationDelivery.findUnique({
-      where: { eventKey },
-    });
+    const claim = await claimOrAcquireDelivery(
+      appointment.id,
+      eventKey,
+      "BOOKING_CONFIRMATION",
+      sender.providerName,
+    );
 
-    if (existing?.status === "SENT") {
+    if (claim.alreadySent || !claim.claimed) {
       return { success: true, skipped: true };
-    }
-
-    let deliveryId: string;
-
-    if (!existing) {
-      const created = await prisma.notificationDelivery.create({
-        data: {
-          appointmentId: appointment.id,
-          eventKey,
-          type: "BOOKING_CONFIRMATION",
-          status: "PENDING",
-          provider: sender.providerName,
-          lastAttemptAt: new Date(),
-        },
-      });
-      deliveryId = created.id;
-    } else {
-      const updated = await prisma.notificationDelivery.update({
-        where: { id: existing.id },
-        data: {
-          attemptCount: { increment: 1 },
-          lastAttemptAt: new Date(),
-          status: "PENDING",
-          provider: sender.providerName,
-        },
-      });
-      deliveryId = updated.id;
     }
 
     const totalCents = appointment.services.reduce((sum, s) => sum + s.priceCents, 0);
@@ -111,25 +196,11 @@ export async function sendBookingConfirmationNotification(input: {
       idempotencyKey: eventKey,
     });
 
+    await recordDeliveryResult(claim.deliveryId, result);
+
     if (result.success) {
-      await prisma.notificationDelivery.update({
-        where: { id: deliveryId },
-        data: {
-          status: "SENT",
-          sentAt: new Date(),
-          providerMessageId: result.messageId ?? null,
-          lastErrorCode: null,
-        },
-      });
       return { success: true };
     } else {
-      await prisma.notificationDelivery.update({
-        where: { id: deliveryId },
-        data: {
-          status: "FAILED",
-          lastErrorCode: sanitizeErrorCode(result.error),
-        },
-      });
       return { success: false, error: result.error };
     }
   } catch (error) {
@@ -162,42 +233,18 @@ export async function sendCustomerCancellationNotification(input: {
       return { success: true, skipped: true };
     }
 
-    const eventKey = `cancellation-confirmation:${appointment.id}:${appointment.cancelledAt?.getTime() ?? Date.now()}`;
+    const eventKey = `cancellation-confirmation:${appointment.id}:${appointment.cancelledAt?.getTime() ?? appointment.updatedAt.getTime()}`;
     const sender = getEmailSender();
 
-    const existing = await prisma.notificationDelivery.findUnique({
-      where: { eventKey },
-    });
+    const claim = await claimOrAcquireDelivery(
+      appointment.id,
+      eventKey,
+      "CANCELLATION_CONFIRMATION",
+      sender.providerName,
+    );
 
-    if (existing?.status === "SENT") {
+    if (claim.alreadySent || !claim.claimed) {
       return { success: true, skipped: true };
-    }
-
-    let deliveryId: string;
-
-    if (!existing) {
-      const created = await prisma.notificationDelivery.create({
-        data: {
-          appointmentId: appointment.id,
-          eventKey,
-          type: "CANCELLATION_CONFIRMATION",
-          status: "PENDING",
-          provider: sender.providerName,
-          lastAttemptAt: new Date(),
-        },
-      });
-      deliveryId = created.id;
-    } else {
-      const updated = await prisma.notificationDelivery.update({
-        where: { id: existing.id },
-        data: {
-          attemptCount: { increment: 1 },
-          lastAttemptAt: new Date(),
-          status: "PENDING",
-          provider: sender.providerName,
-        },
-      });
-      deliveryId = updated.id;
     }
 
     const startsAtFormatted = `${formatDay(appointment.startsAt)} at ${formatTime(appointment.startsAt)}`;
@@ -223,25 +270,11 @@ export async function sendCustomerCancellationNotification(input: {
       idempotencyKey: eventKey,
     });
 
+    await recordDeliveryResult(claim.deliveryId, result);
+
     if (result.success) {
-      await prisma.notificationDelivery.update({
-        where: { id: deliveryId },
-        data: {
-          status: "SENT",
-          sentAt: new Date(),
-          providerMessageId: result.messageId ?? null,
-          lastErrorCode: null,
-        },
-      });
       return { success: true };
     } else {
-      await prisma.notificationDelivery.update({
-        where: { id: deliveryId },
-        data: {
-          status: "FAILED",
-          lastErrorCode: sanitizeErrorCode(result.error),
-        },
-      });
       return { success: false, error: result.error };
     }
   } catch (error) {
@@ -273,42 +306,18 @@ export async function sendAdminCancellationNotification(input: {
       return { success: true, skipped: true };
     }
 
-    const eventKey = `admin-cancellation-confirmation:${appointment.id}:${appointment.cancelledAt?.getTime() ?? Date.now()}`;
+    const eventKey = `admin-cancellation-confirmation:${appointment.id}:${appointment.cancelledAt?.getTime() ?? appointment.updatedAt.getTime()}`;
     const sender = getEmailSender();
 
-    const existing = await prisma.notificationDelivery.findUnique({
-      where: { eventKey },
-    });
+    const claim = await claimOrAcquireDelivery(
+      appointment.id,
+      eventKey,
+      "CANCELLATION_CONFIRMATION",
+      sender.providerName,
+    );
 
-    if (existing?.status === "SENT") {
+    if (claim.alreadySent || !claim.claimed) {
       return { success: true, skipped: true };
-    }
-
-    let deliveryId: string;
-
-    if (!existing) {
-      const created = await prisma.notificationDelivery.create({
-        data: {
-          appointmentId: appointment.id,
-          eventKey,
-          type: "CANCELLATION_CONFIRMATION",
-          status: "PENDING",
-          provider: sender.providerName,
-          lastAttemptAt: new Date(),
-        },
-      });
-      deliveryId = created.id;
-    } else {
-      const updated = await prisma.notificationDelivery.update({
-        where: { id: existing.id },
-        data: {
-          attemptCount: { increment: 1 },
-          lastAttemptAt: new Date(),
-          status: "PENDING",
-          provider: sender.providerName,
-        },
-      });
-      deliveryId = updated.id;
     }
 
     const startsAtFormatted = `${formatDay(appointment.startsAt)} at ${formatTime(appointment.startsAt)}`;
@@ -334,25 +343,11 @@ export async function sendAdminCancellationNotification(input: {
       idempotencyKey: eventKey,
     });
 
+    await recordDeliveryResult(claim.deliveryId, result);
+
     if (result.success) {
-      await prisma.notificationDelivery.update({
-        where: { id: deliveryId },
-        data: {
-          status: "SENT",
-          sentAt: new Date(),
-          providerMessageId: result.messageId ?? null,
-          lastErrorCode: null,
-        },
-      });
       return { success: true };
     } else {
-      await prisma.notificationDelivery.update({
-        where: { id: deliveryId },
-        data: {
-          status: "FAILED",
-          lastErrorCode: sanitizeErrorCode(result.error),
-        },
-      });
       return { success: false, error: result.error };
     }
   } catch (error) {
@@ -393,39 +388,15 @@ export async function sendCustomerRescheduleNotification(input: {
     const eventKey = `reschedule-confirmation:${appointment.id}:${appointment.updatedAt.getTime()}`;
     const sender = getEmailSender();
 
-    const existing = await prisma.notificationDelivery.findUnique({
-      where: { eventKey },
-    });
+    const claim = await claimOrAcquireDelivery(
+      appointment.id,
+      eventKey,
+      "RESCHEDULE_CONFIRMATION",
+      sender.providerName,
+    );
 
-    if (existing?.status === "SENT") {
+    if (claim.alreadySent || !claim.claimed) {
       return { success: true, skipped: true };
-    }
-
-    let deliveryId: string;
-
-    if (!existing) {
-      const created = await prisma.notificationDelivery.create({
-        data: {
-          appointmentId: appointment.id,
-          eventKey,
-          type: "RESCHEDULE_CONFIRMATION",
-          status: "PENDING",
-          provider: sender.providerName,
-          lastAttemptAt: new Date(),
-        },
-      });
-      deliveryId = created.id;
-    } else {
-      const updated = await prisma.notificationDelivery.update({
-        where: { id: existing.id },
-        data: {
-          attemptCount: { increment: 1 },
-          lastAttemptAt: new Date(),
-          status: "PENDING",
-          provider: sender.providerName,
-        },
-      });
-      deliveryId = updated.id;
     }
 
     const totalCents = appointment.services.reduce((sum, s) => sum + s.priceCents, 0);
@@ -459,25 +430,11 @@ export async function sendCustomerRescheduleNotification(input: {
       idempotencyKey: eventKey,
     });
 
+    await recordDeliveryResult(claim.deliveryId, result);
+
     if (result.success) {
-      await prisma.notificationDelivery.update({
-        where: { id: deliveryId },
-        data: {
-          status: "SENT",
-          sentAt: new Date(),
-          providerMessageId: result.messageId ?? null,
-          lastErrorCode: null,
-        },
-      });
       return { success: true };
     } else {
-      await prisma.notificationDelivery.update({
-        where: { id: deliveryId },
-        data: {
-          status: "FAILED",
-          lastErrorCode: sanitizeErrorCode(result.error),
-        },
-      });
       return { success: false, error: result.error };
     }
   } catch (error) {

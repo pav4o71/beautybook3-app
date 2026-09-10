@@ -19,8 +19,24 @@ export function getEmailSender(): EmailSender {
     return customSender;
   }
 
+  const rawProvider = process.env.EMAIL_PROVIDER?.toLowerCase()?.trim();
+  const isProduction = process.env.NODE_ENV === "production";
+
+  if (isProduction) {
+    if (!rawProvider) {
+      throw new Error("EMAIL_PROVIDER environment variable is required in production (e.g. 'resend' or 'smtp').");
+    }
+    if (rawProvider === "resend") {
+      return new ResendEmailSender();
+    }
+    if (rawProvider === "smtp") {
+      return new SmtpEmailSender();
+    }
+    throw new Error(`Unsupported EMAIL_PROVIDER in production: '${rawProvider}'. Must be 'resend' or 'smtp'.`);
+  }
+
   const provider =
-    process.env.EMAIL_PROVIDER?.toLowerCase() ||
+    rawProvider ||
     (process.env.CI || process.env.NODE_ENV === "test" ? "memory" : "smtp");
 
   if (provider === "memory") {

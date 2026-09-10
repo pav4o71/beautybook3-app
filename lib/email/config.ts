@@ -7,7 +7,15 @@
  */
 
 export function getAppBaseUrl(): string {
-  const envUrl = process.env.APP_BASE_URL || process.env.BETTER_AUTH_URL || "http://127.0.0.1:3000";
+  const envUrl = process.env.APP_BASE_URL;
+  if (!envUrl || !envUrl.trim()) {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error("APP_BASE_URL environment variable is required in production.");
+    }
+    const fallback = process.env.BETTER_AUTH_URL || "http://127.0.0.1:3000";
+    return fallback.trim().replace(/\/+$/, "");
+  }
+
   const trimmed = envUrl.trim().replace(/\/+$/, "");
 
   try {
