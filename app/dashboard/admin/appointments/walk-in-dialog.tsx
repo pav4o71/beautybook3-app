@@ -360,7 +360,7 @@ export function WalkInDialog({
                     id="walk-in-time"
                     data-testid="walk-in-time"
                     type="time"
-                    step="900"
+                    step="1800"
                     required
                     value={time}
                     onChange={(e) => setTime(e.target.value)}

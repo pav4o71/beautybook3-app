@@ -173,6 +173,55 @@ async function main() {
   });
   assert(walkIn3.id, "Non-overlapping appointment at slot3 must succeed");
 
+  // 6. Multi-Branch Location Isolation Check
+  const secondLocation = await prisma.location.findFirst({
+    where: { organizationId, id: { not: locationId } },
+  });
+
+  if (secondLocation) {
+    // Create appointment at second location
+    const otherStaff = await prisma.staff.findFirst({
+      where: { organizationId, locationId: secondLocation.id, active: true },
+    });
+
+    if (otherStaff) {
+      const walkInOtherLoc = await createAppointment({
+        organizationId,
+        locationId: secondLocation.id,
+        customerId: null,
+        staffId: otherStaff.id,
+        serviceIds: [service.id],
+        startsAt: slot3,
+        customerName: "Other Branch Guest",
+        isWalkIn: true,
+      });
+
+      // Query primary location's day board
+      const primaryLocBoard = await getAppointmentsForDay(
+        organizationId,
+        parsedTargetDate,
+        locationId,
+      );
+      assert(
+        !primaryLocBoard.some((a) => a.id === walkInOtherLoc.id),
+        "Appointments from another location must not appear in primary location day board",
+      );
+
+      // Query second location's day board
+      const secondLocBoard = await getAppointmentsForDay(
+        organizationId,
+        parsedTargetDate,
+        secondLocation.id,
+      );
+      assert(
+        secondLocBoard.some((a) => a.id === walkInOtherLoc.id),
+        "Appointments for second location must appear in second location day board",
+      );
+
+      await prisma.appointment.delete({ where: { id: walkInOtherLoc.id } });
+    }
+  }
+
   // Cleanup test appointments
   await prisma.appointment.deleteMany({
     where: {
