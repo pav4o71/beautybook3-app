@@ -36,7 +36,11 @@ async function main() {
     where: { organizationId: tenant.organizationId, locationId: tenant.locationId, active: true },
   });
   const service = await prisma.service.findFirstOrThrow({
-    where: { organizationId: tenant.organizationId, active: true },
+    where: {
+      organizationId: tenant.organizationId,
+      active: true,
+      staff: { some: { staffId: staff.id } },
+    },
   });
 
   const rawSlots = await getAvailableSlots({

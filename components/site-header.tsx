@@ -18,18 +18,30 @@ export async function SiteHeader() {
               <span className="hidden max-w-40 truncate text-zinc-600 sm:inline">
                 {session.user.name}
               </span>
+              {/* Org members see Dashboard; customers see Account */}
               <Link href="/dashboard" className={textLinkClass}>
                 Dashboard
+              </Link>
+              <Link href="/account" className={textLinkClass}>
+                My account
               </Link>
               <SignOutButton />
             </>
           ) : (
-            <Link
-              href="/login"
-              className={`${secondaryButtonClass} border-emerald-200 text-emerald-900 hover:bg-emerald-50`}
-            >
-              Sign in
-            </Link>
+            <>
+              <Link
+                href="/signup"
+                className={textLinkClass}
+              >
+                Create account
+              </Link>
+              <Link
+                href="/login"
+                className={`${secondaryButtonClass} border-emerald-200 text-emerald-900 hover:bg-emerald-50`}
+              >
+                Sign in
+              </Link>
+            </>
           )}
         </nav>
       </div>

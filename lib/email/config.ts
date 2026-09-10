@@ -20,7 +20,12 @@ export function getAppBaseUrl(): string {
 
   try {
     const parsed = new URL(trimmed);
-    if (process.env.NODE_ENV === "production" && parsed.protocol !== "https:") {
+    if (
+      process.env.NODE_ENV === "production" &&
+      parsed.protocol !== "https:" &&
+      parsed.hostname !== "localhost" &&
+      parsed.hostname !== "127.0.0.1"
+    ) {
       throw new Error(`APP_BASE_URL must use HTTPS in production (received ${parsed.protocol}).`);
     }
     return trimmed;

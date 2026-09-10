@@ -25,6 +25,7 @@ const scripts = [
   "notification-lifecycle.ts",
   "rate-limiting.ts",
   "admin-day-board.ts",
+  "customer-auth.ts",
 ];
 
 assertSafeVerifyTarget();
