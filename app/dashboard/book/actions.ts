@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import type { ActionFormState } from "@/lib/action-form-state";
 import { actionError } from "@/lib/action-form-state";
 import { createAppointment } from "@/lib/booking";
+import { sendBookingConfirmationNotification } from "@/lib/email/notification-service";
 import { prisma } from "@/lib/prisma";
 import { requireActiveOrgContext } from "@/lib/require-org";
 import {
@@ -48,8 +49,9 @@ export async function bookSlot(formData: FormData): Promise<ActionFormState> {
     return { error: formatZodError(parsed.error) };
   }
 
+  let createdAppointment: { id: string; rawToken: string };
   try {
-    await createAppointment({
+    createdAppointment = await createAppointment({
       organizationId: parsed.data.organizationId,
       locationId: parsed.data.locationId,
       customerId: parsed.data.customerId ?? session.user.id,
@@ -62,6 +64,16 @@ export async function bookSlot(formData: FormData): Promise<ActionFormState> {
     });
   } catch (error) {
     return actionError(error);
+  }
+
+  // Post-commit transactional email delivery (isolated; never rolls back booking)
+  try {
+    await sendBookingConfirmationNotification({
+      appointmentId: createdAppointment.id,
+      rawToken: createdAppointment.rawToken,
+    });
+  } catch {
+    // Non-blocking: email failure never fails or rolls back the appointment
   }
 
   revalidatePath("/dashboard/book");

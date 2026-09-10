@@ -42,6 +42,18 @@ enum Weekday {
   SUN
 }
 
+enum NotificationType {
+  BOOKING_CONFIRMATION
+  CANCELLATION_CONFIRMATION
+  RESCHEDULE_CONFIRMATION
+}
+
+enum NotificationDeliveryStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
 model User {
   id                  String               @id
   name                String
@@ -327,6 +339,7 @@ model Appointment {
   organization Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   location     Location             @relation(fields: [locationId], references: [id], onDelete: Restrict)
   services     AppointmentService[]
+  notifications NotificationDelivery[]
 
   @@index([organizationId, startsAt])
   @@index([locationId, startsAt])
@@ -347,4 +360,24 @@ model AppointmentService {
 
   @@unique([appointmentId, serviceId])
   @@index([appointmentId])
+}
+
+model NotificationDelivery {
+  id                String                     @id @default(cuid())
+  appointmentId     String
+  appointment       Appointment                @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  eventKey          String                     @unique
+  type              NotificationType
+  status            NotificationDeliveryStatus @default(PENDING)
+  attemptCount      Int                        @default(1)
+  provider          String
+  providerMessageId String?
+  lastErrorCode     String?
+  lastAttemptAt     DateTime?
+  sentAt            DateTime?
+  createdAt         DateTime                   @default(now())
+  updatedAt         DateTime                   @updatedAt
+
+  @@index([appointmentId])
+  @@index([status])
 }
