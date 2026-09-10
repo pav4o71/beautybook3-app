@@ -2,6 +2,7 @@
 
 import {
   cancelAppointmentByManagementToken,
+  isValidManagementTokenFormat,
   rescheduleAppointmentByManagementToken,
 } from "@/lib/appointment-management-token";
 import {
@@ -21,6 +22,10 @@ export async function cancelAppointmentAction(
   formData: FormData,
 ): Promise<{ success: boolean; error?: string }> {
   try {
+    if (!isValidManagementTokenFormat(token)) {
+      return { success: false, error: "Invalid management token." };
+    }
+
     const subjectHash = deriveManagementTokenSubjectHash(token);
     const rateLimit = await checkRateLimit({
       scope: RATE_LIMIT_CONFIG.CUSTOMER_CANCEL.scope,
@@ -70,6 +75,10 @@ export async function rescheduleAppointmentAction(
   try {
     if (!targetStartsAt || typeof targetStartsAt !== "string") {
       return { success: false, error: "Please select a valid time." };
+    }
+
+    if (!isValidManagementTokenFormat(token)) {
+      return { success: false, error: "Invalid management token." };
     }
 
     const subjectHash = deriveManagementTokenSubjectHash(token);

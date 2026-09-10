@@ -35,16 +35,16 @@ function getRateLimitSecret(): string {
 
 /**
  * Computes deterministic HMAC-SHA256 for public booking identity.
- * Combines organization, location, and normalized customer phone.
+ * Combines organization and normalized customer phone.
+ * Scoped to organization to prevent cross-branch quota multiplication.
  * Raw phone or IP is NEVER stored in the database.
  */
 export function deriveBookingSubjectHash(
   organizationId: string,
-  locationId: string,
   phone: string,
 ): string {
   const secret = getRateLimitSecret();
-  const canonical = `booking:${organizationId}:${locationId}:${phone.trim()}`;
+  const canonical = `booking:${organizationId}:${phone.trim()}`;
   return createHmac("sha256", secret).update(canonical).digest("hex");
 }
 
