@@ -26,6 +26,27 @@ export const customerPhoneSchema = z
     return result.e164;
   });
 
+export const optionalCustomerPhoneSchema = z
+  .string()
+  .trim()
+  .max(40, "Phone number is too long.")
+  .optional()
+  .nullable()
+  .transform((val, ctx) => {
+    if (!val || val.length === 0) return null;
+    const result = normalizePhone(val);
+    if (!result.valid || !result.e164) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          result.error ??
+          "Enter a valid Philippine mobile number (e.g. 0917 123 4567) or international number.",
+      });
+      return z.NEVER;
+    }
+    return result.e164;
+  });
+
 export const customerEmailSchema = z
   .string()
   .trim()
@@ -71,6 +92,19 @@ export const publicBookSlotSchema = bookSlotSchema
     customerPhone: customerPhoneSchema,
     customerEmail: customerEmailSchema,
   });
+
+export const walkInBookingSchema = z.object({
+  locationId: z.string().min(1, "Choose a location."),
+  staffId: z.string().min(1, "Choose a specialist."),
+  serviceIds: z
+    .array(z.string().min(1))
+    .min(1, "Choose at least one service.")
+    .max(MAX_BOOKING_SERVICES, `You can book at most ${MAX_BOOKING_SERVICES} services.`),
+  startsAt: z.coerce.date({ message: "Choose a valid start time." }),
+  customerName: customerNameSchema,
+  customerPhone: optionalCustomerPhoneSchema,
+  customerEmail: customerEmailSchema,
+});
 
 export function parseServiceIdsFromForm(formData: FormData): string[] {
   const collected: string[] = [];

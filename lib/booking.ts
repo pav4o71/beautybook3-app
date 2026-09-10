@@ -206,12 +206,13 @@ export async function createAppointment(input: {
   customerName?: string | null;
   customerPhone?: string | null;
   customerEmail?: string | null;
+  isWalkIn?: boolean;
 }) {
   const startsAt = input.startsAt;
   if (Number.isNaN(startsAt.getTime())) {
     throw new Error("Invalid time selected.");
   }
-  if (startsAt.getTime() <= Date.now()) {
+  if (!input.isWalkIn && startsAt.getTime() <= Date.now()) {
     throw new Error("That time is not available.");
   }
 
