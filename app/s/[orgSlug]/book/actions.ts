@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import type { ActionFormState } from "@/lib/action-form-state";
 import { actionError } from "@/lib/action-form-state";
 import { createAppointment } from "@/lib/booking";
+import { sendBookingConfirmationNotification } from "@/lib/email/notification-service";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { getPublishedOrganizationBySlug } from "@/lib/tenant";
@@ -52,6 +53,7 @@ export async function bookPublicSlot(
   const session = await getSession();
 
   let rawToken: string;
+  let appointmentId: string;
   try {
     const created = await createAppointment({
       organizationId: organization.id,
@@ -65,8 +67,19 @@ export async function bookPublicSlot(
       customerEmail: parsed.data.customerEmail,
     });
     rawToken = created.rawToken;
+    appointmentId = created.id;
   } catch (error) {
     return actionError(error);
+  }
+
+  // Post-commit transactional email delivery (isolated; never rolls back booking)
+  try {
+    await sendBookingConfirmationNotification({
+      appointmentId,
+      rawToken,
+    });
+  } catch {
+    // Non-blocking: email failure never fails or rolls back the appointment
   }
 
   revalidatePath(`/s/${orgSlug}/book`);
