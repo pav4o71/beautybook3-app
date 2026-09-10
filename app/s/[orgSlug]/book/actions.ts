@@ -7,6 +7,12 @@ import { actionError } from "@/lib/action-form-state";
 import { createAppointment } from "@/lib/booking";
 import { sendBookingConfirmationNotification } from "@/lib/email/notification-service";
 import { prisma } from "@/lib/prisma";
+import {
+  checkRateLimit,
+  deriveBookingSubjectHash,
+  RATE_LIMIT_CONFIG,
+  RATE_LIMIT_ERROR_MESSAGE,
+} from "@/lib/rate-limit";
 import { getSession } from "@/lib/session";
 import { getPublishedOrganizationBySlug } from "@/lib/tenant";
 import {
@@ -48,6 +54,22 @@ export async function bookPublicSlot(
 
   if (!location) {
     return { error: "Choose a valid location." };
+  }
+
+  // Abuse protection: durable rate limiting on booking attempts per customer phone & salon
+  const bookingSubjectHash = deriveBookingSubjectHash(
+    organization.id,
+    location.id,
+    parsed.data.customerPhone,
+  );
+  const rateLimit = await checkRateLimit({
+    scope: RATE_LIMIT_CONFIG.PUBLIC_BOOKING.scope,
+    subjectHash: bookingSubjectHash,
+    max: RATE_LIMIT_CONFIG.PUBLIC_BOOKING.max,
+    windowMs: RATE_LIMIT_CONFIG.PUBLIC_BOOKING.windowMs,
+  });
+  if (!rateLimit.allowed) {
+    return { error: RATE_LIMIT_ERROR_MESSAGE };
   }
 
   const session = await getSession();

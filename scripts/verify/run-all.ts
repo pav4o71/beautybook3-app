@@ -23,6 +23,7 @@ const scripts = [
   "cutoff-settings.ts",
   "notification-foundation.ts",
   "notification-lifecycle.ts",
+  "rate-limiting.ts",
 ];
 
 assertSafeVerifyTarget();
