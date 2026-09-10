@@ -381,3 +381,17 @@ model NotificationDelivery {
   @@index([appointmentId])
   @@index([status])
 }
+
+model RateLimitBucket {
+  id          String   @id @default(cuid())
+  scope       String
+  subjectHash String
+  windowStart DateTime
+  count       Int      @default(1)
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([scope, subjectHash, windowStart], map: "RateLimitBucket_scope_subject_window_uidx")
+  @@index([expiresAt], map: "RateLimitBucket_expiresAt_idx")
+}

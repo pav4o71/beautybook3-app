@@ -8,6 +8,12 @@ import {
   sendCustomerCancellationNotification,
   sendCustomerRescheduleNotification,
 } from "@/lib/email/notification-service";
+import {
+  checkRateLimit,
+  deriveManagementTokenSubjectHash,
+  RATE_LIMIT_CONFIG,
+  RATE_LIMIT_ERROR_MESSAGE,
+} from "@/lib/rate-limit";
 import { revalidatePath } from "next/cache";
 
 export async function cancelAppointmentAction(
@@ -15,6 +21,17 @@ export async function cancelAppointmentAction(
   formData: FormData,
 ): Promise<{ success: boolean; error?: string }> {
   try {
+    const subjectHash = deriveManagementTokenSubjectHash(token);
+    const rateLimit = await checkRateLimit({
+      scope: RATE_LIMIT_CONFIG.CUSTOMER_CANCEL.scope,
+      subjectHash,
+      max: RATE_LIMIT_CONFIG.CUSTOMER_CANCEL.max,
+      windowMs: RATE_LIMIT_CONFIG.CUSTOMER_CANCEL.windowMs,
+    });
+    if (!rateLimit.allowed) {
+      return { success: false, error: RATE_LIMIT_ERROR_MESSAGE };
+    }
+
     const reason = formData.get("reason") as string | null;
     const note = formData.get("note") as string | null;
 
@@ -53,6 +70,17 @@ export async function rescheduleAppointmentAction(
   try {
     if (!targetStartsAt || typeof targetStartsAt !== "string") {
       return { success: false, error: "Please select a valid time." };
+    }
+
+    const subjectHash = deriveManagementTokenSubjectHash(token);
+    const rateLimit = await checkRateLimit({
+      scope: RATE_LIMIT_CONFIG.CUSTOMER_RESCHEDULE.scope,
+      subjectHash,
+      max: RATE_LIMIT_CONFIG.CUSTOMER_RESCHEDULE.max,
+      windowMs: RATE_LIMIT_CONFIG.CUSTOMER_RESCHEDULE.windowMs,
+    });
+    if (!rateLimit.allowed) {
+      return { success: false, error: RATE_LIMIT_ERROR_MESSAGE };
     }
 
     const result = await rescheduleAppointmentByManagementToken({
