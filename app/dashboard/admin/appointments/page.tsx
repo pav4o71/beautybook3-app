@@ -21,6 +21,15 @@ import {
   parseSalonIsoDate,
   salonIsoDate,
 } from "@/lib/timezone";
+import {
+  appointmentHeight,
+  appointmentTop,
+  buildTimeMarkers,
+  deriveVisibleRange,
+  getAppointmentSnapshotDuration,
+  PIXELS_PER_MINUTE,
+  STEP_MINUTES,
+} from "@/lib/admin-day-board-geometry";
 
 export default async function AdminAppointmentsPage({
   searchParams,
@@ -39,7 +48,7 @@ export default async function AdminAppointmentsPage({
   const prevDateIso = salonIsoDate(addSalonDays(selectedDate, -1));
   const nextDateIso = salonIsoDate(addSalonDays(selectedDate, 1));
 
-  const [appointments, staff, services, locations] = await Promise.all([
+  const [appointments, staff, services, locations, schedules] = await Promise.all([
     getAppointmentsForDay(organizationId, selectedDate, locationId),
     prisma.staff.findMany({
       where: { organizationId, locationId, active: true },
@@ -54,12 +63,28 @@ export default async function AdminAppointmentsPage({
       where: { organizationId, active: true },
       orderBy: { name: "asc" },
     }),
+    prisma.staffSchedule.findMany({
+      where: { organizationId, locationId },
+    }),
   ]);
 
   const activeLocation = locations.find((l) => l.id === locationId);
 
+  const visibleRange = deriveVisibleRange(
+    selectedDate,
+    schedules,
+    appointments.map((a) => ({ startsAt: a.startsAt, endsAt: a.endsAt, status: a.status })),
+  );
+
+  const timeMarkers = buildTimeMarkers(
+    visibleRange.startMinutes,
+    visibleRange.endMinutes,
+    STEP_MINUTES,
+    PIXELS_PER_MINUTE,
+  );
+
   return (
-    <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-10">
+    <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-10">
       <AdminNav current="appointments" />
 
       {/* Header */}
@@ -70,7 +95,7 @@ export default async function AdminAppointmentsPage({
           </h1>
           <p className="mt-1 text-sm text-zinc-600">
             {activeLocation?.name ? `${activeLocation.name} · ` : ""}
-            {formatDay(selectedDate)} · Staff day board · Mark completed, no-show, or cancelled.
+            {formatDay(selectedDate)} · Staff day timeline · Mark completed, no-show, or cancelled.
           </p>
         </div>
         <Link href="/dashboard/admin" className={secondaryButtonClass}>
@@ -135,11 +160,11 @@ export default async function AdminAppointmentsPage({
         </div>
       </div>
 
-      {/* Staff Day Board: Column Lanes */}
+      {/* Staff Day Timeline Board */}
       <div className="mt-6">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-sm font-semibold uppercase tracking-wider text-zinc-600">
-            Staff Day Board ({staff.length} {staff.length === 1 ? "specialist" : "specialists"})
+            Staff Day Timeline ({staff.length} {staff.length === 1 ? "specialist" : "specialists"})
           </h2>
           {activeLocation?.name ? (
             <span className="text-xs font-medium text-zinc-500">
@@ -154,127 +179,260 @@ export default async function AdminAppointmentsPage({
           </p>
         ) : (
           <div
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+            className="rounded-2xl border border-zinc-200 bg-white shadow-xs overflow-hidden"
             data-testid="staff-day-board"
           >
-            {staff.map((specialist) => {
-              const specialistAppointments = appointments.filter(
-                (a) => a.staffId === specialist.id,
-              );
-
-              return (
+            <div className="overflow-x-auto">
+              <div className="flex min-w-max">
+                {/* 1. Left Time Gutter */}
                 <div
-                  key={specialist.id}
-                  data-testid={`staff-lane-${specialist.id}`}
-                  className="rounded-xl border border-zinc-200 bg-white p-4 shadow-2xs flex flex-col min-h-[320px]"
+                  className="w-16 shrink-0 border-r border-zinc-200 bg-zinc-50/90 select-none z-20 sticky left-0"
+                  data-testid="timeline-time-gutter"
                 >
-                  <div className="flex items-center justify-between border-b border-zinc-100 pb-3 mb-3">
-                    <div className="flex items-center gap-2">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-900 font-semibold text-xs text-white">
-                        {specialist.name.charAt(0)}
-                      </div>
-                      <div>
-                        <h3 className="font-medium text-zinc-900 text-sm">{specialist.name}</h3>
-                        <p className="text-xs text-zinc-500">
-                          {specialistAppointments.length}{" "}
-                          {specialistAppointments.length === 1 ? "appointment" : "appointments"}
-                        </p>
-                      </div>
-                    </div>
+                  <div className="h-16 border-b border-zinc-200 flex items-center justify-center">
+                    <span className="text-2xs font-bold uppercase tracking-wider text-zinc-400">Time</span>
                   </div>
-
-                  <div className="space-y-3 flex-1">
-                    {specialistAppointments.length === 0 ? (
-                      <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-zinc-200 py-12 text-center">
-                        <p className="text-xs text-zinc-500 font-medium">No appointments scheduled</p>
-                        <p className="text-2xs text-zinc-400 mt-1">Free for walk-ins or bookings</p>
+                  <div className="relative" style={{ height: `${visibleRange.totalHeightPx}px` }}>
+                    {timeMarkers.map((marker) => (
+                      <div
+                        key={marker.minutes}
+                        data-testid={`time-marker-${marker.label}`}
+                        className="absolute left-0 right-1 text-right -translate-y-1/2 pr-2"
+                        style={{ top: `${marker.topPx}px` }}
+                      >
+                        <span
+                          className={`tabular-nums ${
+                            marker.isHour
+                              ? "text-xs font-semibold text-zinc-800"
+                              : "text-2xs font-medium text-zinc-600"
+                          }`}
+                        >
+                          {marker.label}
+                        </span>
                       </div>
-                    ) : (
-                      specialistAppointments.map((appointment) => {
-                        const totalCents = appointment.services.reduce(
-                          (sum, row) => sum + row.priceCents,
-                          0,
-                        );
-                        const totalDuration = appointment.services.reduce(
-                          (sum, row) => sum + row.service.durationMin,
-                          0,
-                        );
-                        const serviceNames = appointment.services
-                          .map((row) => row.service.name)
-                          .join(", ");
-                        const contact = getAppointmentContactDisplay(appointment);
-
-                        return (
-                          <article
-                            key={appointment.id}
-                            className="rounded-lg border border-zinc-200 bg-zinc-50/70 p-3 text-sm transition-shadow hover:shadow-xs hover:border-zinc-300"
-                            data-testid={`admin-appointment-${appointment.id}`}
-                          >
-                            <div className="flex items-start justify-between gap-2">
-                              <div>
-                                <div className="flex items-center gap-1.5">
-                                  <span className="font-semibold text-zinc-900 text-xs">
-                                    {formatTime(appointment.startsAt)} – {formatTime(appointment.endsAt)}
-                                  </span>
-                                  <span className="text-2xs font-medium text-zinc-500 bg-zinc-200/80 rounded px-1.5 py-0.2">
-                                    {totalDuration}m
-                                  </span>
-                                </div>
-                                <p className="font-medium text-zinc-800 mt-0.5 text-xs">
-                                  {serviceNames}
-                                </p>
-                              </div>
-                              <span
-                                className={`rounded-full px-2 py-0.5 text-2xs font-semibold shrink-0 ${statusBadgeClass(
-                                  appointment.status,
-                                )}`}
-                              >
-                                {statusLabel(appointment.status)}
-                              </span>
-                            </div>
-
-                            <div className="mt-2 text-xs text-zinc-600 space-y-0.5 border-t border-zinc-200/60 pt-2">
-                              <p className="font-medium text-zinc-900">
-                                {contact.customerName}
-                                <span className="font-normal text-zinc-500"> · with {specialist.name}</span>
-                                {contact.customerEmail ? (
-                                  <span className="font-normal text-zinc-600 text-xs ml-1">
-                                    ({contact.customerEmail})
-                                  </span>
-                                ) : null}
-                              </p>
-                              {contact.customerPhone ? (
-                                <p>
-                                  <a
-                                    href={`tel:${contact.customerPhone}`}
-                                    className="text-zinc-700 underline hover:text-zinc-900 font-medium"
-                                    data-testid={`admin-appointment-phone-${appointment.id}`}
-                                  >
-                                    {formatPhoneDisplay(contact.customerPhone)}
-                                  </a>
-                                </p>
-                              ) : null}
-                              <p className="font-semibold text-zinc-900 pt-0.5">
-                                {formatPrice(totalCents)}
-                              </p>
-                            </div>
-
-                            {isAppointmentActionable(appointment.status) ? (
-                              <div className="mt-2.5 pt-2 border-t border-zinc-200/60">
-                                <AppointmentStatusActions
-                                  appointmentId={appointment.id}
-                                  selectedDateIso={selectedDateIso}
-                                />
-                              </div>
-                            ) : null}
-                          </article>
-                        );
-                      })
-                    )}
+                    ))}
                   </div>
                 </div>
-              );
-            })}
+
+                {/* 2. Staff Lanes */}
+                <div className="flex flex-1 divide-x divide-zinc-200">
+                  {staff.map((specialist) => {
+                    const allSpecialistAppts = appointments.filter(
+                      (a) => a.staffId === specialist.id,
+                    );
+                    const activeAppointments = allSpecialistAppts.filter(
+                      (a) => a.status !== "CANCELLED",
+                    );
+                    const cancelledAppointments = allSpecialistAppts.filter(
+                      (a) => a.status === "CANCELLED",
+                    );
+
+                    return (
+                      <div
+                        key={specialist.id}
+                        data-testid={`staff-lane-${specialist.id}`}
+                        className="w-72 min-w-[280px] max-w-[380px] shrink-0 flex flex-col bg-white"
+                      >
+                        {/* Lane Header */}
+                        <div className="h-16 px-4 border-b border-zinc-200 bg-zinc-50 flex items-center justify-between">
+                          <div className="flex items-center gap-2.5">
+                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-900 font-semibold text-xs text-white">
+                              {specialist.name.charAt(0)}
+                            </div>
+                            <div>
+                              <h3 className="font-semibold text-zinc-900 text-sm leading-tight">
+                                {specialist.name}
+                              </h3>
+                              <p className="text-2xs text-zinc-500">
+                                {activeAppointments.length}{" "}
+                                {activeAppointments.length === 1 ? "appointment" : "appointments"}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Timeline Grid Body */}
+                        <div
+                          className="relative bg-zinc-50/20"
+                          style={{ height: `${visibleRange.totalHeightPx}px` }}
+                        >
+                          {/* Horizontal 30-min grid lines */}
+                          {timeMarkers.map((marker) => (
+                            <div
+                              key={marker.minutes}
+                              className={`absolute inset-x-0 pointer-events-none ${
+                                marker.isHour
+                                  ? "border-b border-zinc-200/90"
+                                  : "border-b border-zinc-100"
+                              }`}
+                              style={{ top: `${marker.topPx}px` }}
+                            />
+                          ))}
+
+                          {/* Active Appointment Cards */}
+                          {activeAppointments.map((appointment) => {
+                            const topPx = appointmentTop(
+                              appointment.startsAt,
+                              visibleRange.startMinutes,
+                              PIXELS_PER_MINUTE,
+                            );
+                            const heightPx = appointmentHeight(
+                              appointment.startsAt,
+                              appointment.endsAt,
+                              PIXELS_PER_MINUTE,
+                            );
+                            const snapshotDuration = getAppointmentSnapshotDuration(
+                              appointment.services,
+                            );
+                            const totalCents = appointment.services.reduce(
+                              (sum, row) => sum + row.priceCents,
+                              0,
+                            );
+                            const serviceNames = appointment.services
+                              .map((row) => row.service.name)
+                              .join(", ");
+                            const contact = getAppointmentContactDisplay(appointment);
+                            const actionable = isAppointmentActionable(appointment.status);
+
+                            return (
+                              <article
+                                key={appointment.id}
+                                className="absolute inset-x-1.5 rounded-lg border border-zinc-300 bg-white p-2.5 shadow-xs hover:shadow-md hover:border-zinc-400 transition-all z-10 flex flex-col justify-between overflow-y-auto"
+                                data-testid={`admin-appointment-${appointment.id}`}
+                                style={{
+                                  top: `${topPx}px`,
+                                  height: `${Math.max(56, heightPx - 3)}px`,
+                                }}
+                              >
+                                <div>
+                                  <div className="flex items-start justify-between gap-1.5">
+                                    <div>
+                                      <div className="flex items-center gap-1">
+                                        <span className="font-bold text-zinc-900 text-xs tabular-nums">
+                                          {formatTime(appointment.startsAt)} –{" "}
+                                          {formatTime(appointment.endsAt)}
+                                        </span>
+                                        <span className="text-2xs font-semibold text-zinc-600 bg-zinc-100 border border-zinc-200 rounded px-1 py-0.2">
+                                          {snapshotDuration}m
+                                        </span>
+                                      </div>
+                                      <p className="font-medium text-zinc-800 text-xs mt-0.5 leading-snug">
+                                        {serviceNames}
+                                      </p>
+                                    </div>
+                                    <span
+                                      className={`rounded-full px-2 py-0.5 text-2xs font-semibold shrink-0 ${statusBadgeClass(
+                                        appointment.status,
+                                      )}`}
+                                    >
+                                      {statusLabel(appointment.status)}
+                                    </span>
+                                  </div>
+
+                                  <div className="mt-1.5 text-xs text-zinc-600 space-y-0.5 border-t border-zinc-100 pt-1">
+                                    <p className="font-medium text-zinc-900 leading-snug">
+                                      {contact.customerName}
+                                      <span className="font-normal text-zinc-500">
+                                        {" "}
+                                        · {specialist.name}
+                                      </span>
+                                      {contact.customerEmail ? (
+                                        <span className="font-normal text-zinc-600 text-xs ml-1">
+                                          ({contact.customerEmail})
+                                        </span>
+                                      ) : null}
+                                    </p>
+                                    {contact.customerPhone ? (
+                                      <p>
+                                        <a
+                                          href={`tel:${contact.customerPhone}`}
+                                          className="text-zinc-700 underline hover:text-zinc-900 font-medium"
+                                          data-testid={`admin-appointment-phone-${appointment.id}`}
+                                        >
+                                          {formatPhoneDisplay(contact.customerPhone)}
+                                        </a>
+                                      </p>
+                                    ) : null}
+                                    <p className="font-semibold text-zinc-900">
+                                      {formatPrice(totalCents)}
+                                    </p>
+                                  </div>
+                                </div>
+
+                                {actionable ? (
+                                  <div className="mt-2 pt-1 border-t border-zinc-100">
+                                    <AppointmentStatusActions
+                                      appointmentId={appointment.id}
+                                      selectedDateIso={selectedDateIso}
+                                    />
+                                  </div>
+                                ) : null}
+                              </article>
+                            );
+                          })}
+                        </div>
+
+                        {/* Cancelled / Historical Section */}
+                        {cancelledAppointments.length > 0 ? (
+                          <div
+                            className="p-3 border-t border-zinc-200 bg-zinc-50/80 space-y-2"
+                            data-testid={`cancelled-history-${specialist.id}`}
+                          >
+                            <h4 className="text-2xs font-bold uppercase tracking-wider text-zinc-500">
+                              Cancelled ({cancelledAppointments.length})
+                            </h4>
+                            {cancelledAppointments.map((appointment) => {
+                              const serviceNames = appointment.services
+                                .map((row) => row.service.name)
+                                .join(", ");
+                              const contact = getAppointmentContactDisplay(appointment);
+                              return (
+                                <article
+                                  key={appointment.id}
+                                  data-testid={`admin-appointment-${appointment.id}`}
+                                  className="rounded-md border border-zinc-200 bg-white p-2 text-xs opacity-80"
+                                >
+                                  <div className="flex items-center justify-between">
+                                    <span className="line-through font-medium text-zinc-600 tabular-nums">
+                                      {formatTime(appointment.startsAt)} –{" "}
+                                      {formatTime(appointment.endsAt)}
+                                    </span>
+                                    <span
+                                      className={`rounded-full px-2 py-0.5 text-2xs font-semibold ${statusBadgeClass(
+                                        appointment.status,
+                                      )}`}
+                                    >
+                                      Cancelled
+                                    </span>
+                                  </div>
+                                  <p className="text-zinc-700 mt-0.5">{serviceNames}</p>
+                                  <p className="text-zinc-600 font-medium">
+                                    {contact.customerName}
+                                    <span className="font-normal text-zinc-500">
+                                      {" "}
+                                      · {specialist.name}
+                                    </span>
+                                  </p>
+                                  {contact.customerPhone ? (
+                                    <a
+                                      href={`tel:${contact.customerPhone}`}
+                                      className="text-zinc-600 underline text-2xs"
+                                      data-testid={`admin-appointment-phone-${appointment.id}`}
+                                    >
+                                      {formatPhoneDisplay(contact.customerPhone)}
+                                    </a>
+                                  ) : null}
+                                </article>
+                              );
+                            })}
+                          </div>
+                        ) : null}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </div>

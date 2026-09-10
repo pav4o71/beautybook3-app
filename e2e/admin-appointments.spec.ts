@@ -127,6 +127,31 @@ test.describe("admin appointments board", () => {
     await expect(page.getByText(uniqueCustomer)).toBeVisible({ timeout: 15_000 });
   });
 
+  test("renders true 30-minute timeline geometry with time gutter and duration-scaled cards", async ({ page }) => {
+    await page.goto("/dashboard/admin/appointments");
+
+    // 1. Time gutter exists with 30-minute markers
+    const timeGutter = page.getByTestId("timeline-time-gutter");
+    await expect(timeGutter).toBeVisible();
+    await expect(page.getByTestId("time-marker-09:00")).toBeVisible();
+    await expect(page.getByTestId("time-marker-09:30")).toBeVisible();
+    await expect(page.getByTestId("time-marker-10:00")).toBeVisible();
+
+    // 2. Staff lanes exist with appointment cards
+    const lanes = page.locator('[data-testid^="staff-lane-"]');
+    await expect(lanes.first()).toBeVisible();
+    expect(await lanes.count()).toBeGreaterThan(0);
+
+    // 3. Appointment cards have explicit temporal top and height styling
+    const cards = page.locator('[data-testid^="admin-appointment-"]');
+    const firstCard = cards.first();
+    await expect(firstCard).toBeVisible();
+
+    const styleAttr = await firstCard.getAttribute("style");
+    expect(styleAttr).toContain("top:");
+    expect(styleAttr).toContain("height:");
+  });
+
   test("unauthenticated user is sent to login", async ({ page, context }) => {
     await context.clearCookies();
     await page.goto("/dashboard/admin/appointments");
