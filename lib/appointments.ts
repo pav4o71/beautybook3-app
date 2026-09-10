@@ -44,13 +44,18 @@ export async function getCustomerAppointments(
   });
 }
 
-export async function getAppointmentsForDay(organizationId: string, day: Date = new Date()) {
+export async function getAppointmentsForDay(
+  organizationId: string,
+  day: Date = new Date(),
+  locationId?: string,
+) {
   const { start, end } = salonDayBounds(day);
 
   return prisma.appointment.findMany({
     where: {
       organizationId,
       startsAt: { gte: start, lt: end },
+      ...(locationId ? { locationId } : {}),
     },
     include: {
       customer: { select: { id: true, name: true, email: true, phone: true } },

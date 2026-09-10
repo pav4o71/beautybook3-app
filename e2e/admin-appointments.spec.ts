@@ -81,6 +81,52 @@ test.describe("admin appointments board", () => {
     await expect(row.getByText("Cancelled", { exact: true })).toBeVisible();
   });
 
+  test("navigates days with prev, next, and today controls", async ({ page }) => {
+    await page.goto("/dashboard/admin/appointments");
+
+    await expect(page.getByTestId("staff-day-board")).toBeVisible();
+    await expect(page.getByTestId("prev-day-button")).toBeVisible();
+    await expect(page.getByTestId("next-day-button")).toBeVisible();
+
+    // Click Prev Day
+    await page.getByTestId("prev-day-button").click();
+    await page.waitForLoadState("networkidle");
+    expect(page.url()).toContain("date=");
+    await expect(page.getByTestId("today-button")).toBeVisible();
+
+    // Click Next Day (back to today)
+    await page.getByTestId("next-day-button").click();
+    await page.waitForLoadState("networkidle");
+    await expect(page.getByRole("heading", { name: /Today's appointments/i })).toBeVisible();
+  });
+
+  test("creates a walk-in appointment via reception dialog", async ({ page }) => {
+    test.setTimeout(60_000);
+    await page.goto("/dashboard/admin/appointments");
+
+    const walkInBtn = page.getByTestId("walk-in-button");
+    await expect(walkInBtn).toBeVisible();
+    await walkInBtn.click();
+
+    await expect(page.getByRole("heading", { name: "New Walk-In Appointment" })).toBeVisible();
+
+    const uniqueCustomer = `Walk-in Guest ${Date.now()}`;
+    await page.getByTestId("walk-in-name").fill(uniqueCustomer);
+    await page.getByTestId("walk-in-phone").fill("0917 888 7777");
+
+    // Select specialist
+    await page.getByTestId("walk-in-staff").selectOption({ index: 1 });
+
+    // Pick 10:00 (or keep default time)
+    await page.getByTestId("walk-in-time").fill("16:00");
+
+    await page.getByTestId("walk-in-submit").click();
+
+    // Dialog should close and appointment should appear in specialist lane
+    await expect(page.getByRole("heading", { name: "New Walk-In Appointment" })).toHaveCount(0);
+    await expect(page.getByText(uniqueCustomer)).toBeVisible({ timeout: 15_000 });
+  });
+
   test("unauthenticated user is sent to login", async ({ page, context }) => {
     await context.clearCookies();
     await page.goto("/dashboard/admin/appointments");
