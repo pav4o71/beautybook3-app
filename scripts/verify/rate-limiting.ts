@@ -12,7 +12,6 @@ import {
 import { getDemoTenantContext } from "../../lib/tenant";
 import { bookPublicSlot } from "../../app/s/[orgSlug]/book/actions";
 import { cancelAppointmentAction, rescheduleAppointmentAction } from "../../app/b/[token]/actions";
-import { createAppointment, getAvailableSlots } from "../../lib/booking";
 import { assertSafeVerifyTarget } from "./assert-safe-target";
 
 async function main() {
@@ -137,80 +136,57 @@ async function main() {
   assert(activeCheck, "Active bucket must not be deleted by cleanup");
 
   // 4. Action-Level Rate Limit Enforcement
-  const tenant = await getDemoTenantContext();
+  const { organizationId, locationId } = await getDemoTenantContext();
   const org = await prisma.organization.findUniqueOrThrow({
-    where: { id: tenant.organizationId },
-  });
-  const loc = await prisma.location.findUniqueOrThrow({
-    where: { id: tenant.locationId },
+    where: { id: organizationId },
   });
   const staff = await prisma.staff.findFirstOrThrow({
-    where: { organizationId: org.id },
+    where: { organizationId, locationId, active: true },
   });
   const service = await prisma.service.findFirstOrThrow({
-    where: { organizationId: org.id },
+    where: { organizationId, active: true },
   });
 
-  const rawSlots = await getAvailableSlots({
-    organizationId: tenant.organizationId,
-    staffId: staff.id,
-    durationMin: service.durationMin,
-    days: 14,
-  });
-
-  const futureSlot = rawSlots.find((s) => s.getTime() - Date.now() > 36 * 3600 * 1000);
-  assert(futureSlot, "Must find a future slot beyond 36h");
-
-  const created = await createAppointment({
-    organizationId: org.id,
-    locationId: loc.id,
-    customerId: null,
-    serviceIds: [service.id],
-    staffId: staff.id,
-    startsAt: futureSlot,
-    customerName: "Rate Limit Tester",
-    customerPhone: "+359888999000",
-    customerEmail: "ratelimit@test.local",
-  });
-  const token = created.rawToken;
+  const testMgmtToken = `tok_ratelimit_test_${Date.now()}_${Math.random().toString(36).slice(2)}`;
 
   // Test Customer Reschedule Rate Limiting (max 10)
-  const mgmtHash = deriveManagementTokenSubjectHash(token);
+  const rescheduleMgmtHash = deriveManagementTokenSubjectHash(testMgmtToken);
   await prisma.rateLimitBucket.upsert({
     where: {
       scope_subjectHash_windowStart: {
         scope: RATE_LIMIT_CONFIG.CUSTOMER_RESCHEDULE.scope,
-        subjectHash: mgmtHash,
+        subjectHash: rescheduleMgmtHash,
         windowStart: new Date(Math.floor(Date.now() / RATE_LIMIT_CONFIG.CUSTOMER_RESCHEDULE.windowMs) * RATE_LIMIT_CONFIG.CUSTOMER_RESCHEDULE.windowMs),
       },
     },
     update: { count: RATE_LIMIT_CONFIG.CUSTOMER_RESCHEDULE.max },
     create: {
       scope: RATE_LIMIT_CONFIG.CUSTOMER_RESCHEDULE.scope,
-      subjectHash: mgmtHash,
+      subjectHash: rescheduleMgmtHash,
       windowStart: new Date(Math.floor(Date.now() / RATE_LIMIT_CONFIG.CUSTOMER_RESCHEDULE.windowMs) * RATE_LIMIT_CONFIG.CUSTOMER_RESCHEDULE.windowMs),
       count: RATE_LIMIT_CONFIG.CUSTOMER_RESCHEDULE.max,
       expiresAt: new Date(Date.now() + 15 * 60 * 1000),
     },
   });
 
-  const rescheduleRes = await rescheduleAppointmentAction(token, new Date(Date.now() + 60 * 3600 * 1000).toISOString());
+  const rescheduleRes = await rescheduleAppointmentAction(testMgmtToken, new Date(Date.now() + 60 * 3600 * 1000).toISOString());
   assert.equal(rescheduleRes.success, false);
   assert.equal(rescheduleRes.error, RATE_LIMIT_ERROR_MESSAGE, "Reschedule must be blocked with rate limit error");
 
   // Test Customer Cancel Rate Limiting (max 5)
+  const cancelMgmtHash = deriveManagementTokenSubjectHash(testMgmtToken);
   await prisma.rateLimitBucket.upsert({
     where: {
       scope_subjectHash_windowStart: {
         scope: RATE_LIMIT_CONFIG.CUSTOMER_CANCEL.scope,
-        subjectHash: mgmtHash,
+        subjectHash: cancelMgmtHash,
         windowStart: new Date(Math.floor(Date.now() / RATE_LIMIT_CONFIG.CUSTOMER_CANCEL.windowMs) * RATE_LIMIT_CONFIG.CUSTOMER_CANCEL.windowMs),
       },
     },
     update: { count: RATE_LIMIT_CONFIG.CUSTOMER_CANCEL.max },
     create: {
       scope: RATE_LIMIT_CONFIG.CUSTOMER_CANCEL.scope,
-      subjectHash: mgmtHash,
+      subjectHash: cancelMgmtHash,
       windowStart: new Date(Math.floor(Date.now() / RATE_LIMIT_CONFIG.CUSTOMER_CANCEL.windowMs) * RATE_LIMIT_CONFIG.CUSTOMER_CANCEL.windowMs),
       count: RATE_LIMIT_CONFIG.CUSTOMER_CANCEL.max,
       expiresAt: new Date(Date.now() + 15 * 60 * 1000),
@@ -219,13 +195,13 @@ async function main() {
 
   const cancelFormData = new FormData();
   cancelFormData.set("reason", "Customer schedule conflict");
-  const cancelRes = await cancelAppointmentAction(token, cancelFormData);
+  const cancelRes = await cancelAppointmentAction(testMgmtToken, cancelFormData);
   assert.equal(cancelRes.success, false);
   assert.equal(cancelRes.error, RATE_LIMIT_ERROR_MESSAGE, "Cancel must be blocked with rate limit error");
 
   // Test Public Booking Rate Limiting (max 5)
   const phoneToLimit = "+359888777666";
-  const bookingHash = deriveBookingSubjectHash(org.id, loc.id, phoneToLimit);
+  const bookingHash = deriveBookingSubjectHash(org.id, locationId, phoneToLimit);
   await prisma.rateLimitBucket.upsert({
     where: {
       scope_subjectHash_windowStart: {
@@ -245,10 +221,10 @@ async function main() {
   });
 
   const bookFormData = new FormData();
-  bookFormData.set("locationId", loc.id);
+  bookFormData.set("locationId", locationId);
   bookFormData.set("serviceIds", service.id);
   bookFormData.set("staffId", staff.id);
-  bookFormData.set("startsAt", futureSlot.toISOString());
+  bookFormData.set("startsAt", new Date(Date.now() + 48 * 3600 * 1000).toISOString());
   bookFormData.set("customerName", "Spam User");
   bookFormData.set("customerPhone", phoneToLimit);
   bookFormData.set("customerEmail", "spam@example.com");
@@ -261,12 +237,12 @@ async function main() {
     where: {
       OR: [
         { scope: testScope },
-        { subjectHash: mgmtHash },
+        { subjectHash: rescheduleMgmtHash },
+        { subjectHash: cancelMgmtHash },
         { subjectHash: bookingHash },
       ],
     },
   });
-  await prisma.appointment.delete({ where: { id: created.id } });
 
   console.log("verify: rate-limiting and abuse protection checks passed");
 }
