@@ -102,7 +102,8 @@ test.describe("admin appointments board", () => {
 
   test("creates a walk-in appointment via reception dialog", async ({ page }) => {
     test.setTimeout(60_000);
-    await page.goto("/dashboard/admin/appointments");
+    // Use an explicit working Monday date to prevent weekend schedule gaps from breaking walk-in creation
+    await page.goto("/dashboard/admin/appointments?date=2026-09-14");
 
     const walkInBtn = page.getByTestId("walk-in-button");
     await expect(walkInBtn).toBeVisible();
@@ -117,8 +118,9 @@ test.describe("admin appointments board", () => {
     // Select specialist
     await page.getByTestId("walk-in-staff").selectOption({ index: 1 });
 
-    // Pick 10:00 (or keep default time)
-    await page.getByTestId("walk-in-time").fill("16:00");
+    // Set working date and time
+    await page.getByTestId("walk-in-date").fill("2026-09-14");
+    await page.getByTestId("walk-in-time").fill("10:00");
 
     await page.getByTestId("walk-in-submit").click();
 
