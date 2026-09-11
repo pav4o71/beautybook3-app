@@ -18,18 +18,24 @@ import { prisma } from "@/lib/prisma";
 
 export async function linkGuestAppointmentsToVerifiedUser(
   userId: string,
-  verifiedEmail: string,
 ): Promise<{ linked: number }> {
+  // Load user from DB
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { id: true, email: true, emailVerified: true },
+  });
+
+  if (!user || !user.emailVerified || !user.email) {
+    return { linked: 0 };
+  }
+
   // Normalize email to lowercase for deterministic matching.
-  // Better Auth stores emails lowercase but appointment snapshots may not be.
-  const normalizedEmail = verifiedEmail.toLowerCase().trim();
+  const normalizedEmail = user.email.toLowerCase().trim();
 
   const result = await prisma.appointment.updateMany({
     where: {
       customerId: null,
       customerEmail: {
-        // Prisma does not support lower() directly; use mode: insensitive
-        // (PostgreSQL: case-insensitive LIKE using citext or ILIKE)
         equals: normalizedEmail,
         mode: "insensitive",
       },
