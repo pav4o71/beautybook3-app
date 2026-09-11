@@ -1,5 +1,14 @@
 import { expect, test } from "@playwright/test";
 import { DEMO_ORG_SLUG } from "../lib/demo-constants";
+import { DEMO_ACCOUNT } from "../lib/demo-account";
+
+async function signInAdmin(page: import("@playwright/test").Page) {
+  await page.goto("/login");
+  await page.locator('input[name="email"]').fill(DEMO_ACCOUNT.email);
+  await page.locator('input[name="password"]').fill(DEMO_ACCOUNT.password);
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.waitForURL("/dashboard");
+}
 
 test.describe("customer self-service cancellation", () => {
   test("guest books appointment, cancels via /b/[token], and verifies slot is released", async ({
@@ -79,11 +88,19 @@ test.describe("customer self-service cancellation", () => {
     expect(headers["x-robots-tag"]).toContain("noindex");
   });
 
-  test("appointment within 24 hours displays cutoff notice and hides cancel button", async ({
+  test("appointment within cutoff displays cutoff notice and hides cancel button", async ({
     page,
   }) => {
     test.setTimeout(90_000);
 
+    // Set cutoff to 168h so first available slot (even on weekends, e.g. 56h away) is within cutoff
+    await signInAdmin(page);
+    await page.goto("/dashboard/admin/settings");
+    await page.getByTestId("cancellation-cutoff-hours-input").fill("168");
+    await page.getByRole("button", { name: "Save settings" }).click();
+    await page.waitForURL(/\/dashboard\/admin\/settings\?saved=1/);
+
+    await page.context().clearCookies();
     await page.goto(`/s/${DEMO_ORG_SLUG}/book`);
 
     await page.getByRole("button", { name: /Haircut/i }).click();
@@ -93,17 +110,23 @@ test.describe("customer self-service cancellation", () => {
     await page.getByTestId("customer-name-input").fill("Cutoff Test Guest");
     await page.getByTestId("customer-phone-input").fill("0917 111 2222");
 
-    // Today's first slot is within 24 hours
-    const todaySlot = page.getByTestId("book-slot").first();
-    await expect(todaySlot).toBeVisible({ timeout: 15_000 });
+    const firstSlot = page.getByTestId("book-slot").first();
+    await expect(firstSlot).toBeVisible({ timeout: 15_000 });
 
     await Promise.all([
       page.waitForURL(new RegExp(`/b/([A-Za-z0-9_-]{43})\\?booked=1`), { timeout: 45_000 }),
-      todaySlot.click(),
+      firstSlot.click(),
     ]);
 
     // Verify cutoff notice is displayed and cancel button is hidden
     await expect(page.getByTestId("cancellation-cutoff-notice")).toBeVisible();
     await expect(page.getByTestId("cancel-appointment-button")).toHaveCount(0);
+
+    // Restore cutoff back to 24 hours
+    await signInAdmin(page);
+    await page.goto("/dashboard/admin/settings");
+    await page.getByTestId("cancellation-cutoff-hours-input").fill("24");
+    await page.getByRole("button", { name: "Save settings" }).click();
+    await page.waitForURL(/\/dashboard\/admin\/settings\?saved=1/);
   });
 });

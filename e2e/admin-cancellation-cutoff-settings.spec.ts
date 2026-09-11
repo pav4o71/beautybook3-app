@@ -76,7 +76,7 @@ test.describe("organization cancellation cutoff settings", () => {
     await expect(page.getByTestId("reschedule-appointment-button")).toBeVisible();
     await expect(page.getByTestId("cancellation-cutoff-notice")).toHaveCount(0);
 
-    // 6. Sign back in and update cutoff to 168 hours to verify dynamic restriction
+    // 6. Sign back in and update cutoff to 168 hours to verify dynamic restriction (covers weekend schedule gaps up to 7 days)
     await signInAdmin(page);
     await page.goto("/dashboard/admin/settings");
     await expect(page.getByTestId("cancellation-cutoff-hours-input")).toBeVisible();
