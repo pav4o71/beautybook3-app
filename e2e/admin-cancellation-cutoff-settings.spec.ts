@@ -76,24 +76,24 @@ test.describe("organization cancellation cutoff settings", () => {
     await expect(page.getByTestId("reschedule-appointment-button")).toBeVisible();
     await expect(page.getByTestId("cancellation-cutoff-notice")).toHaveCount(0);
 
-    // 6. Sign back in and update cutoff to 168 hours to verify dynamic restriction
+    // 6. Sign back in and update cutoff to 48 hours to verify dynamic restriction
     await signInAdmin(page);
     await page.goto("/dashboard/admin/settings");
     await expect(page.getByTestId("cancellation-cutoff-hours-input")).toBeVisible();
-    await page.getByTestId("cancellation-cutoff-hours-input").fill("168");
+    await page.getByTestId("cancellation-cutoff-hours-input").fill("48");
     await page.getByRole("button", { name: "Save settings" }).click();
     await page.waitForURL(/\/dashboard\/admin\/settings\?saved=1/);
     await expect(page.getByText("Settings saved.")).toBeVisible();
 
-    // 7. Re-check the previously booked appointment under 168h cutoff
-    // It is < 168 hours away, so online changes must now be blocked
+    // 7. Re-check the previously booked appointment under 48h cutoff
+    // It is < 48 hours away, so online changes must now be blocked
     await page.context().clearCookies();
     await page.goto(`/s/${DEMO_ORG_SLUG}/book`);
     await page.getByRole("button", { name: /Haircut/i }).click();
     await page.getByRole("button", { name: /Maya Petrova/i }).click();
     await page.waitForLoadState("networkidle");
 
-    await page.getByTestId("customer-name-input").fill("Cutoff E2E Guest 168h");
+    await page.getByTestId("customer-name-input").fill("Cutoff E2E Guest 48h");
     await page.getByTestId("customer-phone-input").fill("0917 555 4444");
 
     const slot48 = page.getByTestId("book-slot").first();
@@ -106,7 +106,7 @@ test.describe("organization cancellation cutoff settings", () => {
 
     const cutoffNotice = page.getByTestId("cancellation-cutoff-notice");
     await expect(cutoffNotice).toBeVisible();
-    await expect(cutoffNotice).toContainText("168 hours");
+    await expect(cutoffNotice).toContainText("48 hours");
     await expect(page.getByTestId("cancel-appointment-button")).toHaveCount(0);
     await expect(page.getByTestId("reschedule-appointment-button")).toHaveCount(0);
 

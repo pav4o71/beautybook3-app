@@ -4,7 +4,7 @@ import { prisma } from "../../lib/prisma";
 import { assertLocalOnlyDatabaseUrl } from "../../lib/test-only-local-db";
 import { linkGuestAppointmentsToVerifiedUser } from "../../lib/link-guest-appointments";
 import { Role } from "../../app/generated/prisma/enums";
-import { auth } from "../../lib/auth"; // For testing Better Auth if possible
+
 
 assertLocalOnlyDatabaseUrl(process.env.DATABASE_URL);
 
