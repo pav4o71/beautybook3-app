@@ -30,7 +30,7 @@ export default async function AccountPage() {
   // Idempotent reconciliation: link any still-unowned guest appointments.
   // Safe to run on every page load — updateMany with conditional WHERE is atomic.
   if (user.emailVerified && user.email) {
-    await linkGuestAppointmentsToVerifiedUser(user.id, user.email).catch(() => {
+    await linkGuestAppointmentsToVerifiedUser(user.id).catch(() => {
       // Non-fatal — silently continue
     });
   }

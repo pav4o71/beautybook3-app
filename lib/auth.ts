@@ -100,7 +100,7 @@ export const auth = betterAuth({
      */
     afterEmailVerification: async (user) => {
       if (user.emailVerified && user.email) {
-        await linkGuestAppointmentsToVerifiedUser(user.id, user.email).catch(
+        await linkGuestAppointmentsToVerifiedUser(user.id).catch(
           () => {
             // Non-fatal: linking will be retried on account page load
           },
@@ -149,7 +149,7 @@ export const auth = betterAuth({
         window: 60 * 10,
         max: process.env.NODE_ENV === "production" && !process.env.CI ? 5 : 1000,
       },
-      "/forget-password": {
+      "/request-password-reset": {
         window: 60 * 10,
         max: process.env.NODE_ENV === "production" && !process.env.CI ? 5 : 1000,
       },

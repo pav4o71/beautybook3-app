@@ -1,10 +1,18 @@
 import Link from "next/link";
 import { SignOutButton } from "@/app/dashboard/sign-out-button";
 import { getSession } from "@/lib/session";
+import { prisma } from "@/lib/prisma";
 import { brandLinkClass, pageShellClass, secondaryButtonClass, textLinkClass } from "@/lib/ui";
 
 export async function SiteHeader() {
   const session = await getSession();
+
+  let orgCount = 0;
+  if (session?.user) {
+    orgCount = await prisma.organizationMember.count({
+      where: { userId: session.user.id },
+    });
+  }
 
   return (
     <header className="border-b border-emerald-100/80 bg-white/90 backdrop-blur-xs">
@@ -19,9 +27,11 @@ export async function SiteHeader() {
                 {session.user.name}
               </span>
               {/* Org members see Dashboard; customers see Account */}
-              <Link href="/dashboard" className={textLinkClass}>
-                Dashboard
-              </Link>
+              {orgCount > 0 && (
+                <Link href="/dashboard" className={textLinkClass}>
+                  Dashboard
+                </Link>
+              )}
               <Link href="/account" className={textLinkClass}>
                 My account
               </Link>
