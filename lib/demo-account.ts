@@ -10,6 +10,12 @@ export const DEMO_CUSTOMER = {
   password: "Demo1234!",
 } as const;
 
+export const ZERO_ORG_CUSTOMER = {
+  name: "Zero Org Customer",
+  email: "zero-org-customer@beautybook.local",
+  password: "Demo1234!",
+} as const;
+
 export const GLOW_OWNER = {
   name: "Glow Owner",
   email: "owner@glow-nails.local",

@@ -1,6 +1,10 @@
 import { AppointmentStatus, OrgRole, Role, Weekday } from "@/app/generated/prisma/enums";
 import { auth } from "@/lib/auth";
-import { DEMO_ACCOUNT, DEMO_CUSTOMER } from "@/lib/demo-account";
+import {
+  DEMO_ACCOUNT,
+  DEMO_CUSTOMER,
+  ZERO_ORG_CUSTOMER,
+} from "@/lib/demo-account";
 import { DEMO_ORG_SLUG, salonCoverPath } from "@/lib/demo-constants";
 import { prisma } from "@/lib/prisma";
 import { assertLocalOnlyDatabase } from "@/lib/test-only-local-db";
@@ -249,6 +253,36 @@ async function seedDemoCustomer() {
     where: { email: DEMO_CUSTOMER.email },
     data: { role: Role.CUSTOMER, emailVerified: true },
   });
+}
+
+async function seedZeroOrgCustomer() {
+  const existing = await prisma.user.findUnique({
+    where: { email: ZERO_ORG_CUSTOMER.email },
+  });
+
+  let customerId = existing?.id;
+  if (!customerId) {
+    const result = await auth.api.signUpEmail({
+      body: ZERO_ORG_CUSTOMER,
+    });
+
+    if (!result.user) {
+      throw new Error("Better Auth did not return a user for the zero-org customer");
+    }
+
+    customerId = result.user.id;
+  }
+
+  const verifiedCustomer = await prisma.user.update({
+    where: { id: customerId },
+    data: { role: Role.CUSTOMER, emailVerified: true },
+  });
+
+  await prisma.organizationMember.deleteMany({
+    where: { userId: verifiedCustomer.id },
+  });
+
+  return verifiedCustomer;
 }
 
 async function upsertService(
@@ -604,6 +638,7 @@ async function main() {
   const tenant = await seedOrganization();
   const admin = await seedDemoUser();
   const customer = await seedDemoCustomer();
+  await seedZeroOrgCustomer();
   await seedMembership(admin.id, tenant.organizationId, OrgRole.OWNER);
   await seedMembership(customer.id, tenant.organizationId, OrgRole.MEMBER);
   await seedCatalogAndStaff(tenant, customer.id);

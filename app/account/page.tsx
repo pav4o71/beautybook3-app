@@ -9,11 +9,17 @@ import {
   pageMainClass,
   surfaceClass,
   infoAlertClass,
+  successAlertClass,
 } from "@/lib/ui";
+import { firstQueryValue } from "@/lib/validations/booking";
 import { AccountAppointmentList } from "./appointment-list";
 import { SignOutButton } from "@/app/dashboard/sign-out-button";
 
-export default async function AccountPage() {
+export default async function AccountPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ booked?: string | string[] }>;
+}) {
   const session = await getSession();
 
   if (!session?.user) {
@@ -21,6 +27,7 @@ export default async function AccountPage() {
   }
 
   const user = session.user;
+  const query = await searchParams;
 
   // If email is not verified, do not allow access to account data
   if (!user.emailVerified) {
@@ -71,6 +78,10 @@ export default async function AccountPage() {
           </div>
           <SignOutButton />
         </div>
+
+        {firstQueryValue(query.booked) === "1" ? (
+          <p className={successAlertClass}>Booked! Pay at the salon when you arrive.</p>
+        ) : null}
 
         <div className={`${surfaceClass} p-6`}>
           <h2 className="mb-4 text-base font-semibold text-zinc-900">My appointments</h2>
