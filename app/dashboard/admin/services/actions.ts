@@ -12,6 +12,7 @@ import {
 } from "@/lib/catalog";
 import { prisma } from "@/lib/prisma";
 import { requireActiveOrgAdmin } from "@/lib/require-org";
+import { updateServiceForOrganization } from "@/lib/services";
 
 function revalidateServicePaths() {
   revalidatePath("/dashboard/admin/services");
@@ -82,23 +83,13 @@ export async function updateService(
     const priceCents = parsePesoToCentavos(formData.get("pricePhp"), "Price");
     const active = parseBooleanCheckbox(formData.get("active"));
 
-    const existing = await prisma.service.findFirst({
-      where: { id, organizationId },
-    });
-    if (!existing) {
-      throw new Error("Service not found.");
-    }
-
-    await prisma.service.update({
-      where: { id },
-      data: {
-        categoryId,
-        name,
-        description,
-        durationMin,
-        priceCents,
-        active,
-      },
+    await updateServiceForOrganization(organizationId, id, {
+      categoryId,
+      name,
+      description,
+      durationMin,
+      priceCents,
+      active,
     });
   } catch (error) {
     return actionError(error);
