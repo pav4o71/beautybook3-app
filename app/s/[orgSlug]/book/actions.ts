@@ -105,8 +105,8 @@ export async function bookPublicSlot(
 
   revalidatePath(`/s/${orgSlug}/book`);
   if (session?.user) {
-    revalidatePath("/dashboard/appointments");
-    redirect("/dashboard/appointments?booked=1");
+    revalidatePath("/account");
+    redirect("/account?booked=1");
   }
 
   redirect(`/b/${rawToken}?booked=1`);
