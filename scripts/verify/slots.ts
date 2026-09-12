@@ -23,21 +23,26 @@ async function main() {
     where: { organizationId: tenant.organizationId, name: "Lena Dimitrova" },
   });
 
+  // getAvailableSlots checks offsets 0..days-1. Eight days guarantees one
+  // complete future weekly cycle, including Saturday when this runs late on
+  // Saturday after Lena's same-day availability has passed.
+  const availabilityDays = 8;
+
   const mayaBefore = await getAvailableSlots({
     organizationId: tenant.organizationId,
     staffId: maya.id,
     durationMin: cut.durationMin,
-    days: 7,
+    days: availabilityDays,
   });
 
   const lenaSaturday = await getAvailableSlots({
     organizationId: tenant.organizationId,
     staffId: lena.id,
     durationMin: cut.durationMin,
-    days: 7,
+    days: availabilityDays,
   });
 
-  assert(mayaBefore.length > 0, "Maya should have open slots in the next 7 days");
+  assert(mayaBefore.length > 0, "Maya should have open slots in the next 8 days");
   assert(
     lenaSaturday.some((slot) => slot.getDay() === 6),
     "Lena should have Saturday slots from seed schedule",
@@ -65,7 +70,7 @@ async function main() {
     organizationId: tenant.organizationId,
     staffId: maya.id,
     durationMin: cut.durationMin,
-    days: 7,
+    days: availabilityDays,
   });
 
   assert(
