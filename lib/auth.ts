@@ -2,10 +2,10 @@ import { prismaAdapter } from "@better-auth/prisma-adapter";
 import { betterAuth } from "better-auth";
 import { nextCookies } from "better-auth/next-js";
 import { prisma } from "@/lib/prisma";
-import { getEmailSender } from "@/lib/email/sender";
 import { getEmailFrom, getAppBaseUrl } from "@/lib/email/config";
 import { renderVerificationEmail } from "@/lib/email/templates/verification-email";
 import { renderResetPasswordEmail } from "@/lib/email/templates/reset-password-email";
+import { sendRequiredAuthEmail } from "@/lib/email/auth-email";
 import { linkGuestAppointmentsToVerifiedUser } from "@/lib/link-guest-appointments";
 import { postgresRateLimitStorage } from "@/lib/auth-rate-limit-storage";
 
@@ -32,12 +32,11 @@ export const auth = betterAuth({
      * We must NOT log the url or token, and must NOT persist them in application tables.
      */
     sendResetPassword: async (data) => {
-      const sender = getEmailSender();
       const template = renderResetPasswordEmail({
         userName: data.user.name,
         resetUrl: data.url,
       });
-      await sender.send({
+      await sendRequiredAuthEmail({
         to: data.user.email,
         from: getEmailFrom(),
         subject: template.subject,
@@ -62,8 +61,10 @@ export const auth = betterAuth({
 
   // Email verification lifecycle
   emailVerification: {
-    // Always send verification email immediately on signup
-    sendOnSignUp: true,
+    // Better Auth 1.7.2 swallows send-on-signup callback failures. The signup
+    // client explicitly calls sendVerificationEmail after account creation so
+    // it can show a retryable, generic delivery error instead.
+    sendOnSignUp: false,
     // Do NOT auto-sign-in after verification — user clicks link → success page → login
     autoSignInAfterVerification: false,
     // Token expires in 1 hour
@@ -77,12 +78,11 @@ export const auth = betterAuth({
      * from any incoming request header.
      */
     sendVerificationEmail: async (data) => {
-      const sender = getEmailSender();
       const template = renderVerificationEmail({
         userName: data.user.name,
         verificationUrl: data.url,
       });
-      await sender.send({
+      await sendRequiredAuthEmail({
         to: data.user.email,
         from: getEmailFrom(),
         subject: template.subject,

@@ -49,9 +49,8 @@ export function SignupForm() {
       callbackURL: "/verify-email/confirm",
     });
 
-    setPending(false);
-
     if (result.error) {
+      setPending(false);
       // Avoid exposing whether the email already exists
       setError(
         result.error.status === 422
@@ -61,8 +60,26 @@ export function SignupForm() {
       return;
     }
 
-    // Signup succeeded — redirect to "check your email" page
-    router.push("/verify-email?signup=1");
+    // Better Auth persists the account before this explicit delivery attempt.
+    // Its built-in send-on-signup path swallows callback failures in v1.7.2,
+    // while sendVerificationEmail reports a generic retryable error to us.
+    try {
+      const verificationResult = await authClient.sendVerificationEmail({
+        email,
+        callbackURL: "/verify-email/confirm",
+      });
+
+      if (verificationResult.error) {
+        setError("We couldn't send the verification email. Please try again.");
+        return;
+      }
+
+      router.push("/verify-email?signup=1");
+    } catch {
+      setError("We couldn't send the verification email. Please try again.");
+    } finally {
+      setPending(false);
+    }
   }
 
   return (
