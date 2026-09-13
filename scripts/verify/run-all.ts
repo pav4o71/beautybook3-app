@@ -26,6 +26,7 @@ const scripts = [
   "rate-limiting.ts",
   "admin-day-board.ts",
   "customer-auth.ts",
+  "auth-email-delivery.ts",
 ];
 
 assertSafeVerifyTarget();
