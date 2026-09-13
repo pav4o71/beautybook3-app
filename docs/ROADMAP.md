@@ -12,14 +12,14 @@ BeautyBook currently provides a secure multi-tenant foundation with robust multi
 - Admin day board featuring a real temporal timeline and walk-in scheduling.
 - Marketplace discoverability with real next-available slots and trust signals.
 
-## Now — Verified Engineering Work
-The following engineering tasks are authorized, backed by source verification, and represent the immediate technical priorities:
+## Now — Verified Engineering Follow-Ups
+The following items are verified open engineering follow-ups backed by current repository evidence. Their presence here does not by itself authorize implementation; each should be handled through a separately scoped task and normal review workflow:
 - **Real Better Auth Lifecycle Acceptance (BB-P1-03):** Implement end-to-end HTTP and browser verification token consumption tests.
 - **Environment & Rate Limit Contract:** Formalize the `RATE_LIMIT_SECRET` deployment contract and standardize environment documentation.
 - **Node Runtime Contract:** Synchronize and formalize the supported Node.js runtime target across development, CI, and production environments.
 - **Route Loading & Error Boundaries:** Add `loading.tsx` skeletons and `error.tsx` error boundaries across the public marketplace and admin dashboards.
 - **Staff Deactivated Location Edit Retention:** Ensure deactivated branch assignments are preserved when viewing or editing historical staff assignments.
-- **Next.js Middleware to Proxy Migration:** Perform a technical evaluation and execute the migration from `middleware.ts` to Next.js route proxying.
+- **Next.js Middleware to Proxy Evaluation:** Evaluate migration from `middleware.ts` to `proxy.ts` against the current Next.js version and BeautyBook security requirements. If the evaluation confirms that migration is appropriate, handle it in a separate scoped implementation task.
 - **Stale PR Disposition:** Make a definitive maintenance decision on the unmerged PR #21 and the open draft PR #22.
 
 ## Next — Product Candidates
@@ -31,6 +31,7 @@ These items are potential product features. They are **not automatically authori
 - In-account appointment management UX (adding cancel/reschedule controls directly within `/account`).
 - SMS appointment notifications.
 - Saved salons, Book the Look, and Beauty Finder Quiz.
+- Waitlist / cancellation-backfill workflow.
 
 ## Founder Decisions Required
 These product and business decisions have significant architectural or policy implications. They require explicit user (founder) approval before any engineering work can begin:
@@ -44,10 +45,6 @@ These product and business decisions have significant architectural or policy im
 - **Database RLS vs Application Isolation:** Decision on adopting Supabase RLS policies alongside Prisma tenant scoping.
 - **Rate-Limit Tuning:** Specific threshold adjustments based on empirical production traffic patterns.
 - **Audit & Notification Data Retention:** Retention windows and soft-delete/prune policies for historical appointments and delivery logs.
-
-## Deferred
-The following items have been intentionally postponed for a defensible reason:
-- **Waitlist System:** Deferred due to pre-mature complexity; the system will be reconsidered once customer and booking volume warrants cancellation backfill.
 
 ## Completed Foundations
 The following foundational features are fully implemented and verified in the source:
