@@ -13,13 +13,14 @@ When working on BeautyBook, do not guess and do not rely on stale documentation.
 ## Current Documents
 
 - **[`../README.md`](../README.md):** Project onboarding, environment context, and setup guide.
+- **[`ROADMAP.md`](ROADMAP.md):** Current canonical roadmap governing planned product and engineering work.
 - **[`architecture.md`](architecture.md):** Current durable architecture of implemented systems.
 - **[`supabase-migration-runbook.md`](supabase-migration-runbook.md):** (CURRENT-REFERENCE / PARTIAL) Guide for executing database migrations against hosted Supabase. Note: It may contain historical migration counts that should be disregarded in favor of the current source.
 
 ## Roadmap Status
 
-**Important:** The roadmap has not yet been consolidated (pending DOC-2).
-The files [`saas-next-steps.md`](saas-next-steps.md) and [`beautybook-improvement-roadmap.md`](beautybook-improvement-roadmap.md) are currently *inputs* to the future roadmap process. They are NOT implementation truth and do not constitute authorized upcoming work.
+The canonical roadmap is **[`ROADMAP.md`](ROADMAP.md)**.
+The files [`saas-next-steps.md`](saas-next-steps.md) and [`beautybook-improvement-roadmap.md`](beautybook-improvement-roadmap.md) are preserved as superseded inputs. They are NOT implementation truth and do not constitute authorized upcoming work.
 
 ## Historical / Superseded Material
 

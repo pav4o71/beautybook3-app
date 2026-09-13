@@ -1,3 +1,9 @@
+> HISTORICAL / SUPERSEDED ROADMAP INPUT
+>
+> This file is preserved for historical context.
+> The canonical current roadmap is [ROADMAP.md](ROADMAP.md).
+> Do not use this file to select new implementation work.
+
 # BeautyBook Improvement Roadmap
 
 > **Status (as of 2026-09-06):**
