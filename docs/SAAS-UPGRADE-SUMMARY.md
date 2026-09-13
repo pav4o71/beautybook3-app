@@ -279,7 +279,7 @@ git push -u origin feat/saas-phase-1-multi-tenant
 
 - [Upgrade Plan](BEAUTYBOOK3-SAAS-UPGRADE-PLAN.md) - Complete architecture
 - [Implementation Phases](IMPLEMENTATION-PHASES.md) - Step-by-step checklists
-- [Historical Cursor Rules](docs/archive/2026-08-30/tool-rules/beautybook3-saas-cursor-rule.md) - Historical / superseded (not active)
+- [Historical Cursor Rules](archive/2026-08-30/tool-rules/beautybook3-saas-cursor-rule.md) - Historical / superseded (not active)
 - [PR Template](../.github/pull_request_template.md) - Pull request format
 
 ### Commands Reference
