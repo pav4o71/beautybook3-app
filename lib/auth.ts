@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { getEmailFrom, getAppBaseUrl } from "@/lib/email/config";
 import { renderVerificationEmail } from "@/lib/email/templates/verification-email";
 import { renderResetPasswordEmail } from "@/lib/email/templates/reset-password-email";
-import { sendRequiredAuthEmail } from "@/lib/email/auth-email";
+import { scheduleAuthEmail } from "@/lib/email/auth-email";
 import { linkGuestAppointmentsToVerifiedUser } from "@/lib/link-guest-appointments";
 import { postgresRateLimitStorage } from "@/lib/auth-rate-limit-storage";
 
@@ -36,7 +36,7 @@ export const auth = betterAuth({
         userName: data.user.name,
         resetUrl: data.url,
       });
-      await sendRequiredAuthEmail({
+      scheduleAuthEmail({
         to: data.user.email,
         from: getEmailFrom(),
         subject: template.subject,
@@ -61,10 +61,10 @@ export const auth = betterAuth({
 
   // Email verification lifecycle
   emailVerification: {
-    // Better Auth 1.7.2 swallows send-on-signup callback failures. The signup
-    // client explicitly calls sendVerificationEmail after account creation so
-    // it can show a retryable, generic delivery error instead.
-    sendOnSignUp: false,
+    // Better Auth's duplicate-signup response deliberately skips this callback.
+    // Keeping delivery inside the signup path avoids a second client request
+    // that could reveal whether an account already exists.
+    sendOnSignUp: true,
     // Do NOT auto-sign-in after verification — user clicks link → success page → login
     autoSignInAfterVerification: false,
     // Token expires in 1 hour
@@ -82,7 +82,7 @@ export const auth = betterAuth({
         userName: data.user.name,
         verificationUrl: data.url,
       });
-      await sendRequiredAuthEmail({
+      scheduleAuthEmail({
         to: data.user.email,
         from: getEmailFrom(),
         subject: template.subject,

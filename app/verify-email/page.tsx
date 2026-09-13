@@ -17,8 +17,8 @@ export default function VerifyEmailPage({
             <div className="mb-3 text-4xl">📬</div>
             <h1 className={pageTitleClass}>Check your email</h1>
             <p className={pageLeadClass}>
-              We sent a verification link to your email address. Click the link
-              in the email to activate your BeautyBook account.
+              If your account needs verification, you&apos;ll receive a link by
+              email. Click it to activate your BeautyBook account.
             </p>
           </div>
 

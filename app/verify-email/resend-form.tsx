@@ -42,7 +42,8 @@ export function ResendVerificationForm({ email }: { email?: string }) {
     <div className="space-y-4">
       {status === "success" ? (
         <p className={successAlertClass}>
-          Verification email sent. Please check your inbox.
+          If the account exists and needs verification, you&apos;ll receive an
+          email shortly.
         </p>
       ) : null}
       {status === "error" ? (
