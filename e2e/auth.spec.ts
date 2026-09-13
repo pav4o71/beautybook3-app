@@ -46,16 +46,23 @@ test.describe("authentication", () => {
     await page.waitForURL("/login");
   });
 
-  test("customer signup shows check-email page", async ({ page }) => {
-    await page.goto("/signup");
+  test("customer signup keeps duplicate account states generic", async ({ page }) => {
     const uniqueEmail = `playwright.${Date.now()}@example.com`;
-    await page.locator('input[name="name"]').fill("Playwright Customer");
-    await page.locator('input[name="email"]').fill(uniqueEmail);
-    await page.locator('input[name="password"]').fill("Password123!");
-    await page.locator('input[name="confirmPassword"]').fill("Password123!");
-    await page.getByRole("button", { name: "Create account" }).click();
-    await page.waitForURL(/\/verify-email/);
-    await expect(page.getByText(/check your email/i)).toBeVisible();
+
+    async function expectGenericSignup(email: string) {
+      await page.goto("/signup");
+      await page.locator('input[name="name"]').fill("Playwright Customer");
+      await page.locator('input[name="email"]').fill(email);
+      await page.locator('input[name="password"]').fill("Password123!");
+      await page.locator('input[name="confirmPassword"]').fill("Password123!");
+      await page.getByRole("button", { name: "Create account" }).click();
+      await page.waitForURL(/\/verify-email/);
+      await expect(page.getByText(/check your email/i)).toBeVisible();
+    }
+
+    await expectGenericSignup(uniqueEmail);
+    await expectGenericSignup(uniqueEmail);
+    await expectGenericSignup(DEMO_ACCOUNT.email);
   });
 
   test("forgot password form submits generic response", async ({ page }) => {
