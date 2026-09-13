@@ -1,9 +1,21 @@
 ---
-description: BeautyBook core stack — TypeScript, React, Tailwind, Prisma patterns
+description: BeautyBook Cursor adapter — defers to AGENTS.md for shared project policy
 alwaysApply: true
 ---
 
-# BeautyBook Project Conventions
+# BeautyBook — Cursor Conventions
+
+## Shared project authority
+
+Repository-root **AGENTS.md** is the shared project workflow and security authority.
+Read and follow AGENTS.md before making changes.
+
+Current source code, `prisma/schema.prisma`, migrations, tests, CI, and Git state
+define implemented reality. If a tool-specific rule conflicts with AGENTS.md or
+current source truth, AGENTS.md and current source win.
+
+Historical and archive documents (under `docs/archive/` and similar) must not be
+treated as current implementation instructions.
 
 ## TypeScript
 
@@ -16,7 +28,6 @@ alwaysApply: true
 - Functional components only — no class components.
 - Default to **Server Components**; add `"use client"` only for hooks, browser APIs, or client interactivity.
 - Mutations: **server actions** in colocated `actions.ts` files, not ad-hoc REST routes (except Better Auth `/api/auth/*` and future webhooks).
-- Auth gates: `requireUser()` for signed-in pages, `requireOrgMember()` for tenant-specific actions, `requireActiveOrgContext()` for member dashboard, and `requireActiveOrgAdmin()` (or `requireAdmin()` alias) for `/dashboard/admin/*`. Organization admin access is strictly governed by `OrgRole` (`OWNER` or `ADMIN`); `User.role === ADMIN` does not grant access.
 - After mutations: `revalidatePath()` for affected routes, then `redirect()` on success.
 
 ## Styling (Tailwind only)
@@ -33,26 +44,30 @@ alwaysApply: true
 - Use generated enums from `@/app/generated/prisma/enums` (`Role`, `OrgRole`, `AppointmentStatus`, `Weekday`).
 - Pin Prisma 7.x; avoid Prisma 8 RC. No schema change without a migration.
 - **`postinstall`** runs `prisma generate`; `/app/generated/prisma` is gitignored.
-- **Supabase Postgres** (storage only — not Supabase Auth): default **`DATABASE_URL`** is the **session pooler** URI (`*.pooler.supabase.com:5432`, user `beautybook_prisma.[REF]`). Use `npx prisma migrate deploy` on hosted DB (not `migrate dev`). Raw SQL migrations (e.g. exclusion constraints) may need Supabase SQL editor + `migrate resolve` if pooler DDL fails.
-- Schema integrity: `Location_one_default_per_org` enforces **at most one default location per organization** via a partial unique index (`WHERE isDefault = true`).
 - `priceCents` is integer centavos (PHP display via `formatPrice` in `lib/format.ts`).
 - Soft-deactivate with `active: false`; do not hard-delete rows referenced by appointments.
+- Database safety, mutation permissions, and Supabase policy: see AGENTS.md.
 
 ## Money & locale
 
 - Display prices with `formatPrice()` — currency is **PHP** (`en-PH`).
 - Parse admin price inputs with `parsePesoToCentavos()` from `lib/catalog.ts`.
 
-## Testing & Safety
-
-- Verify scripts: `npm run verify` (runs all 11 verification checks — strictly fail-closed; requires an approved local test database; no remote bypass).
-- E2E: `npm run test:e2e` (Playwright suite of 34 tests — seeds local test DB via `global-setup.ts`).
-- Demo accounts: `lib/demo-account.ts` (all passwords `Demo1234!`):
-  - `demo@beautybook.local` (Owner/Admin)
-  - `customer@beautybook.local` (Customer)
-  - `owner@glow-nails.local` / `owner@luxe-hair.local` (Marketplace owners)
-
 ## Validation
 
 - Use Zod schemas in `lib/validations/` for new server actions; `safeParse` + `actionError` on failure.
 - Legacy `parse*` helpers in `lib/catalog.ts` remain for existing forms until migrated.
+
+## Auth, tenancy, security, rate limiting
+
+See AGENTS.md for authoritative policy on authentication gates, organization membership
+checks, tenant isolation, management tokens, booking invariants, rate limiting, and email.
+
+## Testing
+
+- Verify scripts: `npm run verify` — strictly fail-closed; requires an approved local test database; no remote bypass. See AGENTS.md for database safety rules.
+- E2E: `npm run test:e2e` (Playwright suite — seeds local test DB via `global-setup.ts`).
+- Demo accounts: `lib/demo-account.ts` (all passwords `Demo1234!`):
+  - `demo@beautybook.local` (Owner/Admin)
+  - `customer@beautybook.local` (Customer)
+  - `owner@glow-nails.local` / `owner@luxe-hair.local` (Marketplace owners)

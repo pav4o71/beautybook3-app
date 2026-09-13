@@ -20,7 +20,7 @@ All files are in your repository at `docs/` and `.github/`:
 | `docs/BEAUTYBOOK3-SAAS-UPGRADE-PLAN.md` | Complete 4-phase migration strategy | Planning & architecture |
 | `docs/IMPLEMENTATION-PHASES.md` | Step-by-step implementation checklists | During implementation |
 | `docs/SAAS-UPGRADE-SUMMARY.md` | This file - quick reference | Getting started |
-| `.cursor/rules/beautybook3-saas.mdc` | Multi-tenant coding rules | Always (auto-applied) |
+| `docs/archive/2026-08-30/tool-rules/beautybook3-saas-cursor-rule.md` | Historical / superseded multi-tenant coding rules (not active) | Historical reference only |
 | `.github/pull_request_template.md` | PR template | When creating PRs |
 
 ---
@@ -279,7 +279,7 @@ git push -u origin feat/saas-phase-1-multi-tenant
 
 - [Upgrade Plan](BEAUTYBOOK3-SAAS-UPGRADE-PLAN.md) - Complete architecture
 - [Implementation Phases](IMPLEMENTATION-PHASES.md) - Step-by-step checklists
-- [Cursor Rules](../.cursor/rules/beautybook3-saas.mdc) - Coding standards
+- [Historical Cursor Rules](docs/archive/2026-08-30/tool-rules/beautybook3-saas-cursor-rule.md) - Historical / superseded (not active)
 - [PR Template](../.github/pull_request_template.md) - Pull request format
 
 ### Commands Reference

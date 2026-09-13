@@ -1,16 +1,20 @@
----
-description: BeautyBook3 SaaS - Multi-Tenant Platform Rules
-globs: **/*
-alwaysApply: false
+# HISTORICAL / SUPERSEDED — NOT ACTIVE PROJECT INSTRUCTIONS
+
+> [!CAUTION]
+> This file is preserved **only for historical context**. It is not an active
+> Cursor rule and must not be used to implement current BeautyBook behavior.
+>
+> - Repository-root **AGENTS.md** governs shared workflow and security policy.
+> - Current source code, `prisma/schema.prisma`, migrations, tests, CI, and
+>   Git state govern implemented behavior.
+>
+> Originally: `.cursor/rules/beautybook3-saas.mdc` (August 2026 SaaS design phase).
+
 ---
 
 > [!WARNING]
 > **Status: Historical / Superseded Planning Document.**
 > This file is an early aspirational draft from the initial SaaS design phase. It contains hypothetical APIs and schema sketches (e.g. `requireOrgMembership`, `organization.isActive`, `scheduledAt`) that were refined during canonical implementation.
-> For current conventions and technical truth, refer to:
-> - Active conventions: [`.cursor/rules/beautybook3.mdc`](./beautybook3.mdc)
-> - Technical architecture: [`docs/architecture.md`](../../docs/architecture.md)
-> - Primary guide: [`README.md`](../../README.md)
 
 ## Project Overview
 
