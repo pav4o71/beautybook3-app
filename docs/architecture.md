@@ -107,7 +107,7 @@ Customer identity is decoupled from tenant membership:
 ## 6. Email Delivery & Rate Limiting
 
 ### Notification Delivery Architecture
-- The `NotificationDelivery` model tracks asynchronous background email delivery state (PENDING, SENDING, SENT, FAILED).
+- The `NotificationDelivery` model tracks appointment transactional email delivery state (PENDING, SENDING, SENT, FAILED).
 - Claim tokens and lease expiry mechanisms prevent duplicate delivery and handle worker restarts gracefully.
 - Appointment transactional notifications (booking, cancellation, rescheduling) are invoked after successful appointment commit. Delivery failure is isolated and does not roll back the appointment.
 - Auth verification and password reset emails utilize Next.js `after()` API to perform non-blocking delivery while returning an immediate response to the client.
