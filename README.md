@@ -67,12 +67,12 @@ npm run dev
 - **`/`**: Canonical marketplace discovery.
 - **`/search` & `/marketplace`**: Redirect to `/`.
 - **`/s/[orgSlug]`**: Salon storefront.
-- **`/s/[orgSlug]/book`**: Public booking flow for both members and zero-org customers.
-- **`/b/[token]`**: Guest management capability. Allows unauthenticated customers to manage (cancel/reschedule) their appointment using a secure hashed bearer token.
+- **`/s/[orgSlug]/book`**: Public booking flow for anonymous guests, zero-org customers, and organization members.
+- **`/b/[token]`**: Guest management capability. Allows unauthenticated customers to manage (cancel/reschedule) their appointment using a raw high-entropy bearer capability; only its SHA-256 hash is stored.
 
 ### Customer & Auth Routes
 - **`/login`, `/signup`, `/verify-email`, `/forgot-password`, `/reset-password`**: Better Auth managed lifecycle routes.
-- **`/account`**: Customer account management and appointment history for users with no salon organization memberships (zero-org customers).
+- **`/account`**: Customer account management and appointment history for verified customers (including those who also have organization memberships).
 
 ### Tenant Admin Routes
 - **`/onboarding`**: Create a new business organization.

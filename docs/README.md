@@ -24,13 +24,17 @@ The files [`saas-next-steps.md`](saas-next-steps.md) and [`beautybook-improvemen
 ## Historical / Superseded Material
 
 The following documents are historical archives. **Future developers and AI agents must NOT use these to infer current system behavior or implement missing features based on their contents.**
-- `audit-2026-08-31-01.md`
-- `audit-2026-08-31-02-auth.md`
-- `audit-2026-09-02-auth-recovery.md`
-- `auth-and-booking-refactor.md`
-- `development-plan.md`
-- `superpowers-checklist.md`
-- `schema-saas.prisma`
+- `BEAUTYBOOK3-SAAS-UPGRADE-PLAN.md`
+- `IMPLEMENTATION-PHASES.md`
+- `SAAS-UPGRADE-SUMMARY.md`
+- `beautybook-product-audit.md`
+- `saas-phase-2-plan.md`
+- `saas-phase-5-plan.md`
+- `saas-phase-6-plan.md`
+- `saas-upgrade-progress.md`
+- Documents within `archive/`
+- Documents within `superpowers/`
+- `../prisma/schema-saas.prisma` (outside `docs/`, a stale non-live schema sketch)
 
 ## Operations
 

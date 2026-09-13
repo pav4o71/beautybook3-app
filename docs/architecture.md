@@ -27,9 +27,12 @@ Every salon tenant is represented by an `Organization`. All operational models (
 
 ### Membership & Role Hierarchy (`lib/org-roles.ts`)
 Tenant access is strictly determined by `OrganizationMember.role` (mapped to `OrgRole` enum):
-- `OWNER` (Rank 100): Full control over organization settings, locations, catalog, staff, and appointments.
-- `ADMIN` (Rank 50): Equivalent to OWNER, restricted from destroying the organization or transferring ownership.
-- `MEMBER` (Rank 10): Standard staff access (e.g., viewing schedules and appointments).
+- `OWNER` (Rank 4)
+- `ADMIN` (Rank 3)
+- `STAFF` (Rank 2)
+- `MEMBER` (Rank 1)
+
+`isOrgAdminRole(role)` requires at least `ADMIN` (Rank 3).
 
 ### Server Authorization Gates (`lib/require-org.ts`, `lib/require-user.ts`)
 - **`requireUser()`**: Ensures the client has an active session via Better Auth; redirects unauthenticated requests to `/login`.
@@ -76,12 +79,12 @@ Authentication uses Better Auth for email/password registration and login.
 Customer identity is decoupled from tenant membership:
 - A user account may have zero `OrganizationMember` records (a "zero-org customer").
 - Appointment ownership is governed by `Appointment.customerId === User.id`.
-- The `/account` route provides a central dashboard for these zero-org customers to view their cross-salon booking history.
+- The `/account` route provides a central dashboard for verified customers to view their cross-salon booking history.
 
 ### Public Guest Booking & Management Token
 - **Guest Booking:** Unauthenticated users can book appointments.
 - **Guest-to-Account Linking:** An unauthenticated guest booking can be linked to a customer account *only* after Better Auth verifies the email address matches the guest booking.
-- **Management Capability (`/b/[token]`):** Appointments can be securely managed (cancelled/rescheduled) by unauthenticated users via a high-entropy management token. Only the SHA-256 hash of this token is stored in the database. The raw token is sent once via email and never persisted.
+- **Management Capability (`/b/[token]`):** Appointments can be securely managed (cancelled/rescheduled) by unauthenticated users via a high-entropy management token. Only the SHA-256 hash of this capability is stored in the database. The raw bearer capability is never persisted.
 
 ---
 
@@ -104,8 +107,9 @@ Customer identity is decoupled from tenant membership:
 ## 6. Email Delivery & Rate Limiting
 
 ### Notification Delivery Architecture
-- The `NotificationDelivery` model tracks asynchronous background email delivery state (PENDING, CLAIMED, DELIVERED, FAILED).
+- The `NotificationDelivery` model tracks asynchronous background email delivery state (PENDING, SENDING, SENT, FAILED).
 - Claim tokens and lease expiry mechanisms prevent duplicate delivery and handle worker restarts gracefully.
+- Appointment transactional notifications (booking, cancellation, rescheduling) are invoked after successful appointment commit. Delivery failure is isolated and does not roll back the appointment.
 - Auth verification and password reset emails utilize Next.js `after()` API to perform non-blocking delivery while returning an immediate response to the client.
 
 ### Rate Limiting (Abuse Protection)
@@ -125,7 +129,7 @@ Mutating commands (`verify`, `seed`, `test:e2e`) are protected by a strict fail-
 
 ### CI Runner
 - `scripts/verify/run-all.ts` acts as the integration test runner.
-- The Playwright suite (`e2e/`) provides full end-to-end coverage using a seeded local database.
+- The Playwright suite (`e2e/`) provides browser end-to-end coverage for the flows represented in the suite using a seeded local database.
 
 ---
 
