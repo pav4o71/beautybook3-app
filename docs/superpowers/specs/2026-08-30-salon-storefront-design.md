@@ -3,7 +3,7 @@
 > [!NOTE]
 > **Status: Historical design spec (2026-08-30).**
 > This reflects the design spec for salon storefront and multi-service booking (merged in PR #19).
-> For current architecture and setup, see [`README.md`](../../README.md) and [`docs/architecture.md`](../architecture.md).
+> For current architecture and setup, see [`README.md`](../../README.md) and [`docs/architecture.md`](../../architecture.md).
 
 **Status:** Implemented (Phase 7)
 **Date:** 2026-08-30

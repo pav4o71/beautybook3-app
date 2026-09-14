@@ -3,7 +3,7 @@
 > [!NOTE]
 > **Status: Historical planning document (Phase 5).**
 > This reflects the repository during hardening and isolation implementation (merged in PRs #7–#10).
-> For current architecture and setup, see [`README.md`](../README.md) and [`docs/architecture.md`](./architecture.md).
+> For current architecture and setup, see [`README.md`](../../../README.md) and [`docs/architecture.md`](../../architecture.md).
 
 **Status:** Complete (2026-08-30)
 **Base:** `main` after PR #7 merged

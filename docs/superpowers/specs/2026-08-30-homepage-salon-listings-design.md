@@ -3,7 +3,7 @@
 > [!NOTE]
 > **Status: Historical design spec (2026-08-30).**
 > This reflects the initial design spec for homepage salon listings (merged in PR #17).
-> For current architecture and setup, see [`README.md`](../../README.md) and [`docs/architecture.md`](../architecture.md).
+> For current architecture and setup, see [`README.md`](../../README.md) and [`docs/architecture.md`](../../architecture.md).
 
 **Status:** Approved by product direction (layout C, cover URL + disk upload)
 **Date:** 2026-08-30

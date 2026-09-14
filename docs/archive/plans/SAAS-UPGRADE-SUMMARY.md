@@ -3,7 +3,7 @@
 > [!NOTE]
 > **Status: Historical summary document.**
 > This reflects the repository at the inception of the SaaS upgrade.
-> For current architecture and setup, see [`README.md`](../README.md) and [`docs/architecture.md`](./architecture.md).
+> For current architecture and setup, see [`README.md`](../../../README.md) and [`docs/architecture.md`](../../architecture.md).
 
 ## 🎯 What We've Created
 
@@ -17,10 +17,10 @@ All files are in your repository at `docs/` and `.github/`:
 
 | File | Purpose | When to Use |
 |------|---------|-------------|
-| `docs/BEAUTYBOOK3-SAAS-UPGRADE-PLAN.md` | Complete 4-phase migration strategy | Planning & architecture |
+| `./BEAUTYBOOK3-SAAS-UPGRADE-PLAN.md` | Complete 4-phase migration strategy | Planning & architecture |
 | `docs/IMPLEMENTATION-PHASES.md` | Step-by-step implementation checklists | During implementation |
 | `docs/SAAS-UPGRADE-SUMMARY.md` | This file - quick reference | Getting started |
-| `docs/archive/2026-08-30/tool-rules/beautybook3-saas-cursor-rule.md` | Historical / superseded multi-tenant coding rules (not active) | Historical reference only |
+| `../2026-08-30/tool-rules/beautybook3-saas-cursor-rule.md` | Historical / superseded multi-tenant coding rules (not active) | Historical reference only |
 | `.github/pull_request_template.md` | PR template | When creating PRs |
 
 ---
@@ -31,7 +31,7 @@ All files are in your repository at `docs/` and `.github/`:
 
 ```bash
 # Open the upgrade plan
-cat docs/BEAUTYBOOK3-SAAS-UPGRADE-PLAN.md
+cat ./BEAUTYBOOK3-SAAS-UPGRADE-PLAN.md
 
 # Focus on:
 # - Architecture overview
@@ -279,8 +279,8 @@ git push -u origin feat/saas-phase-1-multi-tenant
 
 - [Upgrade Plan](BEAUTYBOOK3-SAAS-UPGRADE-PLAN.md) - Complete architecture
 - [Implementation Phases](IMPLEMENTATION-PHASES.md) - Step-by-step checklists
-- [Historical Cursor Rules](archive/2026-08-30/tool-rules/beautybook3-saas-cursor-rule.md) - Historical / superseded (not active)
-- [PR Template](../.github/pull_request_template.md) - Pull request format
+- [Historical Cursor Rules](../2026-08-30/tool-rules/beautybook3-saas-cursor-rule.md) - Historical / superseded (not active)
+- [PR Template](../../../.github/pull_request_template.md) - Pull request format
 
 ### Commands Reference
 

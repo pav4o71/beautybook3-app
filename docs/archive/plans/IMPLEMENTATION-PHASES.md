@@ -3,7 +3,7 @@
 > [!NOTE]
 > **Status: Historical implementation checklist.**
 > This reflects the repository during early SaaS migration planning (Phase 1).
-> For current architecture and setup, see [`README.md`](../README.md) and [`docs/architecture.md`](./architecture.md).
+> For current architecture and setup, see [`README.md`](../../../README.md) and [`docs/architecture.md`](../../architecture.md).
 
 ## Overview
 

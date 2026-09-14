@@ -3,7 +3,7 @@
 > [!NOTE]
 > **Status: Historical planning document.**
 > This reflects the repository during early multi-tenant SaaS scoping prior to Phase 1.
-> For current architecture and setup, see [`README.md`](../README.md) and [`docs/architecture.md`](./architecture.md).
+> For current architecture and setup, see [`README.md`](../../../README.md) and [`docs/architecture.md`](../../architecture.md).
 
 ## Executive Summary
 
