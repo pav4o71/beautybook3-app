@@ -11,7 +11,7 @@
 > - **Phase 2 (Better booking & retention) & Phase 3 (Premium salon mini-sites):** Active future roadmap.
 
 **Date:** 2026-09-03
-**Companion audit:** [`beautybook-product-audit.md`](./beautybook-product-audit.md)
+**Companion audit:** [`beautybook-product-audit.md`](./archive/audits/beautybook-product-audit.md)
 
 Product phases below are **marketplace / conversion** phases. They do not replace SaaS infra phases in [`saas-next-steps.md`](./saas-next-steps.md).
 

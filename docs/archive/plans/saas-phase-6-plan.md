@@ -3,7 +3,7 @@
 > [!NOTE]
 > **Status: Historical planning document (Phase 6).**
 > This reflects the repository during search-first marketplace UI implementation (merged in PRs #12–#15).
-> For current architecture and setup, see [`README.md`](../README.md) and [`docs/architecture.md`](./architecture.md).
+> For current architecture and setup, see [`README.md`](../../../README.md) and [`docs/architecture.md`](../../architecture.md).
 
 **Status:** Complete (PRs [#12](https://github.com/pav4o71/beautybook3-app/pull/12)–[#15](https://github.com/pav4o71/beautybook3-app/pull/15))
 **Base:** `main` after Phase 5 (PRs #7–#11)

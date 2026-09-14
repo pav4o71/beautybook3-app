@@ -3,7 +3,7 @@
 > [!NOTE]
 > **Status: Historical planning document (Phase 2).**
 > This reflects the repository during multi-location and marketplace implementation (merged in PR #6).
-> For current architecture and setup, see [`README.md`](../README.md) and [`docs/architecture.md`](./architecture.md).
+> For current architecture and setup, see [`README.md`](../../../README.md) and [`docs/architecture.md`](../../architecture.md).
 
 **Status:** Phase 2 complete (2A–2C merged). **2D invites** deferred.
 **Base:** `main` @ PR #6 merged (`9d640f1`)
