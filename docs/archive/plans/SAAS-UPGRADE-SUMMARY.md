@@ -17,9 +17,9 @@ All files are in your repository at `docs/` and `.github/`:
 
 | File | Purpose | When to Use |
 |------|---------|-------------|
-| `./BEAUTYBOOK3-SAAS-UPGRADE-PLAN.md` | Complete 4-phase migration strategy | Planning & architecture |
-| `docs/IMPLEMENTATION-PHASES.md` | Step-by-step implementation checklists | During implementation |
-| `docs/SAAS-UPGRADE-SUMMARY.md` | This file - quick reference | Getting started |
+| `docs/archive/plans/BEAUTYBOOK3-SAAS-UPGRADE-PLAN.md` | Complete 4-phase migration strategy | Planning & architecture |
+| `docs/archive/plans/IMPLEMENTATION-PHASES.md` | Step-by-step implementation checklists | During implementation |
+| `docs/archive/plans/SAAS-UPGRADE-SUMMARY.md` | This file - quick reference | Getting started |
 | `../2026-08-30/tool-rules/beautybook3-saas-cursor-rule.md` | Historical / superseded multi-tenant coding rules (not active) | Historical reference only |
 | `.github/pull_request_template.md` | PR template | When creating PRs |
 
@@ -31,7 +31,7 @@ All files are in your repository at `docs/` and `.github/`:
 
 ```bash
 # Open the upgrade plan
-cat ./BEAUTYBOOK3-SAAS-UPGRADE-PLAN.md
+cat docs/archive/plans/BEAUTYBOOK3-SAAS-UPGRADE-PLAN.md
 
 # Focus on:
 # - Architecture overview
