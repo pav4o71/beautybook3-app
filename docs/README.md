@@ -15,7 +15,7 @@ When working on BeautyBook, do not guess and do not rely on stale documentation.
 - **[`../README.md`](../README.md):** Project onboarding, environment context, and setup guide.
 - **[`ROADMAP.md`](ROADMAP.md):** Current canonical roadmap governing planned product and engineering work.
 - **[`architecture.md`](architecture.md):** Current durable architecture of implemented systems.
-- **[`supabase-migration-runbook.md`](supabase-migration-runbook.md):** (CURRENT-REFERENCE / PARTIAL) Guide for executing database migrations against hosted Supabase. Note: It may contain historical migration counts that should be disregarded in favor of the current source.
+- **[`supabase-migration-runbook.md`](supabase-migration-runbook.md):** Current reference for executing database migrations against hosted Supabase.
 
 ## Roadmap Status
 
@@ -39,7 +39,7 @@ The following documents are historical archives. **Future developers and AI agen
 
 ## Operations
 
-For database operations, see the [`supabase-migration-runbook.md`](supabase-migration-runbook.md). Normalization of operations and environment contracts will be formalized in future documentation phases (DOC-4).
+For database operations, see the [`supabase-migration-runbook.md`](supabase-migration-runbook.md).
 
 ## Change Discipline
 

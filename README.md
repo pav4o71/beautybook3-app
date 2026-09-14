@@ -16,6 +16,13 @@ This index dictates which files represent current implemented architecture, oper
 
 ## Environment & Setup
 
+### Prerequisites
+
+- **Node.js**: Node 22 is BeautyBook's canonical tested application runtime baseline.
+  - The project root `.nvmrc` contains `22`.
+  - Continuous Integration (CI) runs BeautyBook application commands on Node 22.
+- **PostgreSQL 16**: Required for the documented local Docker example below.
+
 Copy the environment template:
 ```bash
 cp .env.example .env
@@ -24,30 +31,32 @@ Ensure required variables are populated. (Note: Production deployments require `
 
 ### Database Contexts & Safety
 
-BeautyBook strictly isolates database contexts to prevent accidental mutations.
+BeautyBook strictly isolates database contexts. Do not confuse these concepts:
 
-#### 1. Hosted Postgres (Application Runtime)
-Point `DATABASE_URL` to a hosted remote PostgreSQL instance (e.g., Supabase) for normal application usage.
+1. **Canonical local development DB**: The expected target for local active development (`beautybook_dev`).
+2. **Hosted application runtime DB**: The database accessed by production or staging application servers.
+3. **Hosted migration connection**: A deliberate, controlled connection used by a human to deploy schema changes.
+4. **CI ephemeral DB**: Temporary databases spun up during automated GitHub Actions.
+5. **Code guard technical allowlist**: The technical fail-closed mechanism in `lib/test-only-local-db.ts` accepts approved loopback hosts and an explicit allowlist of local database names, but does not enforce port 5433 or require one single database name.
+6. **Autonomous-agent mutation policy**: The strict rules defined in `AGENTS.md` governing what agents are allowed to mutate.
 
-#### 2. Human Local Development Example
+*Note: `AGENTS.md` remains authoritative for agents. Do not infer that anything accepted by the technical allowlist (`lib/test-only-local-db.ts`) is automatically authorized for autonomous agents.*
+
+#### Documented Local Docker Example
+
 A standard local PostgreSQL instance can be used for testing and development:
 ```bash
 # Example local Postgres container on port 5433
 docker run -d --name beautybook3-pg \
   -e POSTGRES_USER=beautybook \
   -e POSTGRES_PASSWORD=beautybook \
-  -e POSTGRES_DB=beautybook \
+  -e POSTGRES_DB=beautybook_dev \
   -p 5433:5432 \
   postgres:16
 
 # Point DATABASE_URL to local instance
-export DATABASE_URL="postgresql://beautybook:beautybook@localhost:5433/beautybook?sslmode=disable"
+export DATABASE_URL="postgresql://beautybook:beautybook@localhost:5433/beautybook_dev?sslmode=disable"
 ```
-*Note: This is a human/developer local example. Autonomous agents follow strict rules in `AGENTS.md` and may not infer mutation permissions from this example.*
-
-#### 3. Agent & Validation Databases
-Mutating scripts (like `npm run prisma:seed`, `npm run verify`, `npm run test:e2e`) use a fail-closed guard (`lib/test-only-local-db.ts`) that strictly refuses non-local targets.
-Agents must follow `AGENTS.md` exactly, mutating only the authorized local database (e.g., `beautybook_dev`).
 
 ## Development & Testing
 
