@@ -37,7 +37,7 @@ BeautyBook strictly isolates database contexts. Do not confuse these concepts:
 2. **Hosted application runtime DB**: The database accessed by production or staging application servers.
 3. **Hosted migration connection**: A deliberate, controlled connection used by a human to deploy schema changes.
 4. **CI ephemeral DB**: Temporary databases spun up during automated GitHub Actions.
-5. **Code guard technical allowlist**: The technical fail-closed mechanism in `lib/test-only-local-db.ts` which broadly accepts loopback targets (but does not enforce port 5433 or a specific DB name).
+5. **Code guard technical allowlist**: The technical fail-closed mechanism in `lib/test-only-local-db.ts` accepts approved loopback hosts and an explicit allowlist of local database names, but does not enforce port 5433 or require one single database name.
 6. **Autonomous-agent mutation policy**: The strict rules defined in `AGENTS.md` governing what agents are allowed to mutate.
 
 *Note: `AGENTS.md` remains authoritative for agents. Do not infer that anything accepted by the technical allowlist (`lib/test-only-local-db.ts`) is automatically authorized for autonomous agents.*
