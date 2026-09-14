@@ -7,21 +7,19 @@ Use this runbook when applying Prisma migrations to hosted Supabase, or troubles
 
 ---
 
-## 1. Canonical Migration Inventory
+## 1. Known Migration Caveats
 
-There are **9 migrations** under `prisma/migrations/`. All migrations must be applied in sequential order.
+The canonical migration source of truth is the `prisma/migrations/` directory. All committed pending migrations must be deployed in sequential order. You should always determine the current state from source and by running `npx prisma migrate status`.
 
-| # | Migration Directory | Scope & Constraints | Hosted Deployment Caveats |
-|---|---|---|---|
-| 1 | `20260829224926_init_auth_and_booking` | Initial auth, user, and single-salon booking schema | Applies normally |
-| 2 | `20260830034500_appointment_staff_no_overlap` | Enables `btree_gist` extension; adds staff appointment exclusion constraint `Appointment_staff_no_overlap` | One-time cleanup deletes newer row in overlapping active appointments |
-| 3 | `20260830100000_add_tenancy_tables` | Adds `Organization`, `Location`, `OrganizationMember`, `OrgRole` enum | Applies normally |
-| 4 | `20260830100100_add_tenant_fks_nullable` | Adds nullable tenant foreign keys across catalog and appointments | Requires table ownership grants if mixed roles exist (see below) |
-| 5 | `20260830100200_backfill_tenant_data` | Backfills `beautybook-demo` tenant data; enforces `NOT NULL` constraints | Requires table ownership grants if mixed roles exist (see below) |
-| 6 | `20260830133632_add_location_area` | Adds `Location.area` column and index for Metro Manila area filtering | Applies normally |
-| 7 | `20260830172000_add_organization_cover_image` | Adds `Organization.coverImageUrl` | Applies normally |
-| 8 | `20260830183000_salon_profile_and_appointment_service_unique` | Adds `Organization.description`/`phone`, `Location.phone`; adds unique constraint on `AppointmentService(appointmentId, serviceId)` | Deletes duplicate join rows, keeping the lowest id |
-| 9 | `20260903120000_location_one_default_and_org_published_idx` | Enforces partial unique index `Location_one_default_per_org` (**at most one default location per organization**) and index on `Organization(published)` | Cleans up duplicate defaults per org before creating index |
+The following list is **not a complete migration inventory**, but rather a record of specific historical migrations that carry unusual behavior or operational caveats:
+
+| Migration Directory | Scope & Constraints | Hosted Deployment Caveats |
+|---|---|---|
+| `20260830034500_appointment_staff_no_overlap` | Enables `btree_gist` extension; adds staff appointment exclusion constraint `Appointment_staff_no_overlap` | One-time cleanup deletes newer row in overlapping active appointments |
+| `20260830100100_add_tenant_fks_nullable` | Adds nullable tenant foreign keys across catalog and appointments | Requires table ownership grants if mixed roles exist (see below) |
+| `20260830100200_backfill_tenant_data` | Backfills `beautybook-demo` tenant data; enforces `NOT NULL` constraints | Requires table ownership grants if mixed roles exist (see below) |
+| `20260830183000_salon_profile_and_appointment_service_unique` | Adds `Organization.description`/`phone`, `Location.phone`; adds unique constraint on `AppointmentService(appointmentId, serviceId)` | Deletes duplicate join rows, keeping the lowest id |
+| `20260903120000_location_one_default_and_org_published_idx` | Enforces partial unique index `Location_one_default_per_org` (**at most one default location per organization**) and index on `Organization(published)` | Cleans up duplicate defaults per org before creating index |
 
 ---
 
@@ -72,7 +70,10 @@ GRANT ALL ON TABLE "OrganizationMember" TO postgres;
 GRANT USAGE ON TYPE "OrgRole" TO postgres;
 ```
 
-After applying pending migration SQL in the SQL Editor, mark them applied locally:
+After applying pending migration SQL in the SQL Editor, you must mark them as applied on the database selected by `DATABASE_URL`.
+
+> [!WARNING]
+> `npx prisma migrate resolve` acts on the database selected by the active `DATABASE_URL`. It must only be used after verifying you are connected to the intended target.
 
 ```bash
 npx prisma migrate resolve --applied 20260830100100_add_tenant_fks_nullable
@@ -97,7 +98,10 @@ When running DDL migrations against hosted Supabase, connect via the **direct** 
 
 ---
 
-## 3. Standard Migration Deployment Procedure
+## 3. Standard Migration Deployment Procedure (Human Operation)
+
+> [!IMPORTANT]
+> Hosted migration deployment is a controlled human operation. Autonomous agents are not authorized to mutate hosted Supabase instances.
 
 ### Recommended Workflow: Direct Connection
 1. Retrieve the direct connection URI from the Supabase Dashboard (`Project Settings → Database → Connection string → URI`, port 5432).
@@ -126,5 +130,5 @@ When running DDL migrations against hosted Supabase, connect via the **direct** 
 > There is **no remote bypass** (`VERIFY_ALLOW_REMOTE` does not exist).
 
 To verify the hosted database after migrations:
-1. Inspect `_prisma_migrations` in the Supabase Dashboard Table Editor to verify all 9 migrations have `finished_at IS NOT NULL`.
-2. Start the application locally against the pooler URI (`npm run dev`) and spot-check public and admin pages in the browser.
+1. Inspect `_prisma_migrations` in the Supabase Dashboard Table Editor to verify all pending migrations have `finished_at IS NOT NULL`.
+2. As a deliberate, controlled human operation, you may start the application locally against the pooler URI (`npm run dev`) and spot-check public and admin pages in the browser. This action does not grant autonomous agents authorization to mutate the hosted database.
