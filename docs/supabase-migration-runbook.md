@@ -27,7 +27,7 @@ The following list is **not a complete migration inventory**, but rather a recor
 
 If migrations are executed across different connection endpoints (for example, applying initial migrations via direct `postgres` and subsequent migrations via a Supavisor connection pooler role such as `beautybook_prisma`), tables in the `public` schema may end up owned by different PostgreSQL roles.
 
-When a later migration adds cross-table foreign keys (e.g., migrations 4 and 5 referencing `Organization` and `Location`), PostgreSQL requires `REFERENCES` privilege on the referenced table. If the connecting role does not own the target table or have explicit `REFERENCES` privileges granted by the owner, the migration fails with:
+When a later migration adds cross-table foreign keys (e.g., migrations referencing `Organization` and `Location`), PostgreSQL requires `REFERENCES` privilege on the referenced table. If the connecting role does not own the target table or have explicit `REFERENCES` privileges granted by the owner, the migration fails with:
 `ERROR: permission denied for table Organization` or `must be owner of table`.
 
 ### Step 1: Diagnose Object Ownership and Roles
@@ -130,5 +130,6 @@ When running DDL migrations against hosted Supabase, connect via the **direct** 
 > There is **no remote bypass** (`VERIFY_ALLOW_REMOTE` does not exist).
 
 To verify the hosted database after migrations:
-1. Inspect `_prisma_migrations` in the Supabase Dashboard Table Editor to verify all pending migrations have `finished_at IS NOT NULL`.
-2. As a deliberate, controlled human operation, you may start the application locally against the pooler URI (`npm run dev`) and spot-check public and admin pages in the browser. This action does not grant autonomous agents authorization to mutate the hosted database.
+1. Run `npx prisma migrate status` to determine whether committed migrations remain pending against the selected `DATABASE_URL` target.
+2. Inspect `_prisma_migrations` in the Supabase Dashboard Table Editor to verify the completion and status of migration records that exist (e.g., ensuring `finished_at IS NOT NULL`).
+3. As a deliberate, controlled human operation, you may start the application locally against the pooler URI (`npm run dev`) and spot-check public and admin pages in the browser. This action does not grant autonomous agents authorization to mutate the hosted database.
